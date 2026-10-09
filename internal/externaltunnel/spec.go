@@ -25,7 +25,8 @@ var Kinds = []Kind{
 	{"l2tp-ip", "L2TPv3 IP", "new/setup-l2tpv3.sh", "IPv4 protocol 115; l2tp_eth kernel module"},
 	{"l2tp-udp", "L2TPv3 UDP", "new/setup-l2tpv3.sh", "UDP; l2tp_eth kernel module"},
 	{"awg", "AmneziaWG", "new/awg-relay.sh", "kernel or pinned userspace AWG; UDP"},
-	{"ssh", "SSH pool", "new/ssh.sh", "SSH key authentication and verified host key; TCP"},
+	{"ssh", "SSH pool", "new/ssh.sh", "Iran connects to kharej; authenticated TCP forwarding"},
+	{"ssh-reverse", "SSH reverse", "native OpenSSH remote forwarding", "Kharej connects to Iran; authenticated reverse TCP forwarding"},
 	{"rgt-tcp", "RGT reverse TCP", "https://github.com/black-sec/RGT", "pinned RGT core; TCP"},
 	{"rgt-udp", "RGT reverse UDP", "https://github.com/black-sec/RGT", "pinned RGT core; UDP data, TCP control"},
 	{"rgt-direct", "RGT direct VXLAN", "https://github.com/black-sec/RGT", "VXLAN kernel support; UDP"},
@@ -73,10 +74,17 @@ func NewSecret() string {
 }
 func New(name, kind, side string) Spec {
 	connections := 4
-	if kind == "paqet" {
+	if kind == "paqet" || kind == "ssh-reverse" {
 		connections = 1
 	}
-	return Spec{Version: 1, Name: name, Kind: kind, Side: side, Port: 17010, ID: 10000, MTU: 1280, Secret: NewSecret(), IranIP: "10.203.0.1/30", KharejIP: "10.203.0.2/30", Listen: "0.0.0.0:8443", Target: "127.0.0.1:8443", Protocol: "tcp", Connections: connections, Mode: "fast", SSHUser: "root", SSHKey: "/root/.ssh/bk_external", KnownHosts: "/root/.ssh/known_hosts"}
+	port, source := 17010, 0
+	if SSH(kind) {
+		port = 22
+	}
+	if kind == "ssh-reverse" {
+		source = 17011
+	}
+	return Spec{SourcePort: source, Version: 1, Name: name, Kind: kind, Side: side, Port: port, ID: 10000, MTU: 1280, Secret: NewSecret(), IranIP: "10.203.0.1/30", KharejIP: "10.203.0.2/30", Listen: "0.0.0.0:8443", Target: "127.0.0.1:8443", Protocol: "tcp", Connections: connections, Mode: "fast", SSHUser: "root", SSHKey: "/root/.ssh/bk_external", KnownHosts: "/root/.ssh/known_hosts"}
 }
 func Find(kind string) (Kind, bool) {
 	for _, k := range Kinds {
@@ -94,6 +102,10 @@ func Layer3(kind string) bool {
 	return false
 }
 func Reverse(kind string) bool { return strings.HasPrefix(kind, "rgt-") && kind != "rgt-direct" }
+func SSH(kind string) bool     { return kind == "ssh" || kind == "ssh-reverse" }
+func SSHInitiator(s Spec) bool {
+	return (s.Kind == "ssh" && s.Side == "iran") || (s.Kind == "ssh-reverse" && s.Side == "kharej")
+}
 func validAddr(a string) bool {
 	h, p, e := net.SplitHostPort(a)
 	n, e2 := strconv.Atoi(p)
@@ -129,7 +141,7 @@ func (s Spec) Validate() error {
 	if s.Protocol != "tcp" && s.Protocol != "udp" {
 		return fmt.Errorf("protocol must be tcp or udp")
 	}
-	if s.Kind == "ssh" && s.Protocol != "tcp" {
+	if SSH(s.Kind) && s.Protocol != "tcp" {
 		return fmt.Errorf("SSH supports TCP forwarding only")
 	}
 	if !validAddr(s.Listen) || !validAddr(s.Target) || (s.Backend != "" && !validAddr(s.Backend)) {
@@ -164,10 +176,13 @@ func (s Spec) Validate() error {
 			return fmt.Errorf("Paqet MTU must be <=1500")
 		}
 	}
-	if s.Kind == "ssh" {
+	if SSH(s.Kind) {
 		if !safeName.MatchString(s.SSHUser) || !filepath.IsAbs(s.SSHKey) || !filepath.IsAbs(s.KnownHosts) {
 			return fmt.Errorf("SSH needs a valid user and absolute key/known-hosts paths")
 		}
+	}
+	if s.Kind == "ssh-reverse" && (s.SourcePort < 1024 || s.Connections != 1) {
+		return fmt.Errorf("SSH reverse needs an unused Iran loopback port >=1024 and one multiplexed SSH connection")
 	}
 	if s.WAN != "" && !regexp.MustCompile(`^[a-zA-Z0-9_.:-]{1,15}$`).MatchString(s.WAN) {
 		return fmt.Errorf("invalid network interface")
@@ -203,7 +218,7 @@ func (s Spec) Mirror() Spec {
 		s.Side = "iran"
 	}
 	s.WAN, s.RouterMAC, s.Backend = "", "", ""
-	s.SSHKey, s.KnownHosts = "/root/.ssh/bk_external", "/root/.ssh/known_hosts"
+	s.SSHKey, s.KnownHosts = DefaultSSHKey(), "/root/.ssh/known_hosts"
 	return s
 }
 

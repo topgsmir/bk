@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -66,18 +67,27 @@ func TestAdditionalTunnelsAcrossNamespaces(t *testing.T) {
 	run("-n", ns, "link", "set", "lo", "up")
 	kinds := strings.Split(os.Getenv("BK_ADDON_KINDS"), ",")
 	if len(kinds) == 1 && kinds[0] == "" {
-		kinds = []string{"gre", "l2tp-ip", "l2tp-udp", "rgt-direct", "rgt-tcp", "rgt-udp", "paqet", "awg", "alghadir", "ssh"}
+		kinds = []string{"gre", "l2tp-ip", "l2tp-udp", "rgt-direct", "rgt-tcp", "rgt-udp", "paqet", "awg", "alghadir", "ssh", "ssh-reverse"}
 	}
 	var sshSpec *externaltunnel.Spec
 	for _, kind := range kinds {
 		if kind == "ssh" {
 			var stop func()
-			sshSpec, stop = startAdditionalLiveSSH(t, ns)
+			sshSpec, stop = startAdditionalLiveSSH(t, ns, "10.201.0.2", true)
 			defer stop()
 			break
 		}
 	}
-	s, e := startExternalTestOptions("10.201.0.1", "10.201.0.2", kinds, sshSpec)
+	var reverseSpec *externaltunnel.Spec
+	for _, kind := range kinds {
+		if kind == "ssh-reverse" {
+			var stop func()
+			reverseSpec, stop = startAdditionalLiveSSH(t, "", "10.201.0.1", true)
+			defer stop()
+			break
+		}
+	}
+	s, e := startExternalTestReady("10.201.0.1", "10.201.0.2", kinds, sshSpec, reverseSpec, nil)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -85,6 +95,9 @@ func TestAdditionalTunnelsAcrossNamespaces(t *testing.T) {
 	exe, _ := os.Executable()
 	child := exec.Command("ip", "netns", "exec", ns, exe, "-test.run=^TestAdditionalTunnelPeerHelper$", "-test.v")
 	child.Env = append(os.Environ(), "BK_ADDITIONAL_PEER="+externalTestLink(s.plan))
+	if reverseSpec != nil {
+		child.Env = append(child.Env, "BK_TEST_REVERSE_KEY="+reverseSpec.SSHKey, "BK_TEST_REVERSE_HOSTS="+reverseSpec.KnownHosts)
+	}
 	var out bytes.Buffer
 	child.Stdout, child.Stderr = &out, &out
 	if e = child.Start(); e != nil {
@@ -163,7 +176,15 @@ func TestAdditionalTunnelPeerHelper(t *testing.T) {
 		t.Skip("started by the two-server live test")
 	}
 	connTestBinary = func() (string, error) { return os.Getenv("BK_ADDON_BINARY"), nil }
-	rows, _, e := runExternalKharej(context.Background(), link, io.Discard, nil)
+	rows, _, e := runExternalKharejReady(context.Background(), link, io.Discard, nil, func(ctx context.Context, cases []externaltunnel.Spec, out io.Writer) map[string]string {
+		for i, spec := range cases {
+			if spec.Kind == "ssh-reverse" {
+				cases[i].SSHKey = os.Getenv("BK_TEST_REVERSE_KEY")
+				cases[i].KnownHosts = os.Getenv("BK_TEST_REVERSE_HOSTS")
+			}
+		}
+		return nil
+	})
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -212,7 +233,7 @@ func TestAdditionalRGTOverLoopback(t *testing.T) {
 
 // A dedicated OpenSSH daemon inside the peer namespace verifies the production
 // SSH path, including the real backend socket and its host-key check.
-func startAdditionalLiveSSH(t *testing.T, ns string) (*externaltunnel.Spec, func()) {
+func startAdditionalLiveSSH(t *testing.T, ns, host string, allowForward bool) (*externaltunnel.Spec, func()) {
 	t.Helper()
 	dir, e := os.MkdirTemp("/root", "bk-addon-ssh-")
 	if e != nil {
@@ -227,19 +248,31 @@ func startAdditionalLiveSSH(t *testing.T, ns string) (*externaltunnel.Spec, func
 	}
 	pub, _ := os.ReadFile(hostKey + ".pub")
 	fields := strings.Fields(string(pub))
+	probe, e := net.Listen("tcp", "127.0.0.1:0")
+	if e != nil {
+		t.Fatal(e)
+	}
+	port := probe.Addr().(*net.TCPAddr).Port
+	probe.Close()
 	known := filepath.Join(dir, "known_hosts")
-	if e := os.WriteFile(known, []byte("10.201.0.2 "+strings.Join(fields[:2], " ")+"\n"), 0600); e != nil {
+	if e := os.WriteFile(known, []byte(fmt.Sprintf("[%s]:%d ", host, port)+strings.Join(fields[:2], " ")+"\n"), 0600); e != nil {
 		t.Fatal(e)
 	}
 	if e := os.MkdirAll("/run/sshd", 0755); e != nil {
 		t.Fatal(e)
 	}
 	cfg := filepath.Join(dir, "sshd_config")
-	body := fmt.Sprintf("Port 22\nListenAddress 10.201.0.2\nHostKey %s\nPidFile %s\nAuthorizedKeysFile %s.pub\nPermitRootLogin prohibit-password\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nUsePAM yes\nAllowTcpForwarding yes\n", hostKey, filepath.Join(dir, "pid"), key)
+	body := fmt.Sprintf("Port %d\nListenAddress %s\nHostKey %s\nPidFile %s\nAuthorizedKeysFile %s.pub\nPermitRootLogin prohibit-password\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nUsePAM yes\nAllowTcpForwarding yes\n", port, host, hostKey, filepath.Join(dir, "pid"), key)
+	if !allowForward {
+		body = strings.Replace(body, "AllowTcpForwarding yes", "AllowTcpForwarding no", 1)
+	}
 	if e := os.WriteFile(cfg, []byte(body), 0600); e != nil {
 		t.Fatal(e)
 	}
-	cmd := exec.Command("ip", "netns", "exec", ns, "/usr/sbin/sshd", "-D", "-e", "-f", cfg)
+	cmd := exec.Command("/usr/sbin/sshd", "-D", "-e", "-f", cfg)
+	if ns != "" {
+		cmd = exec.Command("ip", "netns", "exec", ns, "/usr/sbin/sshd", "-D", "-e", "-f", cfg)
+	}
 	var log bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &log, &log
 	if e := cmd.Start(); e != nil {
@@ -250,7 +283,7 @@ func startAdditionalLiveSSH(t *testing.T, ns string) (*externaltunnel.Spec, func
 	stop := func() { cmd.Process.Kill(); <-done; t.Log("OpenSSH fixture: " + log.String()) }
 	ready := false
 	for i := 0; i < 100; i++ {
-		c, e := net.DialTimeout("tcp", "10.201.0.2:22", 100*time.Millisecond)
+		c, e := net.DialTimeout("tcp", net.JoinHostPort(host, strconv.Itoa(port)), 100*time.Millisecond)
 		if e == nil {
 			c.Close()
 			ready = true
@@ -263,7 +296,7 @@ func startAdditionalLiveSSH(t *testing.T, ns string) (*externaltunnel.Spec, func
 		t.Fatalf("SSH daemon not ready: %s", log.String())
 	}
 	spec := externaltunnel.New("ssh-live", "ssh", "iran")
-	spec.Port, spec.SSHKey, spec.KnownHosts = 22, key, known
+	spec.Port, spec.SSHKey, spec.KnownHosts = port, key, known
 	return &spec, stop
 }
 
@@ -301,4 +334,155 @@ func TestAdditionalStopKillsEveryUnresponsiveProcessGroup(t *testing.T) {
 			t.Fatal("process remained alive")
 		}
 	}
+}
+
+// OpenSSH can permit a login while denying -L/-R. Verify that this becomes a
+// forwarding failure with a reason, never a skipped or successful traffic test.
+func TestAdditionalSSHLoginDoesNotImplyForwardingPermission(t *testing.T) {
+	if os.Getenv("BK_LIVE_ADDONS") != "1" {
+		t.Skip("requires isolated OpenSSH lab")
+	}
+	s, stop := startAdditionalLiveSSH(t, "", "127.0.0.1", false)
+	defer stop()
+	s.Kind, s.Side, s.LocalIP, s.PeerIP = "ssh-reverse", "kharej", "127.0.0.1", "127.0.0.1"
+	s.SourcePort = ctPickPort(map[int]bool{}, true)
+	s.Connections = 1
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if e := externaltunnel.CheckSSHAuthentication(ctx, *s); e != nil {
+		t.Fatal("fixture login failed:", e)
+	}
+	if e := externaltunnel.Run(ctx, *s); e == nil || !strings.Contains(e.Error(), "AllowTcpForwarding") {
+		t.Fatalf("remote forwarding denial was not diagnosed: %v", e)
+	}
+}
+
+// Force the SSH control socket closed while the two managers stay alive. Real
+// OpenSSH must release/recreate -R, then a fresh payload must cross the same port.
+func TestAdditionalSSHReverseReconnects(t *testing.T) {
+	if os.Getenv("BK_LIVE_ADDONS") != "1" {
+		t.Skip("requires isolated OpenSSH lab")
+	}
+	sshSpec, stop := startAdditionalLiveSSH(t, "", "127.0.0.1", true)
+	defer stop()
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	proxy, e := net.Listen("tcp", "127.0.0.1:0")
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer proxy.Close()
+	var mu sync.Mutex
+	var active []net.Conn
+	var copies sync.WaitGroup
+	closeConnections := func() {
+		mu.Lock()
+		defer mu.Unlock()
+		for _, c := range active {
+			c.Close()
+		}
+		active = nil
+	}
+	acceptDone := make(chan struct{})
+	defer func() { cancel(); proxy.Close(); <-acceptDone; closeConnections(); copies.Wait() }()
+	go func() {
+		defer close(acceptDone)
+		for {
+			a, e := proxy.Accept()
+			if e != nil {
+				return
+			}
+			b, e := (&net.Dialer{Timeout: 3 * time.Second}).DialContext(ctx, "tcp", net.JoinHostPort("127.0.0.1", strconv.Itoa(sshSpec.Port)))
+			if e != nil {
+				a.Close()
+				return
+			}
+			mu.Lock()
+			active = append(active, a, b)
+			mu.Unlock()
+			copies.Add(1)
+			go func(a, b net.Conn) {
+				defer copies.Done()
+				done := make(chan struct{}, 2)
+				go func() { io.Copy(a, b); done <- struct{}{} }()
+				go func() { io.Copy(b, a); done <- struct{}{} }()
+				<-done
+				a.Close()
+				b.Close()
+				<-done
+			}(a, b)
+		}
+	}()
+	known, e := os.ReadFile(sshSpec.KnownHosts)
+	if e != nil {
+		t.Fatal(e)
+	}
+	proxyPort := proxy.Addr().(*net.TCPAddr).Port
+	known = []byte(strings.Replace(string(known), ":"+strconv.Itoa(sshSpec.Port)+" ", ":"+strconv.Itoa(proxyPort)+" ", 1))
+	if e = os.WriteFile(sshSpec.KnownHosts, known, 0600); e != nil {
+		t.Fatal(e)
+	}
+	backend, e := net.Listen("tcp", "127.0.0.1:0")
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer backend.Close()
+	go ctServeTCPEcho(backend)
+	used := map[int]bool{}
+	s := externaltunnel.New("reconnect", "ssh-reverse", "iran")
+	s.LocalIP, s.PeerIP = "127.0.0.1", "127.0.0.1"
+	s.Port = proxyPort
+	s.SourcePort = ctPickPort(used, true)
+	s.Listen = net.JoinHostPort("127.0.0.1", strconv.Itoa(ctPickPort(used, true)))
+	s.Target = backend.Addr().String()
+	peer := s.Mirror()
+	peer.SSHKey, peer.KnownHosts = sshSpec.SSHKey, sshSpec.KnownHosts
+	iranDone, peerDone := make(chan error, 1), make(chan error, 1)
+	go func() { iranDone <- externaltunnel.Run(ctx, s) }()
+	go func() { peerDone <- externaltunnel.Run(ctx, peer) }()
+	defer func() {
+		cancel()
+		select {
+		case e := <-iranDone:
+			if e != nil {
+				t.Error(e)
+			}
+		case <-time.After(3 * time.Second):
+			t.Error("Iran manager did not stop")
+		}
+		select {
+		case e := <-peerDone:
+			if e != nil {
+				t.Error(e)
+			}
+		case <-time.After(3 * time.Second):
+			t.Error("reverse manager did not stop")
+		}
+	}()
+	exchange := func(payload []byte) {
+		t.Helper()
+		until := time.Now().Add(8 * time.Second)
+		var last error
+		for time.Now().Before(until) {
+			c, e := net.DialTimeout("tcp", s.Listen, 200*time.Millisecond)
+			if e == nil {
+				c.SetDeadline(time.Now().Add(time.Second))
+				done := make(chan error, 1)
+				go func() { _, e := c.Write(payload); done <- e }()
+				got := make([]byte, len(payload))
+				_, e = io.ReadFull(c, got)
+				c.Close()
+				<-done
+				if e == nil && bytes.Equal(got, payload) {
+					return
+				}
+			}
+			last = e
+			time.Sleep(100 * time.Millisecond)
+		}
+		t.Fatalf("reverse data did not recover: %v", last)
+	}
+	exchange(bytes.Repeat([]byte("before-disconnect"), 4096))
+	closeConnections()
+	exchange(bytes.Repeat([]byte("after-disconnect"), 4096))
 }

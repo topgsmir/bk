@@ -8,7 +8,7 @@ work="$(mktemp -d /tmp/bk-awg-build.XXXXXX)"
 trap 'rm -rf -- "$work"' EXIT
 fetch_checked() {
  local url="$1" dest="$2" hash="$3"
- curl -fSL --connect-timeout 15 --max-time 300 "$url" -o "$dest"
+ curl -fSL --retry 2 --retry-delay 2 --connect-timeout 15 --max-time 300 "$url" -o "$dest"
  printf '%s  %s\n' "$hash" "$dest" | sha256sum -c -
 }
 # A complete security patch version is required, including for dependency builds.

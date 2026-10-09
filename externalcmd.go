@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/topgsmir/bk/internal/externaltunnel"
@@ -21,6 +22,33 @@ func runExternal(args []string) {
 	bridge := fs.String("bridge", "", "private Alghadir packet bridge")
 	kind := fs.String("kind", "", "additional tunnel kind for dependency installation")
 	_ = fs.Parse(args[1:])
+	if args[0] == "prepare" {
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		kinds := strings.Split(*kind, ",")
+		if *kind == "" || *kind == "all" {
+			kinds = nil
+			for _, k := range externaltunnel.Kinds {
+				kinds = append(kinds, k.ID)
+			}
+		}
+		for _, id := range kinds {
+			if _, ok := externaltunnel.Find(id); !ok {
+				fmt.Fprintln(os.Stderr, "unknown tunnel kind:", id)
+				os.Exit(2)
+			}
+		}
+		issues := externaltunnel.PrepareDependencies(ctx, kinds, os.Stdout)
+		for _, id := range kinds {
+			if why := issues[id]; why != "" {
+				fmt.Fprintln(os.Stderr, id+": "+why)
+			}
+		}
+		if len(issues) > 0 {
+			os.Exit(1)
+		}
+		return
+	}
 	if args[0] == "install" {
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()

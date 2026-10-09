@@ -24,12 +24,10 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y iproute2 iputils-ping iptables obfs4proxy libpcap-dev openssh-server build-essential curl
-          for kind in rgt-tcp paqet alghadir awg l2tp-ip; do
-            sudo env PATH="$PATH" "$RUNNER_TEMP/bk-addons" external install --kind "$kind"
-          done
+          sudo env PATH="$PATH" "$RUNNER_TEMP/bk-addons" external prepare --kind rgt-tcp,rgt-udp,paqet,alghadir,awg,l2tp-ip,l2tp-udp
       - name: Real two-server tests and cleanup (all additional methods)
         run: |
-          sudo env PATH="$PATH" BK_LIVE_ADDONS=1 BK_ADDON_SOAK=60 BK_ADDON_BINARY="$RUNNER_TEMP/bk-addons" go test ./internal/manage -run '^TestAdditionalTunnelsAcrossNamespaces$' -count=1 -v -timeout 10m
+          sudo env PATH="$PATH" BK_LIVE_ADDONS=1 BK_ADDON_SOAK=60 BK_ADDON_BINARY="$RUNNER_TEMP/bk-addons" go test ./internal/manage -run '^TestAdditional(TunnelsAcrossNamespaces|SSHReverseReconnects|SSHLoginDoesNotImplyForwardingPermission)$' -count=1 -v -timeout 10m
       - name: Real upstream RGT TCP and UDP regression
         run: |
           sudo env PATH="$PATH" BK_LIVE_RGT=1 BK_ADDON_BINARY="$RUNNER_TEMP/bk-addons" go test ./internal/manage -run '^TestAdditionalRGTOverLoopback$' -count=1 -v -timeout 3m

@@ -48,6 +48,12 @@ func InstallDependencies(ctx context.Context, kind string, out io.Writer) error 
 	if runtime.GOOS != "linux" || os.Geteuid() != 0 {
 		return fmt.Errorf("install dependencies as root on Linux")
 	}
+	if _, ok := Find(kind); !ok {
+		return fmt.Errorf("unknown additional tunnel %q", kind)
+	}
+	if _, e := CoreAsset(kind, runtime.GOARCH); e != nil {
+		return e
+	}
 	packages := []string{"iproute2", "iputils-ping"}
 	switch kind {
 	case "l2tp-ip", "l2tp-udp":
@@ -56,7 +62,7 @@ func InstallDependencies(ctx context.Context, kind string, out io.Writer) error 
 		// AWG uses a pinned userspace build, independent of kernel packages.
 	case "paqet":
 		packages = append(packages, "libpcap-dev", "iptables")
-	case "ssh":
+	case "ssh", "ssh-reverse":
 		packages = append(packages, "openssh-client")
 	case "alghadir":
 		packages = append(packages, "obfs4proxy", "iptables")

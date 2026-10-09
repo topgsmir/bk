@@ -29,32 +29,15 @@ func Check(s Spec) error {
 	if runtime.GOOS != "linux" {
 		return fmt.Errorf("additional tunnels require Linux")
 	}
-	programs := []string{}
-	if Layer3(s.Kind) {
-		programs = append(programs, "ip")
+	if e := CheckDependencies(s.Kind); e != nil {
+		return e
 	}
-	switch s.Kind {
-	case "awg":
-		programs = append(programs, awgTool())
-	case "paqet":
-		programs = append(programs, "ip", "iptables", filepath.Join(CoreDir, "paqet"))
-	case "rgt-tcp", "rgt-udp":
-		programs = append(programs, filepath.Join(CoreDir, "rgt"))
-	case "ssh":
-		if s.Side == "iran" {
-			if _, e := os.Stat(s.SSHKey); e != nil {
-				return fmt.Errorf("SSH key missing; use Additional Tunnels -> Prepare SSH Authentication")
-			}
-			if _, e := os.Stat(s.KnownHosts); e != nil {
-				return fmt.Errorf("SSH known hosts missing; verify the peer fingerprint first")
-			}
+	if SSHInitiator(s) {
+		if _, e := os.Stat(s.SSHKey); e != nil {
+			return fmt.Errorf("SSH key missing: %s; authentication must be prepared on the initiating server", s.SSHKey)
 		}
-	case "alghadir":
-		programs = append(programs, "ip", "iptables", "obfs4proxy", filepath.Join(CoreDir, "udp2raw"))
-	}
-	for _, p := range programs {
-		if _, err := exec.LookPath(p); err != nil {
-			return fmt.Errorf("missing %s; use Additional Tunnels -> Install Dependencies", p)
+		if _, e := os.Stat(s.KnownHosts); e != nil {
+			return fmt.Errorf("SSH known hosts missing: %s; verify the peer fingerprint first", s.KnownHosts)
 		}
 	}
 	if Layer3(s.Kind) && s.Kind != "alghadir" {
@@ -97,6 +80,14 @@ func Run(ctx context.Context, s Spec) error {
 	defer os.RemoveAll(dir)
 	if s.Kind == "alghadir" {
 		return runAlghadir(ctx, s, dir)
+	}
+	if s.Kind == "ssh-reverse" {
+		if s.Side == "iran" {
+			return serveTCP(ctx, s.Listen, func(ctx context.Context) (net.Conn, error) {
+				return (&net.Dialer{Timeout: 5 * time.Second}).DialContext(ctx, "tcp", net.JoinHostPort("127.0.0.1", strconv.Itoa(s.SourcePort)))
+			})
+		}
+		return runSSHReverse(ctx, s)
 	}
 	if s.Kind == "ssh" {
 		if s.Side == "kharej" {
