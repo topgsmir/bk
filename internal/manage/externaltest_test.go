@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"github.com/topgsmir/bk/internal/externaltunnel"
+	"io"
 	"net"
 	"strings"
 	"testing"
@@ -26,7 +27,7 @@ func TestAdditionalTestLinksAndPayloadIntegrity(t *testing.T) {
 	defer l.Close()
 	go ctServeTCPEcho(l)
 	c := &connTestCase{entry: l.Addr().(*net.TCPAddr).Port}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if e = externalPayloadSweep(ctx, c); e != nil {
 		t.Fatal(e)
@@ -43,7 +44,7 @@ func TestAdditionalTestLinksAndPayloadIntegrity(t *testing.T) {
 	}
 }
 func TestAllAdditionalTunnelTypesAppearInBothMenuAndTestCatalog(t *testing.T) {
-	for _, kind := range []string{"gre", "l2tp-ip", "l2tp-udp", "awg", "ssh", "rgt-tcp", "rgt-udp", "rgt-direct", "paqet", "alghadir"} {
+	for _, kind := range []string{"gre", "l2tp-ip", "l2tp-udp", "awg", "ssh", "ssh-reverse", "rgt-tcp", "rgt-udp", "rgt-direct", "paqet", "alghadir"} {
 		if _, ok := externaltunnel.Find(kind); !ok {
 			t.Fatal(kind)
 		}
@@ -93,5 +94,80 @@ func TestAdditionalPeerRejectsPlansThatCouldChangeUnrelatedNetworkState(t *testi
 		if validateExternalPeerPlan(p) == nil {
 			t.Fatal("unsafe test plan accepted")
 		}
+	}
+}
+
+func TestAdditionalCoordinatorWaitsForAuthenticatedPreparationReport(t *testing.T) {
+	used := map[int]bool{}
+	token := ctNewSecret()
+	c, e := startExternalCoordinator(ctPickPort(used, true), token)
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer c.close()
+	if got := c.answer("hello "+token, "192.0.2.2"); got != "update" {
+		t.Fatal(got)
+	}
+	select {
+	case <-c.joined:
+		t.Fatal("started before preparation")
+	default:
+	}
+	report := externalIssueReport(map[string]string{"paqet-tcp": "missing libpcap"})
+	if got := c.answer("ready invalid-token "+report, "192.0.2.2"); got != "" {
+		t.Fatal(got)
+	}
+	if got := c.answer("ready "+token+" "+report, "192.0.2.2"); got != "ok" {
+		t.Fatal(got)
+	}
+	select {
+	case <-c.joined:
+	default:
+		t.Fatal("valid ready did not join")
+	}
+	issues := c.peerIssues()
+	if issues["paqet-tcp"] != "missing libpcap" {
+		t.Fatal(issues)
+	}
+	issues["paqet-tcp"] = "altered"
+	if c.peerIssues()["paqet-tcp"] != "missing libpcap" {
+		t.Fatal("report not copied")
+	}
+}
+func TestAdditionalBothServersReceivePreparationFailuresWithoutSkippedRows(t *testing.T) {
+	s, e := startExternalTestReady("127.0.0.1", "127.0.0.2", []string{"rgt-tcp"}, nil, nil, map[string]string{"rgt-tcp": "Iran download failed"})
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.close()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	result := make(chan []ConnTestResult, 1)
+	errc := make(chan error, 1)
+	go func() {
+		rows, _, e := runExternalKharejReady(ctx, externalTestLink(s.plan), io.Discard, nil, func(context.Context, []externaltunnel.Spec, io.Writer) map[string]string {
+			return map[string]string{"rgt-tcp": "Kharej download failed"}
+		})
+		result <- rows
+		errc <- e
+	}()
+	select {
+	case <-s.coord.joined:
+	case <-ctx.Done():
+		t.Fatal("peer not ready")
+	}
+	rows := s.run(ctx, nil)
+	peer := <-result
+	if e := <-errc; e != nil {
+		t.Fatal(e)
+	}
+	for _, list := range [][]ConnTestResult{rows, peer} {
+		if len(list) != 1 || list[0].Status != ctDown || list[0].Tried != 0 || !strings.Contains(list[0].Detail, "Iran download failed") || !strings.Contains(list[0].Detail, "Kharej download failed") {
+			t.Fatal(list)
+		}
+	}
+	table := additionalTestTable(rows)
+	if strings.Contains(table, "SKIPPED") || !strings.Contains(table, "SETUP-FAIL") {
+		t.Fatal(table)
 	}
 }

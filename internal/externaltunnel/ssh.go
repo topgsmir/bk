@@ -5,29 +5,14 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/knownhosts"
 )
 
 func runSSH(ctx context.Context, s Spec) error {
-	b, e := os.ReadFile(s.SSHKey)
-	if e != nil {
-		return fmt.Errorf("SSH key: %w", e)
-	}
-	key, e := ssh.ParsePrivateKey(b)
-	if e != nil {
-		return e
-	}
-	hostCheck, e := knownhosts.New(s.KnownHosts)
-	if e != nil {
-		return fmt.Errorf("SSH known hosts: %w; verify the peer with ssh before setup", e)
-	}
-	cfg := &ssh.ClientConfig{User: s.SSHUser, Auth: []ssh.AuthMethod{ssh.PublicKeys(key)}, HostKeyCallback: hostCheck, Timeout: 10 * time.Second}
 	pool := make([]*ssh.Client, s.Connections)
 	var mu sync.Mutex
 	var turn atomic.Uint64
@@ -46,19 +31,10 @@ func runSSH(ctx context.Context, s Spec) error {
 		if pool[i] != nil {
 			return pool[i], nil
 		}
-		d := net.Dialer{Timeout: 10 * time.Second}
-		raw, e := d.DialContext(ctx, "tcp", net.JoinHostPort(s.PeerIP, strconv.Itoa(s.Port)))
+		client, _, e := openSSH(ctx, s)
 		if e != nil {
 			return nil, e
 		}
-		_ = raw.SetDeadline(time.Now().Add(10 * time.Second))
-		cc, ch, req, e := ssh.NewClientConn(raw, net.JoinHostPort(s.PeerIP, strconv.Itoa(s.Port)), cfg)
-		if e != nil {
-			raw.Close()
-			return nil, e
-		}
-		_ = raw.SetDeadline(time.Time{})
-		client := ssh.NewClient(cc, ch, req)
 		pool[i] = client
 		go func() {
 			_ = client.Wait()
@@ -142,6 +118,7 @@ func runSSH(ctx context.Context, s Spec) error {
 			last = e
 			// Do not tear down healthy streams merely because the target refused a new one.
 		}
+		fmt.Fprintln(os.Stderr, "SSH forwarding failed (check the target and AllowTcpForwarding/PermitOpen):", last)
 		return nil, last
 	})
 }

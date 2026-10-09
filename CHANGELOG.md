@@ -1,5 +1,13 @@
 # topgsmir distribution
 
+## v1.10.0 — dependency preparation and SSH reverse (2026-10-09)
+
+- Automatically install and verify missing selected cores on both test servers; report installation/setup failures explicitly instead of silently skipping selected methods.
+- Detect existing usable SSH keys and prepare verified key authentication interactively when needed, without storing passwords in configurations or links.
+- Add SSH reverse to setup and real connection tests, with checked host keys, loopback remote forwarding and automatic reconnection.
+- Synchronize peer preparation and final diagnostics; test forwarding denial, interrupted SSH recovery, and all 18 additional TCP/UDP variants using real cores.
+- Preserve original tunnel engines and connection-test probes. Update both servers: the additional test plan is now version 2.
+
 ## v1.9.0 — optional additional tunnels (2026-10-09)
 
 - Add a separate menu 11 for GRE IPv4, L2TPv3 IP/UDP, AmneziaWG, verified SSH pooling, RGT reverse TCP/UDP and direct VXLAN, and Paqet KCP/raw TCP.

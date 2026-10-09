@@ -93,10 +93,10 @@ func setupExternal(side string) {
 	s := externaltunnel.New(strings.TrimSpace(tui.Prompt("Tunnel Name: ")), k, side)
 	s.LocalIP = strings.TrimSpace(tui.PromptDefault("This Server's Local IPv4 (Assigned To Its NIC)", linkHost()))
 	s.PeerIP = strings.TrimSpace(tui.Prompt("Other Server's IPv4: "))
-	if k != "ssh" {
+	if !externaltunnel.SSH(k) {
 		s.Port = externalNumber("Tunnel Port", s.Port)
 	}
-	if k == "ssh" {
+	if externaltunnel.SSH(k) {
 		s.Port = externalNumber("SSH Port", 22)
 	}
 	if externaltunnel.Layer3(k) {
@@ -105,26 +105,31 @@ func setupExternal(side string) {
 		s.ID = externalNumber("Paired Tunnel ID (Unique)", s.ID)
 		s.MTU = externalNumber("MTU", s.MTU)
 	}
-	if k != "ssh" {
+	if !externaltunnel.SSH(k) {
 		s.Secret = tui.PromptDefault("Paired Secret (64 Hex Characters, Same On Both Servers)", s.Secret)
 	}
 	s.Listen = tui.PromptDefault("Iran Listen IP:Port", s.Listen)
 	s.Target = tui.PromptDefault("Kharej Target IP:Port", s.Target)
 	if k == "rgt-udp" {
 		s.Protocol = "udp"
-	} else if k != "ssh" && k != "rgt-tcp" {
+	} else if !externaltunnel.SSH(k) && k != "rgt-tcp" {
 		if i := tui.ChooseOpt("Forwarded Traffic", []tui.Option{{Title: "TCP"}, {Title: "UDP (Also Keeps TCP Available For Layer-3)"}}); i == 1 {
 			s.Protocol = "udp"
 		} else if i < 0 {
 			return
 		}
 	}
+	if k == "ssh-reverse" {
+		s.SourcePort = externalNumber("Unused Iran Loopback Forward Port (>=1024)", 17011)
+	}
 	if k == "ssh" {
 		s.Connections = externalNumber("Parallel Connections (1..64)", s.Connections)
 	}
-	if k == "ssh" && side == "iran" {
-		s.SSHUser = tui.PromptDefault("Kharej SSH User", s.SSHUser)
-		s.SSHKey = tui.PromptDefault("SSH Private Key Path", s.SSHKey)
+	if externaltunnel.SSH(k) {
+		s.SSHUser = tui.PromptDefault("SSH Server User (Kharej For Direct, Iran For Reverse)", s.SSHUser)
+	}
+	if externaltunnel.SSHInitiator(s) {
+		s.SSHKey = tui.PromptDefault("SSH Private Key Path", externaltunnel.DefaultSSHKey())
 		s.KnownHosts = tui.PromptDefault("Verified Known Hosts File", s.KnownHosts)
 	}
 	if k == "paqet" {
@@ -136,6 +141,27 @@ func setupExternal(side string) {
 	finishExternalSetup(s)
 }
 func finishExternalSetup(s externaltunnel.Spec) {
+	if e := s.Validate(); e != nil {
+		tui.Error(e.Error())
+		tui.PressEnter()
+		return
+	}
+	ctxPrepare, cancelPrepare := context.WithTimeout(context.Background(), 10*time.Minute)
+	issues := externaltunnel.PrepareDependencies(ctxPrepare, []string{s.Kind}, os.Stdout)
+	if why := issues[s.Kind]; why != "" {
+		cancelPrepare()
+		tui.Error(why)
+		tui.PressEnter()
+		return
+	}
+	if e := ensureExternalSSH(ctxPrepare, s, os.Stdout); e != nil {
+		cancelPrepare()
+		tui.Error(e.Error())
+		tui.PressEnter()
+		return
+	}
+	cancelPrepare()
+
 	if e := externaltunnel.Check(s); e != nil {
 		tui.Error(e.Error())
 		tui.PressEnter()
@@ -257,32 +283,25 @@ func manageExternal() {
 	}
 }
 func prepareExternalSSH() {
-	host := strings.TrimSpace(tui.Prompt("Kharej IPv4: "))
-	port := externalNumber("SSH Port", 22)
-	user := tui.PromptDefault("SSH User", "root")
-	s := externaltunnel.New("ssh-auth", "ssh", "iran")
-	s.LocalIP = "127.0.0.1"
-	s.PeerIP = host
-	s.Port = port
-	s.SSHUser = user
+	choice := tui.ChooseOpt("SSH Connection Direction", []tui.Option{{Title: "Direct: Iran Connects To Kharej"}, {Title: "Reverse: Kharej Connects To Iran"}})
+	if choice < 0 {
+		return
+	}
+	kind, side := "ssh", "iran"
+	if choice == 1 {
+		kind, side = "ssh-reverse", "kharej"
+	}
+	peer := strings.TrimSpace(tui.Prompt("SSH Server IPv4: "))
+	s := promptExternalSSH(kind, side, "127.0.0.1", peer)
+	if kind == "ssh-reverse" {
+		s.SourcePort = 17011
+	}
 	if e := s.Validate(); e != nil {
 		tui.Error(e.Error())
 		tui.PressEnter()
 		return
 	}
-	os.MkdirAll(filepath.Dir(s.SSHKey), 0700)
-	if _, e := os.Lstat(s.SSHKey); os.IsNotExist(e) {
-		cmd := exec.Command("ssh-keygen", "-t", "ed25519", "-N", "", "-f", s.SSHKey)
-		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
-		if e = cmd.Run(); e != nil {
-			report(e, "Key Created")
-			return
-		}
-	}
-	tui.Info("Verify The SSH Host Fingerprint Against The Kharej Server Before Accepting It.")
-	// ssh-copy-id owns the interactive password/host-key prompts; never trust
-	// ssh-keyscan output automatically or disable host-key verification.
-	cmd := exec.Command("ssh-copy-id", "-p", strconv.Itoa(port), "-i", s.SSHKey+".pub", user+"@"+host)
-	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
-	report(cmd.Run(), "SSH Key Prepared")
+	ctx, cancel := connTestContext()
+	defer cancel()
+	report(ensureExternalSSH(ctx, s, os.Stdout), "SSH Authentication Prepared")
 }

@@ -64,6 +64,9 @@ func ExternalConnectionTest() {
 		externalKharejMenu(tui.Prompt("bk://et. Test Link: "))
 	}
 }
+
+const externalJoinWait = 30 * time.Minute
+
 func externalIranMenu() {
 	host := strings.TrimSpace(tui.PromptDefault("Iran IPv4 Assigned To Its NIC", linkHost()))
 	peer := strings.TrimSpace(tui.Prompt("Kharej IPv4 Assigned To Its NIC: "))
@@ -72,7 +75,6 @@ func externalIranMenu() {
 		tui.PressEnter()
 		return
 	}
-	tui.Info("Uses Existing Dependencies. Missing Cores Or Kernel Support Are Reported As SKIPPED/Setup Errors.")
 	ctx, cancel := connTestContext()
 	defer cancel()
 	opts := []tui.Option{{Title: "All Additional Methods"}}
@@ -87,31 +89,46 @@ func externalIranMenu() {
 	if selection > 0 {
 		kinds = []string{externaltunnel.Kinds[selection-1].ID}
 	}
-	var sshSettings *externaltunnel.Spec
-	if selection == 0 || (len(kinds) == 1 && kinds[0] == "ssh") {
-		configured := externaltunnel.New("ssh-test", "ssh", "iran")
-		configured.Port = externalNumber("Kharej SSH Port", 22)
-		configured.SSHUser = tui.PromptDefault("Kharej SSH User", configured.SSHUser)
-		configured.SSHKey = tui.PromptDefault("SSH Private Key Path", configured.SSHKey)
-		configured.KnownHosts = tui.PromptDefault("Verified Known Hosts File", configured.KnownHosts)
-		sshSettings = &configured
+	kinds = selectedExternalKinds(kinds)
+	var direct, reverse *externaltunnel.Spec
+	for _, kind := range kinds {
+		if kind == "ssh" {
+			configured := promptExternalSSH("ssh", "iran", host, peer)
+			direct = &configured
+		}
+		if kind == "ssh-reverse" {
+			configured := externaltunnel.New("ssh-test", "ssh-reverse", "iran")
+			configured.Port = externalNumber("Iran SSH Server Port (Kharej Connects Here)", 22)
+			configured.SSHUser = tui.PromptDefault("Iran SSH User", configured.SSHUser)
+			reverse = &configured
+		}
 	}
-	s, e := startExternalTestOptions(host, peer, kinds, sshSettings)
+	tui.Info("Preparing Selected Methods On Both Servers Before Probing. Missing Verified Cores Are Installed Automatically; SSH May Ask For Login And Host Verification.")
+	preparation := externaltunnel.PrepareDependencies(ctx, kinds, os.Stdout)
+	if direct != nil {
+		if e := ensureExternalSSH(ctx, *direct, os.Stdout); e != nil {
+			preparation["ssh"] = e.Error()
+		}
+	}
+	if ctx.Err() != nil {
+		return
+	}
+	s, e := startExternalTestReady(host, peer, kinds, direct, reverse, preparation)
 	if e != nil {
 		tui.Error(e.Error())
 		tui.PressEnter()
 		return
 	}
 	defer s.close()
-	fmt.Println()
-	tui.Info("Kharej: bk → 0 → Additional tunnels → Kharej. Copy This Secret Test Link:")
+	tui.Info("Kharej: bk → 0 → Additional tunnels → Kharej. Use The Same Updated Version On Both Servers. Copy This Secret Test Link:")
 	fmt.Println(externalTestLink(s.plan))
+	tui.Info("Waiting For Kharej To Prepare Dependencies And SSH (Up To 30 Minutes). Ctrl+C Stops.")
 	select {
 	case <-s.coord.joined:
 	case <-ctx.Done():
 		return
-	case <-time.After(connTestJoinWait):
-		tui.Error("Kharej did not join.")
+	case <-time.After(externalJoinWait):
+		tui.Error("Kharej did not finish preparation and join.")
 		tui.PressEnter()
 		return
 	}
@@ -130,7 +147,7 @@ func externalIranMenu() {
 type externalTest struct {
 	dir     string
 	plan    externalPlan
-	coord   *ctCoordinator
+	coord   *externalCoordinator
 	engines []*ctEngine
 	cases   []*connTestCase
 	best    ConnTestBest
@@ -168,6 +185,9 @@ func startExternalTest(host, peer string, kinds []string) (*externalTest, error)
 	return startExternalTestOptions(host, peer, kinds, nil)
 }
 func startExternalTestOptions(host, peer string, kinds []string, sshSettings *externaltunnel.Spec) (*externalTest, error) {
+	return startExternalTestReady(host, peer, kinds, sshSettings, nil, nil)
+}
+func startExternalTestReady(host, peer string, kinds []string, sshSettings, reverseSettings *externaltunnel.Spec, preparation map[string]string) (*externalTest, error) {
 	dir, e := os.MkdirTemp("", "bk-additional-test-")
 	if e != nil {
 		return nil, e
@@ -175,8 +195,13 @@ func startExternalTestOptions(host, peer string, kinds []string, sshSettings *ex
 	s := &externalTest{dir: dir}
 	fail := func(e error) (*externalTest, error) { s.close(); return nil, e }
 	used := map[int]bool{}
-	s.plan = externalPlan{Version: 1, Host: host, Peer: peer, Token: ctNewSecret(), Coord: ctPickPort(used, true), TCP: ctPickPort(used, true), UDP: ctPickPort(used, true), Until: time.Now().Add(connTestJoinWait + 5*time.Minute + connTestSlack).Unix()}
-	s.coord, e = startCTCoordinator(s.plan.Coord, s.plan.Token)
+	for _, settings := range []*externaltunnel.Spec{sshSettings, reverseSettings} {
+		if settings != nil {
+			used[settings.Port] = true
+		}
+	}
+	s.plan = externalPlan{Version: 2, Host: host, Peer: peer, Token: ctNewSecret(), Coord: ctPickPort(used, true), TCP: ctPickPort(used, true), UDP: ctPickPort(used, true), Until: time.Now().Add(externalJoinWait + 5*time.Minute + connTestSlack).Unix()}
+	s.coord, e = startExternalCoordinator(s.plan.Coord, s.plan.Token)
 	if e != nil {
 		return fail(e)
 	}
@@ -217,13 +242,19 @@ func startExternalTestOptions(host, peer string, kinds []string, sshSettings *ex
 				target = s.plan.UDP
 			}
 			spec.Target = net.JoinHostPort("127.0.0.1", strconv.Itoa(target))
-			if kind == "ssh" {
+			if externaltunnel.SSH(kind) {
 				spec.Port = 22
-				if sshSettings != nil {
-					spec.Port, spec.SSHUser, spec.SSHKey, spec.KnownHosts = sshSettings.Port, sshSettings.SSHUser, sshSettings.SSHKey, sshSettings.KnownHosts
+				settings := sshSettings
+				if kind == "ssh-reverse" {
+					settings = reverseSettings
+				}
+				if settings != nil {
+					spec.Port, spec.SSHUser, spec.SSHKey, spec.KnownHosts = settings.Port, settings.SSHUser, settings.SSHKey, settings.KnownHosts
 				}
 			}
-			if e := externaltunnel.Check(spec); e != nil {
+			if why := preparation[kind]; why != "" {
+				c.skip = why
+			} else if e := externaltunnel.Check(spec); e != nil {
 				c.skip = e.Error()
 			} else {
 				engine, e := startExternalEngine(dir, spec)
@@ -270,10 +301,15 @@ func (s *externalTest) close() {
 func (s *externalTest) run(ctx context.Context, progress func(int, ConnTestResult)) []ConnTestResult {
 	rows := make([]ConnTestResult, len(s.cases))
 	var mu sync.Mutex
+	peerIssues := s.coord.peerIssues()
 	for i, c := range s.cases {
 		rows[i] = ConnTestResult{Kind: c.kind, Transport: c.tr, Status: ctTesting, Total: connTestSoak}
 		if c.skip != "" {
-			rows[i].Status, rows[i].Detail = ctSkipped, c.skip
+			rows[i].Status, rows[i].Detail = ctDown, "SETUP FAILED (Iran): "+c.skip
+		}
+		if why := peerIssues[c.tr]; why != "" {
+			rows[i].Status = ctDown
+			rows[i].Detail += joinExternalDetail(rows[i].Detail, "SETUP FAILED (Kharej): "+why)
 		}
 	}
 	s.coord.setLive(func() []ConnTestResult { mu.Lock(); defer mu.Unlock(); return append([]ConnTestResult(nil), rows...) })
@@ -284,7 +320,7 @@ func (s *externalTest) run(ctx context.Context, progress func(int, ConnTestResul
 	}
 	var wg sync.WaitGroup
 	for i, c := range s.cases {
-		if c.skip != "" {
+		if c.skip != "" || peerIssues[c.tr] != "" {
 			continue
 		}
 		wg.Add(1)
@@ -308,9 +344,22 @@ func (s *externalTest) run(ctx context.Context, progress func(int, ConnTestResul
 					report(r)
 				}
 			}
+			if r.Status != ctOK {
+				for _, engine := range s.engines {
+					if engine.name == c.name {
+						if why := externalEngineDiagnostic(engine); why != "" {
+							r.Detail += joinExternalDetail(r.Detail, "Iran engine: "+why)
+							report(r)
+						}
+					}
+				}
+			}
 			for _, engine := range s.engines {
 				if engine.name == c.name {
-					if exited, why := engine.exited(); exited && r.Status != ctOK {
+					if exited, why := engine.exited(); exited {
+						if r.Status == ctOK {
+							r.Status = ctUnstable
+						}
 						r.Detail = "local setup/engine: " + why
 						report(r)
 					}
@@ -319,6 +368,31 @@ func (s *externalTest) run(ctx context.Context, progress func(int, ConnTestResul
 		}(i, c)
 	}
 	wg.Wait()
+	s.coord.finishMeasurements()
+	select {
+	case <-s.coord.finalReport:
+	case <-ctx.Done():
+	case <-time.After(10 * time.Second):
+	}
+	peerIssues = s.coord.peerIssues()
+	mu.Lock()
+	for i, c := range s.cases {
+		if why := peerIssues[c.tr]; why != "" {
+			if rows[i].Status == ctOK {
+				rows[i].Status = ctUnstable
+			}
+			if !strings.Contains(rows[i].Detail, why) {
+				rows[i].Detail += joinExternalDetail(rows[i].Detail, "Kharej: "+why)
+			}
+
+		}
+	}
+	mu.Unlock()
+	if progress != nil {
+		for i, r := range rows {
+			progress(i, r)
+		}
+	}
 	s.best = ctComputeBest(rows, s.cases, 0, s.dir)
 	s.coord.publish(rows, s.best)
 	return rows
@@ -371,12 +445,12 @@ func externalKharejMenu(raw string) {
 	ctx, cancel := connTestContext()
 	defer cancel()
 	var board *ctBoard
-	rows, best, e := runExternalKharej(ctx, raw, os.Stdout, func(rows []ConnTestResult) {
+	rows, best, e := runExternalKharejReady(ctx, raw, os.Stdout, func(rows []ConnTestResult) {
 		if board == nil {
 			board = newCTBoard(os.Stdout, "Iran")
 		}
 		board.setAll(rows)
-	})
+	}, prepareExternalPeer)
 	if e != nil {
 		if board != nil {
 			board.abandon()
@@ -391,6 +465,9 @@ func externalKharejMenu(raw string) {
 	tui.PressEnter()
 }
 func runExternalKharej(ctx context.Context, raw string, out io.Writer, live func([]ConnTestResult)) ([]ConnTestResult, ConnTestBest, error) {
+	return runExternalKharejReady(ctx, raw, out, live, nil)
+}
+func runExternalKharejReady(ctx context.Context, raw string, out io.Writer, live func([]ConnTestResult), prepare func(context.Context, []externaltunnel.Spec, io.Writer) map[string]string) ([]ConnTestResult, ConnTestBest, error) {
 	a, e := parseExternalTestLink(raw)
 	if e != nil {
 		return nil, ConnTestBest{}, e
@@ -409,8 +486,8 @@ func runExternalKharej(ctx context.Context, raw string, out io.Writer, live func
 		}
 		ctSleep(ctx, time.Second)
 	}
-	if !fetched || p.Version != 1 || len(p.Cases) > 32 || p.Host != a.Host || p.Coord != a.Coord || p.Token != a.Tok || time.Now().Unix() > p.Until || p.Until > time.Now().Add(time.Hour).Unix() {
-		return nil, ConnTestBest{}, fmt.Errorf("additional test configuration missing, damaged or expired")
+	if !fetched || p.Version != 2 || len(p.Cases) > 32 || p.Host != a.Host || p.Coord != a.Coord || p.Token != a.Tok || time.Now().Unix() > p.Until || p.Until > time.Now().Add(time.Hour).Unix() {
+		return nil, ConnTestBest{}, fmt.Errorf("additional test configuration missing, expired or incompatible; update bk on both servers")
 	}
 	if e := validateExternalPeerPlan(p); e != nil {
 		return nil, ConnTestBest{}, e
@@ -430,13 +507,25 @@ func runExternalKharej(ctx context.Context, raw string, out io.Writer, live func
 	var engines []*ctEngine
 	defer func() { stopAdditionalEngines(engines) }()
 	local := map[string]string{}
+	preparation := map[string]string{}
+	if prepare != nil {
+		preparation = prepare(ctx, p.Cases, out)
+	}
 	for _, spec := range p.Cases {
 		tr := spec.Kind
 		if externaltunnel.Layer3(spec.Kind) || spec.Kind == "paqet" {
 			tr += "-" + spec.Protocol
 		}
+		key, known := spec.SSHKey, spec.KnownHosts
 		spec = spec.Mirror()
+		if externaltunnel.SSHInitiator(spec) && key != "" {
+			spec.SSHKey, spec.KnownHosts = key, known
+		}
 		spec.Secret = ctCaseToken(p.Token, "extra", tr) + ctCaseToken(p.Token, "extra-key", tr)
+		if why := preparation[spec.Kind]; why != "" {
+			local[tr] = why
+			continue
+		}
 		if e = externaltunnel.Check(spec); e != nil {
 			local[tr] = e.Error()
 			continue
@@ -450,19 +539,49 @@ func runExternalKharej(ctx context.Context, raw string, out io.Writer, live func
 	}
 	fmt.Fprintf(out, "Started %d temporary additional tunnels. No services or permanent configuration are created.\n", len(engines))
 	for ctx.Err() == nil {
-		r, e := ctAsk(a.Host, a.Coord, "hello "+a.Tok)
+		r, e := ctAsk(a.Host, a.Coord, "ready "+a.Tok+" "+externalIssueReport(local))
 		if e == nil && r == "ok" {
 			break
 		}
 		ctSleep(ctx, time.Second)
 	}
 	for ctx.Err() == nil {
+		for _, engine := range engines {
+			if exited, why := engine.exited(); exited {
+				for _, spec := range p.Cases {
+					if spec.Name == engine.name {
+						local[externalTransport(spec)] = why
+					}
+				}
+			}
+		}
+		if len(local) > 0 {
+			_, _ = ctAsk(a.Host, a.Coord, "diagnostic "+a.Tok+" "+externalIssueReport(local))
+		}
 		r, e := ctAsk(a.Host, a.Coord, "result "+a.Tok)
 		if e == nil && strings.HasPrefix(r, "live ") && live != nil {
 			b, e := unGzipB64(strings.TrimPrefix(r, "live "))
 			var rows []ConnTestResult
 			if e == nil && json.Unmarshal(b, &rows) == nil {
 				live(rows)
+			}
+		}
+		if e == nil && strings.HasPrefix(r, "measured ") {
+			body, err := unGzipB64(strings.TrimPrefix(r, "measured "))
+			var rows []ConnTestResult
+			if err == nil && json.Unmarshal(body, &rows) == nil {
+				for _, row := range rows {
+					if row.Status != ctOK {
+						for _, engine := range engines {
+							if strings.HasSuffix(engine.name, "-"+row.Transport) {
+								if why := externalEngineDiagnostic(engine); why != "" {
+									local[row.Transport] = why
+								}
+							}
+						}
+					}
+				}
+				_, _ = ctAsk(a.Host, a.Coord, "final "+a.Tok+" "+externalIssueReport(local))
 			}
 		}
 		if e == nil && strings.HasPrefix(r, "done ") {
@@ -475,13 +594,13 @@ func runExternalKharej(ctx context.Context, raw string, out io.Writer, live func
 				return nil, ConnTestBest{}, e
 			}
 			for i, row := range v.Results {
-				if why := local[row.Transport]; why != "" && row.Status != ctOK {
+				if why := local[row.Transport]; why != "" && row.Status != ctOK && !strings.Contains(row.Detail, why) {
 					v.Results[i].Detail += "; kharej: " + why
 				}
 				if row.Status != ctOK {
 					for _, engine := range engines {
 						if strings.HasSuffix(engine.name, "-"+row.Transport) {
-							if exited, why := engine.exited(); exited {
+							if exited, why := engine.exited(); exited && !strings.Contains(v.Results[i].Detail, why) {
 								v.Results[i].Detail += "; kharej engine: " + why
 							}
 						}
@@ -516,6 +635,11 @@ func finishExternalBoard(board *ctBoard, rows []ConnTestResult, best ConnTestBes
 }
 func additionalTestTable(rows []ConnTestResult) string {
 	table := ConnTestTable(rows)
+	for _, r := range rows {
+		if strings.Contains(r.Detail, "SETUP FAILED") {
+			table = strings.Replace(table, ctRow(r), strings.Replace(ctRow(r), "DOWN        ", "SETUP-FAIL  ", 1), 1)
+		}
+	}
 	table = strings.ReplaceAll(table, "Nothing carried traffic steadily between these two servers. The path is\nfiltered for every transport tried; another Iran or kharej server (another\nprovider, another IP) is the fix, not a setting.\n", "No additional method passed. Check the setup/dependency errors below and\nverify addresses, routing and network firewalls before trying another path.\n")
 	for _, r := range rows {
 		if r.Status != ctOK && r.Status != ctSkipped && r.Detail != "" {
@@ -571,7 +695,7 @@ func validateExternalPeerPlan(p externalPlan) error {
 		if spec.Backend != "" || spec.WAN != "" || spec.RouterMAC != "" || spec.SSHKey != "" || spec.KnownHosts != "" {
 			return fmt.Errorf("test plan contains a machine-local override")
 		}
-		if spec.Kind != "ssh" && (spec.Port < 1024 || spec.SourcePort < 1024) {
+		if !externaltunnel.SSH(spec.Kind) && (spec.Port < 1024 || spec.SourcePort < 1024) {
 			return fmt.Errorf("test transport ports must be unprivileged")
 		}
 		spec = spec.Mirror()
@@ -588,4 +712,53 @@ func validateExternalPeerPlan(p externalPlan) error {
 		}
 	}
 	return nil
+}
+
+func joinExternalDetail(existing, extra string) string {
+	if existing != "" {
+		return "; " + extra
+	}
+	return extra
+}
+func externalTransport(s externaltunnel.Spec) string {
+	tr := s.Kind
+	if externaltunnel.Layer3(s.Kind) || s.Kind == "paqet" {
+		tr += "-" + s.Protocol
+	}
+	return tr
+}
+
+// Keep the actual failure, including an authenticated SSH server refusing a
+// forwarding request. Ignore informational startup output on successful rows.
+func externalEngineDiagnostic(engine *ctEngine) string {
+	if exited, why := engine.exited(); exited {
+		return why
+	}
+	file, e := os.Open(engine.log)
+	if e != nil {
+		return ""
+	}
+	defer file.Close()
+	info, e := file.Stat()
+	if e != nil {
+		return ""
+	}
+	offset := info.Size() - 4096
+	if offset < 0 {
+		offset = 0
+	}
+	_, _ = file.Seek(offset, io.SeekStart)
+	body, _ := io.ReadAll(io.LimitReader(file, 4096))
+	lines := strings.Split(string(body), "\n")
+	for i := len(lines) - 1; i >= 0; i-- {
+		line := strings.TrimSpace(lines[i])
+		lower := strings.ToLower(line)
+		if strings.Contains(lower, "failed") || strings.Contains(lower, "error") || strings.Contains(lower, "refused") {
+			if len(line) > 1024 {
+				line = line[:1024]
+			}
+			return line
+		}
+	}
+	return ""
 }
