@@ -65,3 +65,33 @@ func TestAdditionalSetupFailuresAreNotMistakenForNetworkFiltering(t *testing.T) 
 		t.Fatal(table)
 	}
 }
+
+func TestAdditionalPeerRejectsPlansThatCouldChangeUnrelatedNetworkState(t *testing.T) {
+	makePlan := func() externalPlan {
+		s := externaltunnel.New("xt-sample-gre-tcp", "gre", "iran")
+		s.LocalIP, s.PeerIP = "192.0.2.1", "192.0.2.2"
+		s.Listen, s.Target = "127.0.0.1:21001", "127.0.0.1:21002"
+		s.SourcePort = 21003
+		s.SSHKey, s.KnownHosts = "", ""
+		return externalPlan{Host: s.LocalIP, Peer: s.PeerIP, TCP: 21002, UDP: 21004, Token: ctNewSecret(), Cases: []externaltunnel.Spec{s}}
+	}
+	if e := validateExternalPeerPlan(makePlan()); e != nil {
+		t.Fatal(e)
+	}
+	for _, alter := range []func(*externalPlan){
+		func(p *externalPlan) { p.Cases[0].Name = "permanent-gre-tcp" },
+		func(p *externalPlan) { p.Cases[0].Side = "kharej" },
+		func(p *externalPlan) { p.Cases[0].PeerIP = "192.0.2.99" },
+		func(p *externalPlan) { p.Cases[0].Target = "127.0.0.1:22" },
+		func(p *externalPlan) { p.Cases[0].IranIP = "10.0.0.1/0"; p.Cases[0].KharejIP = "10.0.0.2/0" },
+		func(p *externalPlan) { p.Cases[0].WAN = "eth0" },
+		func(p *externalPlan) { p.Cases[0].Backend = "192.0.2.100:80" },
+		func(p *externalPlan) { p.Cases = append(p.Cases, p.Cases[0]) },
+	} {
+		p := makePlan()
+		alter(&p)
+		if validateExternalPeerPlan(p) == nil {
+			t.Fatal("unsafe test plan accepted")
+		}
+	}
+}

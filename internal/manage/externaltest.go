@@ -187,6 +187,7 @@ func startExternalTestOptions(host, peer string, kinds []string, sshSettings *ex
 	}
 	id := randomToken(6)
 	index := 0
+	baseID := 500000 + int(time.Now().UnixNano()%1000000)
 	for _, kind := range kinds {
 		protocols := []string{"tcp"}
 		if externaltunnel.Layer3(kind) || kind == "paqet" {
@@ -205,7 +206,7 @@ func startExternalTestOptions(host, peer string, kinds []string, sshSettings *ex
 			spec.LocalIP, spec.PeerIP = host, peer
 			spec.Port = ctPickPort(used, true)
 			spec.SourcePort = ctPickPort(used, true)
-			spec.ID = 500000 + int(time.Now().UnixNano()%1000000) + index
+			spec.ID = baseID + index
 			spec.Secret = ctCaseToken(s.plan.Token, "extra", tr) + ctCaseToken(s.plan.Token, "extra-key", tr)
 			spec.Protocol = proto
 			block := fmt.Sprintf("10.204.%d.", index+1)
@@ -411,6 +412,9 @@ func runExternalKharej(ctx context.Context, raw string, out io.Writer, live func
 	if !fetched || p.Version != 1 || len(p.Cases) > 32 || p.Host != a.Host || p.Coord != a.Coord || p.Token != a.Tok || time.Now().Unix() > p.Until || p.Until > time.Now().Add(time.Hour).Unix() {
 		return nil, ConnTestBest{}, fmt.Errorf("additional test configuration missing, damaged or expired")
 	}
+	if e := validateExternalPeerPlan(p); e != nil {
+		return nil, ConnTestBest{}, e
+	}
 	ctx, cancel := context.WithDeadline(ctx, time.Unix(p.Until, 0))
 	defer cancel()
 	dir, e := os.MkdirTemp("", "bk-additional-test-")
@@ -502,7 +506,11 @@ func finishExternalBoard(board *ctBoard, rows []ConnTestResult, best ConnTestBes
 	w.WriteString("ADDITIONAL TUNNEL CONNECTION TEST — " + board.title + "\n" + ctRule() + "\n\n")
 	w.WriteString(additionalTestTable(rows))
 	if best.Transport != "" {
-		fmt.Fprintf(&w, "\nBest measured method: %s (%.1f Mbps, %d ms RTT, %d ms jitter, %.1f%% loss).\n", best.Transport, best.Mbps, best.RTTms, best.JitterMs, best.LossPct)
+		speed := "UDP throughput not measured"
+		if best.Mbps > 0 {
+			speed = fmt.Sprintf("%.1f Mbps", best.Mbps)
+		}
+		fmt.Fprintf(&w, "\nBest measured method: %s (%s, %d ms RTT, %d ms jitter, %.1f%% loss).\n", best.Transport, speed, best.RTTms, best.JitterMs, best.LossPct)
 	}
 	_, _ = io.WriteString(board.out, w.String())
 }
@@ -532,4 +540,52 @@ func stopAdditionalEnginesWithin(engines []*ctEngine, timeout time.Duration) {
 			<-engine.done
 		}
 	}
+}
+
+// A received test plan can configure only throwaway test resources and the
+// loopback echo endpoints. Reject unrelated services, broad routes and local
+// machine overrides before starting any process or listener as root.
+func validateExternalPeerPlan(p externalPlan) error {
+	if p.TCP < 1024 || p.TCP > 65535 || p.UDP < 1024 || p.UDP > 65535 || p.TCP == p.UDP || len(p.Cases) == 0 {
+		return fmt.Errorf("invalid additional-test echo endpoints")
+	}
+	names := map[string]bool{}
+	for _, spec := range p.Cases {
+		tr := spec.Kind
+		if externaltunnel.Layer3(spec.Kind) || spec.Kind == "paqet" {
+			tr += "-" + spec.Protocol
+		}
+		if spec.Side != "iran" || spec.LocalIP != p.Host || spec.PeerIP != p.Peer || !strings.HasPrefix(spec.Name, "xt-") || !strings.HasSuffix(spec.Name, "-"+tr) || names[spec.Name] {
+			return fmt.Errorf("invalid temporary tunnel identity")
+		}
+		names[spec.Name] = true
+		port := p.TCP
+		if spec.Protocol == "udp" {
+			port = p.UDP
+		}
+		host, entry, e := net.SplitHostPort(spec.Listen)
+		n, e2 := strconv.Atoi(entry)
+		if e != nil || e2 != nil || host != "127.0.0.1" || n < 1024 || n > 65535 || spec.Target != net.JoinHostPort("127.0.0.1", strconv.Itoa(port)) {
+			return fmt.Errorf("test plan may forward only to its loopback echo service")
+		}
+		if spec.Backend != "" || spec.WAN != "" || spec.RouterMAC != "" || spec.SSHKey != "" || spec.KnownHosts != "" {
+			return fmt.Errorf("test plan contains a machine-local override")
+		}
+		if spec.Kind != "ssh" && (spec.Port < 1024 || spec.SourcePort < 1024) {
+			return fmt.Errorf("test transport ports must be unprivileged")
+		}
+		spec = spec.Mirror()
+		spec.Secret = ctCaseToken(p.Token, "extra", tr) + ctCaseToken(p.Token, "extra-key", tr)
+		if e := spec.Validate(); e != nil {
+			return e
+		}
+		if externaltunnel.Layer3(spec.Kind) {
+			_, subnet, _ := net.ParseCIDR(spec.TunnelIP())
+			prefix, _ := subnet.Mask.Size()
+			if prefix != 30 {
+				return fmt.Errorf("temporary tests require a /30 tunnel subnet")
+			}
+		}
+	}
+	return nil
 }

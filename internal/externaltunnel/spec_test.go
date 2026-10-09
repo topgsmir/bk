@@ -185,3 +185,14 @@ func TestRGTHeartbeatTimeoutExceedsSendInterval(t *testing.T) {
 		t.Fatal("heartbeat would race its own timeout")
 	}
 }
+
+func TestBroadAndPublicTunnelRoutesAreRefused(t *testing.T) {
+	for _, subnet := range []string{"10.0.0.1/0", "10.0.0.1/8", "192.0.2.1/30"} {
+		s := fixture("gre")
+		s.IranIP = subnet
+		s.KharejIP = strings.Replace(subnet, ".1/", ".2/", 1)
+		if s.Validate() == nil {
+			t.Fatal("unsafe tunnel subnet accepted:", subnet)
+		}
+	}
+}

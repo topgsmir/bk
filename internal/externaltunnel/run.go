@@ -57,6 +57,25 @@ func Check(s Spec) error {
 			return fmt.Errorf("missing %s; use Additional Tunnels -> Install Dependencies", p)
 		}
 	}
+	if Layer3(s.Kind) && s.Kind != "alghadir" {
+		_, subnet, _ := net.ParseCIDR(s.TunnelIP())
+		interfaces, e := net.Interfaces()
+		if e != nil {
+			return e
+		}
+		for _, iface := range interfaces {
+			addresses, e := iface.Addrs()
+			if e != nil {
+				return e
+			}
+			for _, address := range addresses {
+				_, existing, e := net.ParseCIDR(address.String())
+				if e == nil && existing.IP.To4() != nil && (subnet.Contains(existing.IP) || existing.Contains(subnet.IP)) {
+					return fmt.Errorf("tunnel subnet overlaps interface %s; choose an unused subnet", iface.Name)
+				}
+			}
+		}
+	}
 	return nil
 }
 func runCommand(ctx context.Context, c Command) error {
@@ -142,8 +161,14 @@ func Run(ctx context.Context, s Spec) error {
 		return fmt.Errorf("interface %s already exists; stop the tunnel before starting it again", s.Interface())
 	}
 	created := false
+	var awgStopped <-chan struct{}
 	defer func() {
 		if created {
+			if s.Kind == "awg" {
+				if _, e := net.InterfaceByName(s.Interface()); e != nil {
+					return
+				}
+			}
 			for _, c := range down {
 				cleanup(c)
 			}
@@ -152,11 +177,12 @@ func Run(ctx context.Context, s Spec) error {
 	for i, c := range up {
 		if e := runCommand(ctx, c); e != nil {
 			if s.Kind == "awg" && i == 0 {
-				stop, userspaceErr := startAWGUserspace(ctx, s.Interface())
+				stop, stopped, userspaceErr := startAWGUserspace(ctx, s.Interface())
 				if userspaceErr != nil {
 					return fmt.Errorf("kernel AWG: %v; userspace: %w", e, userspaceErr)
 				}
 				defer stop()
+				awgStopped = stopped
 			} else {
 				return e
 			}
@@ -173,6 +199,9 @@ func Run(ctx context.Context, s Spec) error {
 				return e
 			}
 		}
+	}
+	if awgStopped != nil {
+		return superviseAWGForward(ctx, s, awgStopped)
 	}
 	return runForward(ctx, s)
 }
@@ -383,5 +412,29 @@ func redactLines(out io.Writer, input io.Reader, secrets []string) {
 		if e != nil {
 			return
 		}
+	}
+}
+
+// The userspace core owns the interface. Its unexpected exit must take down
+// the manager so systemd can restart the entire tunnel with a fresh interface.
+func superviseAWGForward(ctx context.Context, s Spec, stopped <-chan struct{}) error {
+	forwardCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	done := make(chan error, 1)
+	go func() { done <- runForward(forwardCtx, s) }()
+	select {
+	case e := <-done:
+		return e
+	case <-ctx.Done():
+		cancel()
+		<-done
+		return nil
+	case <-stopped:
+		cancel()
+		<-done
+		if ctx.Err() != nil {
+			return nil
+		}
+		return fmt.Errorf("AWG userspace core stopped; restarting the tunnel is required")
 	}
 }

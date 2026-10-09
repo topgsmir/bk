@@ -40,7 +40,9 @@ and a separate Additional Tunnels test.
    evidence of successful traffic. Network/cloud firewalls must permit the
    method's required protocol/port.
 
-Use different tunnel names, IDs and tunnel subnets for simultaneous instances.
+Use different tunnel names, IDs and unused private/benchmark tunnel subnets
+(/24 through /31) for simultaneous instances. Overlapping local interfaces are
+refused; temporary test plans are restricted to /30 subnets and loopback echoes.
 The IPv4 entered as local must be assigned to a NIC. This initial implementation
 uses IPv4; NAT-only public addresses and IPv6 need separate handling.
 

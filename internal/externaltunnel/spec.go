@@ -138,6 +138,15 @@ func (s Spec) Validate() error {
 	if Layer3(s.Kind) {
 		a, an, e := net.ParseCIDR(s.IranIP)
 		b, bn, e2 := net.ParseCIDR(s.KharejIP)
+		if e == nil && e2 == nil {
+			prefix, bits := an.Mask.Size()
+			private := func(ip net.IP) bool {
+				return ip.IsPrivate() || (ip.To4() != nil && ip.To4()[0] == 198 && (ip.To4()[1] == 18 || ip.To4()[1] == 19))
+			}
+			if bits != 32 || prefix < 24 || prefix > 31 || !private(a) || !private(b) {
+				return fmt.Errorf("use a private or benchmark IPv4 tunnel subnet with prefix /24../31")
+			}
+		}
 		if e != nil || e2 != nil || a.To4() == nil || b.To4() == nil || a.Equal(b) || !an.Contains(b) || !bn.Contains(a) || an.String() != bn.String() {
 			return fmt.Errorf("tunnel IPs must be different IPv4 addresses in the same subnet")
 		}

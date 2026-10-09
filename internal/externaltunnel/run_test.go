@@ -155,3 +155,44 @@ func TestPaqetRejectsIncompatibleParallelFixedPorts(t *testing.T) {
 		t.Fatal("accepted the core's invalid connection/port combination")
 	}
 }
+
+func TestAWGCoreFailureClosesTheForwarderAndFailsTheService(t *testing.T) {
+	s := fixture("awg")
+	probe, e := net.Listen("tcp", "127.0.0.1:0")
+	if e != nil {
+		t.Fatal(e)
+	}
+	s.Listen = probe.Addr().String()
+	probe.Close()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	stopped := make(chan struct{})
+	done := make(chan error, 1)
+	go func() { done <- superviseAWGForward(ctx, s, stopped) }()
+	ready := false
+	for i := 0; i < 100; i++ {
+		c, e := net.DialTimeout("tcp", s.Listen, 50*time.Millisecond)
+		if e == nil {
+			c.Close()
+			ready = true
+			break
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	if !ready {
+		t.Fatal("forwarder never started")
+	}
+	close(stopped)
+	select {
+	case e := <-done:
+		if e == nil || !strings.Contains(e.Error(), "core stopped") {
+			t.Fatal(e)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("core failure left the manager running")
+	}
+	if c, e := net.DialTimeout("tcp", s.Listen, 50*time.Millisecond); e == nil {
+		c.Close()
+		t.Fatal("dead core left a listening proxy behind")
+	}
+}

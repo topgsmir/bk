@@ -28,15 +28,16 @@ func installAWG(ctx context.Context) error {
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 	return cmd.Run()
 }
-func startAWGUserspace(ctx context.Context, iface string) (func(), error) {
+func startAWGUserspace(ctx context.Context, iface string) (func(), <-chan struct{}, error) {
 	cmd := exec.Command(filepath.Join(CoreDir, "amneziawg-go"), "-f", iface)
 	cmd.Env = append(os.Environ(), "WG_I_PREFER_BUGGY_USERSPACE_TO_POLISHED_KMOD=1")
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 	if e := cmd.Start(); e != nil {
-		return nil, e
+		return nil, nil, e
 	}
-	done := make(chan error, 1)
-	go func() { done <- cmd.Wait() }()
+	done := make(chan struct{})
+	var result error
+	go func() { result = cmd.Wait(); close(done) }()
 	stop := func() {
 		_ = cmd.Process.Signal(os.Interrupt)
 		select {
@@ -48,20 +49,20 @@ func startAWGUserspace(ctx context.Context, iface string) (func(), error) {
 	}
 	for i := 0; i < 50; i++ {
 		if _, e := os.Stat("/var/run/amneziawg/" + iface + ".sock"); e == nil {
-			return stop, nil
+			return stop, done, nil
 		}
 		if _, e := os.Stat("/var/run/wireguard/" + iface + ".sock"); e == nil {
-			return stop, nil
+			return stop, done, nil
 		}
 		select {
-		case e := <-done:
-			return nil, fmt.Errorf("AWG userspace startup: %v", e)
+		case <-done:
+			return nil, nil, fmt.Errorf("AWG userspace startup: %v", result)
 		case <-ctx.Done():
 			stop()
-			return nil, ctx.Err()
+			return nil, nil, ctx.Err()
 		case <-time.After(100 * time.Millisecond):
 		}
 	}
 	stop()
-	return nil, fmt.Errorf("AWG userspace interface did not become ready")
+	return nil, nil, fmt.Errorf("AWG userspace interface did not become ready")
 }
