@@ -24,15 +24,6 @@ func externalKindIDs(cases []externaltunnel.Spec) []string {
 	}
 	return ids
 }
-func selectedExternalKinds(kinds []string) []string {
-	if kinds != nil {
-		return kinds
-	}
-	for _, k := range externaltunnel.Kinds {
-		kinds = append(kinds, k.ID)
-	}
-	return kinds
-}
 func ensureExternalSSH(ctx context.Context, s externaltunnel.Spec, out io.Writer) error {
 	if !externaltunnel.SSHInitiator(s) {
 		return nil

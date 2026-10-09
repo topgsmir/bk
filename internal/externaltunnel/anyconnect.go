@@ -82,7 +82,7 @@ func installAnyConnect(ctx context.Context, out io.Writer) error {
 func anyConnectConfig(s Spec, dir string) string {
 	_, subnet, _ := net.ParseCIDR(s.IranIP)
 	ones, _ := subnet.Mask.Size()
-	return fmt.Sprintf("auth = \"plain[passwd=%s]\"\nlisten-host = %s\ntcp-port = %d\nudp-port = %d\nrun-as-user = root\nrun-as-group = root\nsocket-file = %s\npid-file = %s\nserver-cert = %s\nserver-key = %s\nmax-clients = 1\nmax-same-clients = 1\nkeepalive = 5\ndpd = 10\nmobile-dpd = 10\ntry-mtu-discovery = false\nmtu = %d\ncompression = false\ndevice = %s\nipv4-network = %s/%d\nroute = %s/%d\nrestrict-user-to-routes = false\ncisco-client-compat = true\ncookie-timeout = 60\nauth-timeout = 15\n", filepath.Join(dir, "passwd"), s.LocalIP, s.Port, s.Port, filepath.Join(dir, "ocserv.sock"), filepath.Join(dir, "ocserv.pid"), filepath.Join(dir, "ovpn-cert.pem"), filepath.Join(dir, "ovpn-key.pem"), s.MTU, s.Interface(), subnet.IP, ones, subnet.IP, ones)
+	return fmt.Sprintf("auth = \"plain[passwd=%s]\"\nconfig-per-user = %s\nlisten-host = %s\ntcp-port = %d\nudp-port = %d\nrun-as-user = root\nrun-as-group = root\nsocket-file = %s\npid-file = %s\nserver-cert = %s\nserver-key = %s\nmax-clients = 1\nmax-same-clients = 1\nkeepalive = 5\ndpd = 10\nmobile-dpd = 10\ntry-mtu-discovery = false\nmtu = %d\ncompression = false\ndevice = %s\nipv4-network = %s/%d\nroute = %s/%d\nrestrict-user-to-routes = false\ncisco-client-compat = true\ncookie-timeout = 60\nauth-timeout = 15\n", filepath.Join(dir, "passwd"), filepath.Join(dir, "users"), s.LocalIP, s.Port, s.Port, filepath.Join(dir, "ocserv.sock"), filepath.Join(dir, "ocserv.pid"), filepath.Join(dir, "ovpn-cert.pem"), filepath.Join(dir, "ovpn-key.pem"), s.MTU, s.Interface(), subnet.IP, ones, subnet.IP, ones)
 }
 func runAnyConnect(ctx context.Context, s Spec, dir string) error {
 	// A single /30 supplies exactly the paired Iran .1 and Kharej .2 addresses.
@@ -107,6 +107,12 @@ func runAnyConnect(ctx context.Context, s Spec, dir string) error {
 	iface := s.Interface()
 	logPath := filepath.Join(dir, "native.log")
 	if s.Side == "iran" {
+		if err := os.Mkdir(filepath.Join(dir, "users"), 0700); err != nil {
+			return err
+		}
+		if err := os.WriteFile(filepath.Join(dir, "users", "bk"), []byte("explicit-ipv4 = "+strings.Split(s.KharejIP, "/")[0]+"\n"), 0600); err != nil {
+			return err
+		}
 		cmd := exec.CommandContext(ctx, filepath.Join(CoreDir, "ocpasswd"), "-c", filepath.Join(dir, "passwd"), "-g", "bk", "bk")
 		cmd.Stdin = strings.NewReader(s.Secret + "\n" + s.Secret + "\n")
 		if body, err := cmd.CombinedOutput(); err != nil {

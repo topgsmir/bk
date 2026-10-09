@@ -74,7 +74,6 @@ func externalConnectionTestCatalog(title string, catalog []externaltunnel.Kind) 
 
 const externalJoinWait = 30 * time.Minute
 
-func externalIranMenu() { externalIranMenuCatalog(externaltunnel.Kinds) }
 func externalIranMenuCatalog(catalog []externaltunnel.Kind) {
 	host := strings.TrimSpace(tui.PromptDefault("Iran IPv4 Assigned To Its NIC", linkHost()))
 	peer := strings.TrimSpace(tui.Prompt("Kharej IPv4 Assigned To Its NIC: "))
@@ -151,7 +150,11 @@ func externalIranMenuCatalog(catalog []externaltunnel.Kind) {
 		return
 	}
 	defer s.close()
-	tui.Info("Kharej: bk أ¢â€ â€™ 0 أ¢â€ â€™ Additional tunnels أ¢â€ â€™ Kharej. Use The Same Updated Version On Both Servers. Copy This Secret Test Link:")
+	path := "Additional tunnels"
+	if package3Catalog(catalog) {
+		path = "Test Tunnel Package 3"
+	}
+	tui.Info("Kharej: bk -> 0 -> " + path + " -> Kharej. Use The Same Updated Version On Both Servers. Copy This Secret Test Link:")
 	fmt.Println(externalTestLink(s.plan))
 	tui.Info("Waiting For Kharej To Prepare Dependencies And SSH (Up To 30 Minutes). Ctrl+C Stops.")
 	select {
@@ -698,7 +701,7 @@ func finishExternalBoard(board *ctBoard, rows []ConnTestResult, best ConnTestBes
 	if board.tty && len(board.shown) > 0 {
 		fmt.Fprintf(&w, "\033[%dF\033[J", len(board.shown))
 	}
-	w.WriteString("ADDITIONAL TUNNEL CONNECTION TEST أ¢â‚¬â€‌ " + board.title + "\n" + ctRule() + "\n\n")
+	w.WriteString("ADDITIONAL TUNNEL CONNECTION TEST - " + board.title + "\n" + ctRule() + "\n\n")
 	w.WriteString(additionalTestTable(rows))
 	if best.Transport != "" {
 		speed := "UDP throughput not measured"

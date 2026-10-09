@@ -30,7 +30,7 @@ func CheckDependencies(kind string) error {
 
 	programs := []string{}
 	if L2TPIPsec(kind) {
-		programs = append(programs, "swanctl", "pppd", "iptables", "unshare", "mount", filepath.Join(CoreDir, "charon"), filepath.Join(CoreDir, "xl2tpd"))
+		programs = append(programs, filepath.Join(CoreDir, "swanctl"), "pppd", "iptables", "unshare", "mount", filepath.Join(CoreDir, "charon"), filepath.Join(CoreDir, "xl2tpd"))
 	}
 	if AnyConnect(kind) {
 		programs = append(programs, "openconnect", filepath.Join(CoreDir, "ocserv"), filepath.Join(CoreDir, "ocpasswd"), filepath.Join(CoreDir, "ocserv-worker"))

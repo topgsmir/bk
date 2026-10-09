@@ -76,7 +76,6 @@ func additionalTunnels(title string, catalog []externaltunnel.Kind) {
 		}
 	}
 }
-func chooseExternalKind() string { return chooseExternalKindCatalog(externaltunnel.Kinds) }
 func chooseExternalKindCatalog(catalog []externaltunnel.Kind) string {
 	if package3Catalog(catalog) {
 		var ok bool
@@ -102,7 +101,6 @@ func externalNumber(label string, n int) int {
 	}
 	return v
 }
-func setupExternal(side string) { setupExternalCatalog(side, externaltunnel.Kinds) }
 func setupExternalCatalog(side string, catalog []externaltunnel.Kind) {
 	k := chooseExternalKindCatalog(catalog)
 	if k == "" {
@@ -244,7 +242,7 @@ func finishExternalSetup(s externaltunnel.Spec) {
 	}
 	time.Sleep(500 * time.Millisecond)
 	if e := run("is-active", "--quiet", externaltunnel.ServiceName(s.Name)); e != nil {
-		tui.Error("The process stopped. Use Additional Tunnels â†’ Manage â†’ Log.")
+		tui.Error("The process stopped. Use Additional Tunnels -> Manage -> Log.")
 	} else {
 		tui.Success("Service Started. Run Option 0 On Both Servers To Verify Real Traffic.")
 	}
@@ -254,7 +252,6 @@ func finishExternalSetup(s externaltunnel.Spec) {
 	}
 	tui.PressEnter()
 }
-func manageExternal() { manageExternalCatalog(externaltunnel.Kinds) }
 func manageExternalCatalog(catalog []externaltunnel.Kind) {
 	allowed := map[string]bool{}
 	for _, k := range catalog {

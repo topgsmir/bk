@@ -15,8 +15,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - family: dagger
-            kinds: d3-tcp,d3-kcp,d3-http,d3-https,d3-ws,d3-wss,d3-dc6,d3-qplus,d3-xhttp-stream,d3-xhttp-stream-reverse,d3-xhttp-packet,d3-xhttp-packet-reverse,d3-xhttp-auto,d3-xhttp-auto-reverse,d3-xhttps-stream,d3-xhttps-stream-reverse,d3-xhttps-packet,d3-xhttps-packet-reverse,d3-xhttps-auto,d3-xhttps-auto-reverse,d3-quantum-tcp,d3-quantum-udp,d3-quantum-icmp,d3-quantum-gre,d3-quantum-ipip,d3-quantum-bip,d3-quantum-raw,d3-quantum-dcpi,d3-gaming-tcp,d3-gaming-udp,d3-gaming-icmp,d3-gaming-gre,d3-gaming-ipip,d3-gaming-bip,d3-gaming-raw,d3-gaming-dcpi,d3-tun-tcp,d3-tun-udp,d3-tun-icmp,d3-tun-gre,d3-tun-ipip,d3-tun-bip,d3-tun-raw,d3-tun-dcpi
+          - family: dagger-1
+            kinds: d3-tcp,d3-kcp,d3-http,d3-https,d3-ws,d3-wss,d3-dc6,d3-qplus,d3-xhttp-stream,d3-xhttp-stream-reverse,d3-xhttp-packet
+          - family: dagger-2
+            kinds: d3-xhttp-packet-reverse,d3-xhttp-auto,d3-xhttp-auto-reverse,d3-xhttps-stream,d3-xhttps-stream-reverse,d3-xhttps-packet,d3-xhttps-packet-reverse,d3-xhttps-auto,d3-xhttps-auto-reverse,d3-quantum-tcp,d3-quantum-udp
+          - family: dagger-3
+            kinds: d3-quantum-icmp,d3-quantum-gre,d3-quantum-ipip,d3-quantum-bip,d3-quantum-raw,d3-quantum-dcpi,d3-gaming-tcp,d3-gaming-udp,d3-gaming-icmp,d3-gaming-gre,d3-gaming-ipip
+          - family: dagger-4
+            kinds: d3-gaming-bip,d3-gaming-raw,d3-gaming-dcpi,d3-tun-tcp,d3-tun-udp,d3-tun-icmp,d3-tun-gre,d3-tun-ipip,d3-tun-bip,d3-tun-raw,d3-tun-dcpi
           - family: solarpass
             kinds: s3-tcp,s3-tcpmux,s3-ws,s3-wss,s3-wsmux,s3-wssmux,s3-quic,s3-quicmux,s3-hysteria,s3-spoof,s3-gamepass,s3-ultimatepass,s3-speedpass,s3-ultimategamepass,s3-speedpassmux,s3-arenapass
           - family: backhaul
@@ -49,9 +55,9 @@ jobs:
           BK_ADDON_KINDS: ${{ matrix.kinds }}
         run: |
           set -o pipefail
-          sudo env PATH="$PATH" BK_LIVE_ADDONS=1 BK_PACKAGE3_TEST=1 BK_ADDON_SOAK=60 BK_ADDON_KINDS="$BK_ADDON_KINDS" BK_ADDON_BINARY="$RUNNER_TEMP/bk-package3" "$RUNNER_TEMP/package3.test" -test.run='^TestAdditionalTunnelsAcrossNamespaces$' -test.v -test.timeout=35m | tee "$RUNNER_TEMP/package3-${{ matrix.family }}.log"
+          sudo env PATH="$PATH" BK_LIVE_ADDONS=1 BK_PACKAGE3_TEST=1 BK_ADDON_SOAK=60 BK_ADDON_KINDS="$BK_ADDON_KINDS" BK_ADDON_BINARY="$RUNNER_TEMP/bk-package3" unshare --net --mount --propagation private /bin/sh -c 'ip link set lo up; exec "$@"' bk-package3 "$RUNNER_TEMP/package3.test" -test.run='^TestAdditionalTunnelsAcrossNamespaces$' -test.v -test.timeout=35m | tee "$RUNNER_TEMP/package3-${{ matrix.family }}.log"
       - name: Dagger native wrong-key rejection and recovery
-        if: matrix.family == 'dagger'
+        if: matrix.family == 'dagger-1'
         run: sudo env PATH="$PATH" BK_LIVE_DAGGER=1 go test ./internal/externaltunnel -run '^TestDaggerNativeRejectsWrongIdentity$' -count=1 -v -timeout 2m
       - uses: actions/upload-artifact@v7
         if: always()

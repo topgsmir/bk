@@ -30,7 +30,7 @@ func installL2TPIPsec(ctx context.Context, out io.Writer) error {
 		return err
 	}
 	defer os.RemoveAll(dir)
-	for _, name := range []string{"strongswan-charon", "xl2tpd"} {
+	for _, name := range []string{"strongswan-charon", "xl2tpd", "strongswan-swanctl"} {
 		cmd := exec.CommandContext(ctx, "apt-get", "download", name)
 		cmd.Dir = dir
 		cmd.Stdout, cmd.Stderr = out, out
@@ -48,7 +48,7 @@ func installL2TPIPsec(ctx context.Context, out io.Writer) error {
 	if err = os.MkdirAll(CoreDir, 0700); err != nil {
 		return err
 	}
-	for name, source := range map[string]string{"charon": "usr/lib/ipsec/charon", "xl2tpd": "usr/sbin/xl2tpd"} {
+	for name, source := range map[string]string{"charon": "usr/lib/ipsec/charon", "xl2tpd": "usr/sbin/xl2tpd", "swanctl": "usr/sbin/swanctl"} {
 		body, e := os.ReadFile(filepath.Join(dir, "extracted", source))
 		if e != nil {
 			return e
@@ -233,7 +233,7 @@ func runL2TPIPsec(ctx context.Context, s Spec, dir string) error {
 		}
 	}
 	swan := func(args ...string) error {
-		return childCommandRedacted(ctx, "env", []string{s.Secret}, append(env, append([]string{"swanctl"}, args...)...)...)
+		return childCommandRedacted(ctx, "env", []string{s.Secret}, append(env, append([]string{filepath.Join(CoreDir, "swanctl")}, args...)...)...)
 	}
 	if err := swan("--load-all", "--file", filepath.Join(dir, "swanctl.conf"), "--uri", uri, "--noprompt"); err != nil {
 		cancel()
