@@ -18,6 +18,7 @@ Reference pages: what each part of bk **is**, and every setting it has.
   servers, carrying whole IP packets (GRE/IPIP over a TUN device)
 
 ### Transports
+- [Optional additional tunnels](additional-tunnels.md) — menu 11 construction and option 0 tests for GRE, L2TPv3, AWG, SSH, RGT, Paqet and Alghadir
 - [Transports — every one explained](transports.md)
 - [Choosing a transport (Link Test)](choosing-a-transport.md)
 - [TCP + PCK](tcp-pck.md) — TCP without the kernel's TCP stack

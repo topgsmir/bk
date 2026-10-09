@@ -34,10 +34,12 @@ go test ./... -timeout 20m
 go test ./internal/utils/network -race -timeout 5m
 # Run removal and privileged PCK tests in a disposable container only.
 docker run --rm --cap-add=NET_RAW --cap-add=NET_ADMIN -e BK_REQUIRE_PCK=1 -v "$PWD:/work" -w /work golang:1.26.9-bookworm bash -c 'bash tests/uninstall.sh && go test ./internal/utils/network -run TestPckLoopback -count=1 -v'
-RELEASE_TAG=v1.8.6.1 make release
+RELEASE_TAG=v1.9.0 make release
 ```
 
-Push reviewed source to main and its version tag. The Release workflow tests,
+Require the Additional tunnels workflow to pass its real 60-second tests for
+every optional method before tagging. Push reviewed source to main and its
+version tag. The Release workflow tests,
 builds seven Linux architectures and publishes checksums, a signature, SBOM,
 install.sh and uninstall.sh. Manual workflow runs require an existing tag.
 The release tag, VERSION and app.Version must agree.
@@ -67,4 +69,4 @@ checkouts outside /root/bk are left alone.
 
 </div>
 
-*Last verified against bk v1.8.6.1.*
+*Last verified against bk v1.9.0.*
