@@ -40,7 +40,8 @@ func TestAlghadirRejectsWrongSecret(t *testing.T) {
 	err := make(chan error, 2)
 	go func() { _, e := sessionKey(a, s); err <- e }()
 	go func() { _, e := sessionKey(b, peer); err <- e }()
-	if <-err == nil || <-err == nil {
+	first, second := <-err, <-err
+	if first == nil || second == nil {
 		t.Fatal("wrong secret authenticated")
 	}
 }

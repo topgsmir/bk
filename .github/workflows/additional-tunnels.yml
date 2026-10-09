@@ -27,6 +27,10 @@ jobs:
           for kind in rgt-tcp paqet alghadir awg; do
             sudo env PATH="$PATH" "$RUNNER_TEMP/bk-addons" external install --kind "$kind"
           done
+          # Azure runners split the tunnel drivers into the matching extras package.
+          if ! modinfo l2tp_eth >/dev/null 2>&1; then
+            sudo apt-get install -y "linux-modules-extra-$(uname -r)"
+          fi
           sudo modprobe l2tp_eth
           sudo modprobe l2tp_ip
           sudo modprobe l2tp_netlink

@@ -110,10 +110,36 @@ func TestAdditionalTunnelsAcrossNamespaces(t *testing.T) {
 	if bytes.Contains(b, []byte("bkx")) {
 		t.Errorf("additional interfaces leaked: %s", b)
 	}
+	b, _ = exec.Command("ip", "-n", ns, "-j", "link", "show").Output()
+	if bytes.Contains(b, []byte("bkx")) {
+		t.Errorf("peer interfaces leaked: %s", b)
+	}
 	b, _ = exec.Command("ip", "netns", "list").Output()
 	for _, line := range strings.Split(string(b), "\n") {
 		if strings.HasPrefix(line, "bkx") {
 			t.Errorf("Alghadir namespace leaked: %s", line)
+		}
+	}
+	for _, prefix := range [][]string{nil, {"netns", "exec", ns}} {
+		args := append(append([]string(nil), prefix...), "iptables", "-t", "raw", "-S")
+		program := "ip"
+		if len(prefix) == 0 {
+			program, args = "iptables", args[1:]
+		}
+		for _, table := range []string{"raw", "mangle"} {
+			for i, a := range args {
+				if a == "-t" {
+					args[i+1] = table
+					break
+				}
+			}
+			body, e := exec.Command(program, args...).CombinedOutput()
+			if e != nil {
+				t.Errorf("cleanup firewall inspection: %v %s", e, body)
+			}
+			if bytes.Contains(body, []byte("bk-ext-xt-")) {
+				t.Errorf("temporary firewall rule leaked: %s", body)
+			}
 		}
 	}
 	// Temporary configs must never be promoted to the permanent store.
@@ -178,7 +204,11 @@ func TestAdditionalRGTOverLoopback(t *testing.T) {
 // SSH path, including the real backend socket and its host-key check.
 func startAdditionalLiveSSH(t *testing.T, ns string) (*externaltunnel.Spec, func()) {
 	t.Helper()
-	dir := t.TempDir()
+	dir, e := os.MkdirTemp("/root", "bk-addon-ssh-")
+	if e != nil {
+		t.Fatal(e)
+	}
+	t.Cleanup(func() { os.RemoveAll(dir) })
 	key, hostKey := filepath.Join(dir, "id"), filepath.Join(dir, "host")
 	for _, path := range []string{key, hostKey} {
 		if b, e := exec.Command("ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", path).CombinedOutput(); e != nil {
