@@ -16,12 +16,16 @@ import (
 // adds an authenticated readiness/diagnostic report on the same TCP/UDP port.
 type externalCoordinator struct {
 	*ctCoordinator
-	reportMu    sync.Mutex
-	issues      map[string]string
-	ready       bool
-	measured    bool
-	finalReport chan struct{}
-	finalOnce   sync.Once
+	reportMu                      sync.Mutex
+	issues                        map[string]string
+	ready                         bool
+	measured                      bool
+	finalReport                   chan struct{}
+	finalOnce                     sync.Once
+	waves                         bool
+	waveIndex, waveStart, waveEnd int
+	waveReady                     chan struct{}
+	waveJoined                    bool
 }
 
 func startExternalCoordinator(port int, token string) (*externalCoordinator, error) {
@@ -77,16 +81,19 @@ func (c *externalCoordinator) answer(line, from string) string {
 	if len(fields) < 2 || subtle.ConstantTimeCompare([]byte(fields[1]), []byte(c.tok)) != 1 {
 		return ""
 	}
+	if reply, handled := c.waveAnswer(fields); handled {
+		return reply
+	}
 	if fields[0] == "ready" || fields[0] == "diagnostic" || fields[0] == "final" {
 		if len(fields) != 3 {
 			return ""
 		}
 		body, e := unGzipB64(fields[2])
-		if e != nil || len(body) > 64<<10 {
+		if e != nil || len(body) > 256<<10 {
 			return ""
 		}
 		var issues map[string]string
-		if json.Unmarshal(body, &issues) != nil || len(issues) > 32 {
+		if json.Unmarshal(body, &issues) != nil || len(issues) > 256 {
 			return ""
 		}
 		for name, why := range issues {

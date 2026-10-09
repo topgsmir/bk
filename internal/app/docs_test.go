@@ -36,7 +36,7 @@ func TestEveryDocumentSaysWhenItWasVerified(t *testing.T) {
 		version := UpstreamVersion
 		product := "Backpack"
 		switch filepath.Base(path) {
-		case "install.md", "publishing.md", "config-reference.md", "additional-tunnels.md":
+		case "install.md", "publishing.md", "config-reference.md", "additional-tunnels.md", "package3.md":
 			version = Version
 			product = "bk"
 		}

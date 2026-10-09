@@ -62,12 +62,34 @@ func TestAdditionalTunnelsAcrossNamespaces(t *testing.T) {
 	run("link", "set", "bk-test-peer", "netns", ns)
 	run("addr", "add", "10.201.0.1/30", "dev", "bk-test-host")
 	run("link", "set", "bk-test-host", "up")
+	if os.Getenv("BK_PACKAGE3_TEST") == "1" {
+		run("-6", "addr", "add", "fd42:3::1/64", "dev", "bk-test-host", "nodad")
+		run("-n", ns, "-6", "addr", "add", "fd42:3::2/64", "dev", "bk-test-peer", "nodad")
+	}
 	run("-n", ns, "addr", "add", "10.201.0.2/30", "dev", "bk-test-peer")
 	run("-n", ns, "link", "set", "bk-test-peer", "up")
 	run("-n", ns, "link", "set", "lo", "up")
 	kinds := strings.Split(os.Getenv("BK_ADDON_KINDS"), ",")
 	if len(kinds) == 1 && kinds[0] == "" {
 		kinds = []string{"gre", "l2tp-ip", "l2tp-udp", "rgt-direct", "rgt-tcp", "rgt-udp", "paqet", "awg", "alghadir", "ssh", "ssh-reverse"}
+	}
+	host, peer := "10.201.0.1", "10.201.0.2"
+	for _, kind := range kinds {
+		if externaltunnel.Backhaul(kind) {
+			host, peer = "192.0.2.10", "192.0.2.11"
+			run("addr", "add", host+"/32", "dev", "bk-test-host")
+			run("-n", ns, "addr", "add", peer+"/32", "dev", "bk-test-peer")
+			run("route", "add", peer+"/32", "dev", "bk-test-host", "src", host)
+			run("-n", ns, "route", "add", host+"/32", "dev", "bk-test-peer", "src", peer)
+			break
+		}
+	}
+	for _, kind := range kinds {
+		if externaltunnel.Solarpass(kind) || externaltunnel.SingBox(kind) {
+			run("route", "add", "default", "via", "10.201.0.2", "dev", "bk-test-host", "src", host)
+			run("-n", ns, "route", "add", "default", "via", "10.201.0.1", "dev", "bk-test-peer", "src", peer)
+			break
+		}
 	}
 	var sshSpec *externaltunnel.Spec
 	for _, kind := range kinds {
@@ -87,7 +109,11 @@ func TestAdditionalTunnelsAcrossNamespaces(t *testing.T) {
 			break
 		}
 	}
-	s, e := startExternalTestReady("10.201.0.1", "10.201.0.2", kinds, sshSpec, reverseSpec, nil)
+	ipv6 := [2]string{}
+	if os.Getenv("BK_PACKAGE3_TEST") == "1" {
+		ipv6 = [2]string{"fd42:3::1", "fd42:3::2"}
+	}
+	s, e := startExternalTestReadyIPv6(host, peer, kinds, sshSpec, reverseSpec, nil, ipv6)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -104,7 +130,11 @@ func TestAdditionalTunnelsAcrossNamespaces(t *testing.T) {
 		t.Fatal(e)
 	}
 	defer child.Process.Kill()
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	duration := 3 * time.Minute
+	if s.plan.BatchSize > 0 {
+		duration = 60 * time.Minute
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), duration)
 	defer cancel()
 	select {
 	case <-s.coord.joined:
@@ -130,11 +160,11 @@ func TestAdditionalTunnelsAcrossNamespaces(t *testing.T) {
 	// Cleanup is checked explicitly, including kernel state and namespaces.
 	s.close()
 	b, _ := exec.Command("ip", "-j", "link", "show").Output()
-	if bytes.Contains(b, []byte("bkx")) {
+	if bytes.Contains(b, []byte("bkx")) || bytes.Contains(b, []byte("bk3")) {
 		t.Errorf("additional interfaces leaked: %s", b)
 	}
 	b, _ = exec.Command("ip", "-n", ns, "-j", "link", "show").Output()
-	if bytes.Contains(b, []byte("bkx")) {
+	if bytes.Contains(b, []byte("bkx")) || bytes.Contains(b, []byte("bk3")) {
 		t.Errorf("peer interfaces leaked: %s", b)
 	}
 	b, _ = exec.Command("ip", "netns", "list").Output()
@@ -149,7 +179,7 @@ func TestAdditionalTunnelsAcrossNamespaces(t *testing.T) {
 		if len(prefix) == 0 {
 			program, args = "iptables", args[1:]
 		}
-		for _, table := range []string{"raw", "mangle"} {
+		for _, table := range []string{"raw", "mangle", "filter"} {
 			for i, a := range args {
 				if a == "-t" {
 					args[i+1] = table
@@ -160,8 +190,46 @@ func TestAdditionalTunnelsAcrossNamespaces(t *testing.T) {
 			if e != nil {
 				t.Errorf("cleanup firewall inspection: %v %s", e, body)
 			}
-			if bytes.Contains(body, []byte("bk-ext-xt-")) {
+			if bytes.Contains(body, []byte("bk-ext-xt-")) || bytes.Contains(body, []byte("bk-s3-xt-")) || bytes.Contains(body, []byte("bk-b3-xt-")) || bytes.Contains(body, []byte("bk-e3-xt-")) {
 				t.Errorf("temporary firewall rule leaked: %s", body)
+			}
+		}
+	}
+
+	for _, prefix := range [][]string{nil, {"netns", "exec", ns}} {
+		for _, table := range []string{"raw", "mangle", "filter"} {
+			program := "ip6tables"
+			args := []string{"-t", table, "-S"}
+			if len(prefix) > 0 {
+				program = "ip"
+				args = append(append(append([]string{}, prefix...), "ip6tables"), args...)
+			}
+			body, err := exec.Command(program, args...).CombinedOutput()
+			if err != nil {
+				t.Errorf("IPv6 cleanup inspection failed: %v", err)
+			}
+			for _, owner := range []string{"bk-ext-xt-", "bk-s3-xt-", "bk-b3-xt-", "bk-e3-xt-"} {
+				if bytes.Contains(body, []byte(owner)) {
+					t.Errorf("owned IPv6 rule leaked: %s", body)
+				}
+			}
+		}
+		for _, resource := range []string{"state", "policy"} {
+			program := "ip"
+			args := append([]string{}, prefix...)
+			if len(prefix) > 0 {
+				args = append(args, "ip")
+			}
+			args = append(args, "xfrm", resource, "list")
+			if resource == "state" {
+				args = append(args, "nokeys")
+			}
+			body, err := exec.Command(program, args...).Output()
+			if err != nil {
+				t.Errorf("IPsec cleanup inspection failed: %v", err)
+			}
+			if len(bytes.TrimSpace(body)) > 0 {
+				t.Error("IPsec kernel state was not fully removed")
 			}
 		}
 	}

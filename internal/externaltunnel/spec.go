@@ -37,6 +37,8 @@ var Kinds = []Kind{
 // Spec is local state. Only paired protocol settings go into a setup/test link;
 // SSH keys and this machine's physical interface never travel to the peer.
 type Spec struct {
+	LocalIPv6   string `json:"local_ipv6,omitempty"`
+	PeerIPv6    string `json:"peer_ipv6,omitempty"`
 	Backend     string `json:"backend,omitempty"`
 	Version     int    `json:"v"`
 	Name        string `json:"name"`
@@ -74,20 +76,33 @@ func NewSecret() string {
 }
 func New(name, kind, side string) Spec {
 	connections := 4
-	if kind == "paqet" || kind == "ssh-reverse" {
+	if kind == "paqet" || kind == "ssh-reverse" || Dagger(kind) {
 		connections = 1
 	}
 	port, source := 17010, 0
+	if strings.HasPrefix(kind, "d3-tun-") {
+		source = 17012
+	}
+	if Solarpass(kind) || Backhaul(kind) || Eylan(kind) {
+		source = 17020
+	}
+	if L2TPIPsec(kind) {
+		port = 1701
+	}
 	if SSH(kind) {
 		port = 22
 	}
 	if kind == "ssh-reverse" {
 		source = 17011
 	}
-	return Spec{SourcePort: source, Version: 1, Name: name, Kind: kind, Side: side, Port: port, ID: 10000, MTU: 1280, Secret: NewSecret(), IranIP: "10.203.0.1/30", KharejIP: "10.203.0.2/30", Listen: "0.0.0.0:8443", Target: "127.0.0.1:8443", Protocol: "tcp", Connections: connections, Mode: "fast", SSHUser: "root", SSHKey: "/root/.ssh/bk_external", KnownHosts: "/root/.ssh/known_hosts"}
+	protocol := "tcp"
+	if UDPOnly(kind) {
+		protocol = "udp"
+	}
+	return Spec{SourcePort: source, Version: 1, Name: name, Kind: kind, Side: side, Port: port, ID: 10000, MTU: 1280, Secret: NewSecret(), IranIP: "10.203.0.1/30", KharejIP: "10.203.0.2/30", Listen: "0.0.0.0:8443", Target: "127.0.0.1:8443", Protocol: protocol, Connections: connections, Mode: "fast", SSHUser: "root", SSHKey: "/root/.ssh/bk_external", KnownHosts: "/root/.ssh/known_hosts"}
 }
 func Find(kind string) (Kind, bool) {
-	for _, k := range Kinds {
+	for _, k := range append(append([]Kind(nil), Kinds...), Package3Kinds...) {
 		if k.ID == kind {
 			return k, true
 		}
@@ -95,6 +110,9 @@ func Find(kind string) (Kind, bool) {
 	return Kind{}, false
 }
 func Layer3(kind string) bool {
+	if strings.HasPrefix(kind, "d3-tun-") || strings.HasPrefix(kind, "b3-tun-") || (Eylan(kind) && !SingBox(kind)) {
+		return true
+	}
 	switch kind {
 	case "gre", "l2tp-ip", "l2tp-udp", "awg", "rgt-direct", "alghadir":
 		return true
@@ -126,6 +144,23 @@ func (s Spec) Validate() error {
 			return fmt.Errorf("both local and peer IPv4 addresses are required")
 		}
 	}
+	for _, addr := range []string{s.LocalIPv6, s.PeerIPv6} {
+		if addr != "" && (net.ParseIP(addr) == nil || net.ParseIP(addr).To4() != nil) {
+			return fmt.Errorf("Dagger IPv6 addresses must be literal IPv6, without a prefix")
+		}
+	}
+	if strings.HasPrefix(s.Kind, "d3-tun-") && s.SourcePort < 1024 {
+		return fmt.Errorf("Dagger TUN forwarding needs a paired inner port >=1024")
+	}
+	if (Solarpass(s.Kind) || Backhaul(s.Kind) || Eylan(s.Kind)) && (s.Port >= 65535 || s.SourcePort < 1024 || s.SourcePort > 65532 || s.Port >= s.SourcePort && s.Port <= s.SourcePort+3 || s.Port+1 >= s.SourcePort && s.Port+1 <= s.SourcePort+3) {
+		return fmt.Errorf("Package 3 needs separate unused tunnel port pair and frontend/return/sync/decoder port block (1024..65532)")
+	}
+	if Backhaul(s.Kind) && !BothProtocols(s.Kind) && s.Protocol != "tcp" {
+		return fmt.Errorf("%s supports TCP forwarding only", s.Kind)
+	}
+	if UDPOnly(s.Kind) && s.Protocol != "udp" {
+		return fmt.Errorf("%s supports UDP forwarding only", s.Kind)
+	}
 	if s.Port < 1 || s.Port > 65535 || s.SourcePort < 0 || s.SourcePort > 65535 || s.ID < 1 || s.ID > 0xffffff || s.MTU < 576 || s.MTU > 9000 {
 		return fmt.Errorf("invalid tunnel port, ID or MTU")
 	}
@@ -146,6 +181,25 @@ func (s Spec) Validate() error {
 	}
 	if !validAddr(s.Listen) || !validAddr(s.Target) || (s.Backend != "" && !validAddr(s.Backend)) {
 		return fmt.Errorf("listen and target must be numeric IP:port addresses")
+	}
+
+	if AnyConnect(s.Kind) || L2TPIPsec(s.Kind) {
+		a, n, e := net.ParseCIDR(s.IranIP)
+		b, _, e2 := net.ParseCIDR(s.KharejIP)
+		if e != nil || e2 != nil || n.IP.To4() == nil {
+			return fmt.Errorf("VPN requires paired IPv4 .1/.2 addresses in one unused /30")
+		}
+		ones, _ := n.Mask.Size()
+		first := append(net.IP(nil), n.IP.To4()...)
+		second := append(net.IP(nil), first...)
+		first[3]++
+		second[3] += 2
+		if ones != 30 || !a.Equal(first) || !b.Equal(second) {
+			return fmt.Errorf("VPN requires paired IPv4 .1/.2 addresses in one unused /30")
+		}
+	}
+	if L2TPIPsec(s.Kind) && s.Port != 1701 {
+		return fmt.Errorf("L2TP/IPsec uses fixed UDP ports 500, 4500 and 1701")
 	}
 	if Layer3(s.Kind) {
 		a, an, e := net.ParseCIDR(s.IranIP)
@@ -211,6 +265,7 @@ func (s Spec) PeerTunnelIP() string {
 	return strings.Split(s.IranIP, "/")[0]
 }
 func (s Spec) Mirror() Spec {
+	s.LocalIPv6, s.PeerIPv6 = s.PeerIPv6, s.LocalIPv6
 	s.LocalIP, s.PeerIP = s.PeerIP, s.LocalIP
 	if s.Side == "iran" {
 		s.Side = "kharej"

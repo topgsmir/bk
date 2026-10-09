@@ -1,0 +1,60 @@
+name: Tunnel Package 3
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    name: Native ${{ matrix.family }} (60 echoes)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - family: dagger
+            kinds: d3-tcp,d3-kcp,d3-http,d3-https,d3-ws,d3-wss,d3-dc6,d3-qplus,d3-xhttp-stream,d3-xhttp-stream-reverse,d3-xhttp-packet,d3-xhttp-packet-reverse,d3-xhttp-auto,d3-xhttp-auto-reverse,d3-xhttps-stream,d3-xhttps-stream-reverse,d3-xhttps-packet,d3-xhttps-packet-reverse,d3-xhttps-auto,d3-xhttps-auto-reverse,d3-quantum-tcp,d3-quantum-udp,d3-quantum-icmp,d3-quantum-gre,d3-quantum-ipip,d3-quantum-bip,d3-quantum-raw,d3-quantum-dcpi,d3-gaming-tcp,d3-gaming-udp,d3-gaming-icmp,d3-gaming-gre,d3-gaming-ipip,d3-gaming-bip,d3-gaming-raw,d3-gaming-dcpi,d3-tun-tcp,d3-tun-udp,d3-tun-icmp,d3-tun-gre,d3-tun-ipip,d3-tun-bip,d3-tun-raw,d3-tun-dcpi
+          - family: solarpass
+            kinds: s3-tcp,s3-tcpmux,s3-ws,s3-wss,s3-wsmux,s3-wssmux,s3-quic,s3-quicmux,s3-hysteria,s3-spoof,s3-gamepass,s3-ultimatepass,s3-speedpass,s3-ultimategamepass,s3-speedpassmux,s3-arenapass
+          - family: backhaul
+            kinds: b3-tcp,b3-tcpmux,b3-xtcpmux,b3-ws,b3-wss,b3-wsmux,b3-wssmux,b3-xwsmux,b3-anytls,b3-tun-tcp,b3-tun-ipx-icmp,b3-tun-ipx-ipip,b3-tun-ipx-udp,b3-tun-ipx-tcp,b3-tun-ipx-gre,b3-tun-ipx-bip
+          - family: eylan
+            kinds: e3-l2tp-ipsec,e3-anyconnect-tls,e3-anyconnect-dtls,e3-wireguard,e3-openvpn-tcp,e3-openvpn-udp,e3-sing-vless,e3-sing-vmess,e3-sing-trojan,e3-sing-shadowsocks,e3-sing-hysteria2
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Build production adapter and live test driver
+        run: |
+          go build -o "$RUNNER_TEMP/bk-package3" .
+          go test -c -o "$RUNNER_TEMP/package3.test" ./internal/manage
+      - name: Install selected native dependencies
+        env:
+          KINDS: ${{ matrix.kinds }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y iproute2 iptables kmod
+          sudo modprobe tun
+          sudo modprobe ppp_generic || true
+          sudo modprobe ppp_async || true
+          if [ ! -e /dev/ppp ]; then sudo mknod /dev/ppp c 108 0; fi
+          sudo env PATH="$PATH" "$RUNNER_TEMP/bk-package3" external prepare --kind "$KINDS"
+      - name: Real paired native traffic, bulk, payload sizes and cleanup
+        env:
+          BK_ADDON_KINDS: ${{ matrix.kinds }}
+        run: |
+          set -o pipefail
+          sudo env PATH="$PATH" BK_LIVE_ADDONS=1 BK_PACKAGE3_TEST=1 BK_ADDON_SOAK=60 BK_ADDON_KINDS="$BK_ADDON_KINDS" BK_ADDON_BINARY="$RUNNER_TEMP/bk-package3" "$RUNNER_TEMP/package3.test" -test.run='^TestAdditionalTunnelsAcrossNamespaces$' -test.v -test.timeout=35m | tee "$RUNNER_TEMP/package3-${{ matrix.family }}.log"
+      - name: Dagger native wrong-key rejection and recovery
+        if: matrix.family == 'dagger'
+        run: sudo env PATH="$PATH" BK_LIVE_DAGGER=1 go test ./internal/externaltunnel -run '^TestDaggerNativeRejectsWrongIdentity$' -count=1 -v -timeout 2m
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: native-${{ matrix.family }}-results
+          path: ${{ runner.temp }}/package3-${{ matrix.family }}.log
