@@ -1,5 +1,13 @@
 # topgsmir distribution
 
+## v1.11.0 — optional Tunnel Package 3 (2026-10-10)
+
+- Add independent Build Tunnel Package 3 (menu 12) and Test Tunnel Package 3 (menu 0), covering 87 methods and 164 TCP/UDP cases from Dagger, Solarpass, Backhaul and the stock VPN families represented in EylanPanel.
+- Prepare and verify selected dependencies on both servers, synchronize test waves and report setup failures with their actual causes instead of silently skipping methods. Existing bk transport engines remain unchanged.
+- Run real paired native traffic with 60 echoes per case, bulk transfers, payload-size probes, authentication checks and scoped interface/firewall/IPsec cleanup. Keep the mandatory original PCK and regression checks.
+- Repair the supplied Solarpass Spoof UDP bind and peer-filter faults in a separately pinned copy; retain the original binary and publish the verified patch and partial reverse-analysis evidence.
+- Bundle Dagger source and license notices; keep third-party sources, architecture limits, public-IP requirements and reproducible lab validation in docs/package3.md. Live Internet availability still depends on the two servers and their networks.
+
 ## v1.10.0 — dependency preparation and SSH reverse (2026-10-09)
 
 - Automatically install and verify missing selected cores on both test servers; report installation/setup failures explicitly instead of silently skipping selected methods.
