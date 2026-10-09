@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/backpack/backpack/internal/node"
+	"github.com/topgsmir/BackPack/internal/node"
 )
 
 // `backpack node ...` — the managed side of the panel-to-server channel.

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/backpack/backpack/internal/metrics"
+	"github.com/topgsmir/BackPack/internal/metrics"
 )
 
 // The pool grows past the size that was configured for it, and from outside a

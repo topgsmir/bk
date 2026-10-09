@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/backpack/backpack/internal/localproxy"
+	"github.com/topgsmir/BackPack/internal/localproxy"
 )
 
 func TestProxyEnableIsTheMenusProxy(t *testing.T) {

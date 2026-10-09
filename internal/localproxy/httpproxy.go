@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/backpack/backpack/internal/socks"
+	"github.com/topgsmir/BackPack/internal/socks"
 )
 
 // A minimal HTTP proxy: CONNECT for HTTPS (and any TCP the client tunnels

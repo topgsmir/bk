@@ -4,15 +4,15 @@ import (
 	"time"
 
 	"fmt"
-	"github.com/backpack/backpack/internal/tunhist"
+	"github.com/topgsmir/BackPack/internal/tunhist"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/backpack/backpack/internal/app"
-	"github.com/backpack/backpack/internal/manage"
-	"github.com/backpack/backpack/internal/metrics"
-	"github.com/backpack/backpack/internal/sysstat"
+	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/BackPack/internal/manage"
+	"github.com/topgsmir/BackPack/internal/metrics"
+	"github.com/topgsmir/BackPack/internal/sysstat"
 )
 
 // handlePrometheus serves the numbers in Prometheus text exposition format,

@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/BurntSushi/toml"
-	"github.com/backpack/backpack/config"
-	"github.com/backpack/backpack/internal/tunnel/l3"
+	"github.com/topgsmir/BackPack/config"
+	"github.com/topgsmir/BackPack/internal/tunnel/l3"
 )
 
 // Error correction is a paired setting written as two keys, and the way it gets

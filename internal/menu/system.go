@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/backpack/backpack/internal/app"
-	"github.com/backpack/backpack/internal/manage"
-	"github.com/backpack/backpack/internal/optimize"
-	"github.com/backpack/backpack/internal/schedule"
-	"github.com/backpack/backpack/internal/telegram"
-	"github.com/backpack/backpack/internal/tui"
-	"github.com/backpack/backpack/internal/webui"
+	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/BackPack/internal/manage"
+	"github.com/topgsmir/BackPack/internal/optimize"
+	"github.com/topgsmir/BackPack/internal/schedule"
+	"github.com/topgsmir/BackPack/internal/telegram"
+	"github.com/topgsmir/BackPack/internal/tui"
+	"github.com/topgsmir/BackPack/internal/webui"
 )
 
 // autoRefreshMenu lives under Manage.

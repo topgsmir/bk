@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/backpack/backpack/config"
 	"github.com/sirupsen/logrus"
+	"github.com/topgsmir/BackPack/config"
 )
 
 func TestMain(m *testing.M) {

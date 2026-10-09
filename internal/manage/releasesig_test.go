@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/backpack/backpack/internal/app"
+	"github.com/topgsmir/BackPack/internal/app"
 )
 
 // A release's checksum list proves the archive is intact. It does not prove the

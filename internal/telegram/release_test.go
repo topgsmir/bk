@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/backpack/backpack/internal/app"
-	"github.com/backpack/backpack/internal/manage"
+	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/BackPack/internal/manage"
 )
 
 // The release announcement is the one alert with no condition to recover from.

@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/backpack/backpack/config"
+	"github.com/topgsmir/BackPack/config"
 )
 
 // Rendering the two new kinds of config.

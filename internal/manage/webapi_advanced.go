@@ -5,9 +5,9 @@ import (
 	"net"
 	"strings"
 
-	"github.com/backpack/backpack/config"
+	"github.com/topgsmir/BackPack/config"
 
-	"github.com/backpack/backpack/internal/utils/network"
+	"github.com/topgsmir/BackPack/internal/utils/network"
 )
 
 // The advanced halves of the panel's setup and edit forms: the IP-spoofing

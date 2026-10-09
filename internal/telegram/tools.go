@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/backpack/backpack/internal/alerthist"
-	"github.com/backpack/backpack/internal/app"
-	"github.com/backpack/backpack/internal/manage"
+	"github.com/topgsmir/BackPack/internal/alerthist"
+	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/BackPack/internal/manage"
 )
 
 // The screens that are not about one tunnel: the panel, backups, updates,

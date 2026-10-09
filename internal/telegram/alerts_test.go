@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/backpack/backpack/internal/alerthist"
-	"github.com/backpack/backpack/internal/sysstat"
+	"github.com/topgsmir/BackPack/internal/alerthist"
+	"github.com/topgsmir/BackPack/internal/sysstat"
 )
 
 // The value of an alert system is entirely in when it stays quiet. These tests

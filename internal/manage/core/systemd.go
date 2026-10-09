@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/backpack/backpack/internal/app"
+	"github.com/topgsmir/BackPack/internal/app"
 )
 
 // Systemctl runs a systemctl subcommand and returns combined output.

@@ -5,7 +5,7 @@
 One command as root on the VPS:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/AminMGMT/BackPack/main/install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/topgsmir/BackPack/main/install.sh)
 ```
 
 It downloads the prebuilt release archive for your architecture (amd64/arm64)
@@ -36,7 +36,7 @@ install it there. Nothing is fetched from the VPS.
 
 ![Offline install](../img/offline-install.gif)
 
-From the [releases page](https://github.com/AminMGMT/BackPack/releases/latest),
+From the [releases page](https://github.com/topgsmir/BackPack/releases/latest),
 download the archive for the server's architecture — run `uname -m` on it:
 `x86_64` → `backpack_linux_amd64.tar.gz`, `aarch64` → `backpack_linux_arm64.tar.gz`.
 
@@ -86,13 +86,50 @@ installed. [More](updates.md).
 
 ## Uninstalling
 
-**Main menu → 9) Uninstall** removes everything Backpack installed.
+Run the removal script from your own repository as root:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/topgsmir/BackPack/main/uninstall.sh)
+```
+
+It asks you to type `DELETE`, stops BackPack timers and services, removes its cron jobs and tuning files,
+tunnels, settings, binary and `/root/BackPack` **including backups**. Unrelated
+cron jobs and custom source checkouts are preserved. Kernel tuning already applied
+to the running kernel lasts until reboot. `--dry-run` previews it;
+`--yes` skips the prompt. The installed menu's **9) Uninstall** also remains available.
+
+## Private repository access
+
+Anonymous raw and release links work only while the repository is public.
+For a private repository, authenticate GitHub CLI on a machine with access,
+then download the installer and assets from **topgsmir/BackPack**:
+
+```bash
+gh auth login
+gh repo clone topgsmir/BackPack
+cd BackPack
+gh release download --repo topgsmir/BackPack --pattern 'backpack_linux_amd64.tar.gz' --pattern SHA256SUMS --dir .
+sudo bash install.sh
+# Local removal needs no GitHub connection or token:
+sudo bash uninstall.sh
+```
+
+Choose the asset matching the server architecture. For servers without GitHub
+access, copy these files from the authenticated machine and use the offline
+steps above. Private releases are updated through this same authenticated,
+offline path; the built-in anonymous online updater needs a public repository.
+Never paste a token into a public installation command or commit it to source.
 
 ---
 
 <div dir="rtl">
 
 ## خلاصهٔ فارسی
+
+این توزیع از مخزن topgsmir/BackPack نصب می‌شود. برای حذف با لینک خودمان،
+اسکریپت uninstall.sh را اجرا کن؛ باید DELETE را تأیید کنی و بکاپ‌ها نیز حذف
+می‌شوند. --dry-run فقط پیش‌نمایش است. اگر مخزن Private باشد، لینک ناشناس کار
+نمی‌کند؛ فایل‌ها را با gh و حساب مجاز بگیر و آفلاین نصب یا حذف کن.
 
 **نصب عادی:** یک دستور با کاربر root روی سرور — آرشیو ریلیز مخصوص معماری سرور را
 دانلود می‌کند، با چک‌سام منتشرشده **تأیید** می‌کند، نصب می‌کند و خودش منو را باز
@@ -117,4 +154,4 @@ amd64 و `aarch64` یعنی arm64. بهترین راه این است که `insta
 
 ---
 
-*Last verified against Backpack v1.8.5.*
+*Last verified against Backpack v1.8.5.1.*

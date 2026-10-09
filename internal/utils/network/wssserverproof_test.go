@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/backpack/backpack/config"
 	"github.com/gorilla/websocket"
+	"github.com/topgsmir/BackPack/config"
 )
 
 // A wss client knows the server it reached, not just whatever answered.

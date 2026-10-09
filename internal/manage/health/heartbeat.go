@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/backpack/backpack/internal/app"
-	"github.com/backpack/backpack/internal/manage/core"
+	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/BackPack/internal/manage/core"
 )
 
 // Something that notices when the watchdog is not running.

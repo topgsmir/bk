@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/backpack/backpack/internal/tunnel/l3"
+	"github.com/topgsmir/BackPack/internal/tunnel/l3"
 )
 
 // The panel and the wizard must write the same file from the same answers.

@@ -3,7 +3,7 @@ package manage
 import (
 	"testing"
 
-	"github.com/backpack/backpack/internal/manage/tunnelspec"
+	"github.com/topgsmir/BackPack/internal/manage/tunnelspec"
 )
 
 // withTempConfigDir points the configuration history somewhere a test may

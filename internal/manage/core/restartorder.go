@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/backpack/backpack/internal/app"
+	"github.com/topgsmir/BackPack/internal/app"
 )
 
 // Restarting everything onto a new binary, from wherever the request came.

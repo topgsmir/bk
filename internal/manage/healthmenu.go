@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/backpack/backpack/internal/tui"
+	"github.com/topgsmir/BackPack/internal/tui"
 )
 
 // HealthCheck runs every diagnostic and prints a grouped report with a ✓/!/✗

@@ -15,7 +15,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/backpack/backpack/internal/app"
+	"github.com/topgsmir/BackPack/internal/app"
 )
 
 // maxEvents bounds the file: only the recent past is worth scrolling through,

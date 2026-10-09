@@ -25,7 +25,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/backpack/backpack/internal/spooftest"
+	"github.com/topgsmir/BackPack/internal/spooftest"
 )
 
 // Connection Test: which transports survive the path between two servers.

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/backpack/backpack/internal/manage"
-	"github.com/backpack/backpack/internal/telegram"
+	"github.com/topgsmir/BackPack/internal/manage"
+	"github.com/topgsmir/BackPack/internal/telegram"
 )
 
 // Settings endpoints: backup download and restore, and Telegram configuration.

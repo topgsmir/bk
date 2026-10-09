@@ -1,6 +1,6 @@
 package health
 
-import "github.com/backpack/backpack/internal/manage/spec"
+import "github.com/topgsmir/BackPack/internal/manage/spec"
 
 // The transport and address vocabulary, under the names the code in this
 // package was written with. See internal/manage/spec.

@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/backpack/backpack/internal/app"
+	"github.com/topgsmir/BackPack/internal/app"
 )
 
 // The panel.

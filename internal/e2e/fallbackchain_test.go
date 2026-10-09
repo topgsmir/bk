@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/backpack/backpack/config"
+	"github.com/topgsmir/BackPack/config"
 )
 
 // The transport fallback chain, end to end.

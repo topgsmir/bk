@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/backpack/backpack/internal/manage"
-	"github.com/backpack/backpack/internal/telegram"
-	"github.com/backpack/backpack/internal/tui"
+	"github.com/topgsmir/BackPack/internal/manage"
+	"github.com/topgsmir/BackPack/internal/telegram"
+	"github.com/topgsmir/BackPack/internal/tui"
 )
 
 // telegramMenu is main-menu item 7.

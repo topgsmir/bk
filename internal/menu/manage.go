@@ -5,8 +5,8 @@ package menu
 import (
 	"fmt"
 
-	"github.com/backpack/backpack/internal/manage"
-	"github.com/backpack/backpack/internal/tui"
+	"github.com/topgsmir/BackPack/internal/manage"
+	"github.com/topgsmir/BackPack/internal/tui"
 )
 
 // manageMenu is main-menu item 3.

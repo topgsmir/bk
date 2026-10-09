@@ -3,8 +3,8 @@ package cmd
 import (
 	"testing"
 
-	"github.com/backpack/backpack/config"
-	"github.com/backpack/backpack/internal/tunnel/l3"
+	"github.com/topgsmir/BackPack/config"
+	"github.com/topgsmir/BackPack/internal/tunnel/l3"
 )
 
 // A carrier's startup checks have to run for the configurations that actually

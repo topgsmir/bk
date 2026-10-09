@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/backpack/backpack/internal/web"
 	"github.com/gorilla/websocket"
+	"github.com/topgsmir/BackPack/internal/web"
 )
 
 // Cancellation is the shutdown path a reload and a transport restart both take.

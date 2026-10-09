@@ -6,8 +6,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/backpack/backpack/internal/metrics"
-	"github.com/backpack/backpack/internal/quota"
+	"github.com/topgsmir/BackPack/internal/metrics"
+	"github.com/topgsmir/BackPack/internal/quota"
 )
 
 // The traffic limit, enforced where the bytes are counted.

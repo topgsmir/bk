@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/backpack/backpack/internal/manage"
+	"github.com/topgsmir/BackPack/internal/manage"
 	"golang.org/x/crypto/ssh"
 )
 

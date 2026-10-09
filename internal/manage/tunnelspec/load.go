@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"github.com/backpack/backpack/config"
-	"github.com/backpack/backpack/internal/app"
-	"github.com/backpack/backpack/internal/manage/core"
+	"github.com/topgsmir/BackPack/config"
+	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/BackPack/internal/manage/core"
 )
 
 // LoadServer reconstructs a server tunnel's spec from its config file so it

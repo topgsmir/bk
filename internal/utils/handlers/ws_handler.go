@@ -6,10 +6,10 @@ import (
 	"io"
 	"net"
 
-	"github.com/backpack/backpack/internal/metrics"
-	"github.com/backpack/backpack/internal/web"
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
+	"github.com/topgsmir/BackPack/internal/metrics"
+	"github.com/topgsmir/BackPack/internal/web"
 )
 
 // WSConnectionHandler relays between a websocket tunnel connection and a TCP

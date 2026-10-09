@@ -30,16 +30,26 @@ func TestAReleaseSignatureIsGoodForItsOwnTagOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cmd := exec.Command("go", "run", "./tools/signsums", sumsPath)
+	// The child signing tool must trust the same fixture publisher as this test.
+	flags := "-X github.com/topgsmir/BackPack/internal/app.ReleasePublicKey=" + base64.StdEncoding.EncodeToString(pub)
+	cmd := exec.Command("go", "run", "-ldflags", flags, "./tools/signsums", sumsPath)
 	cmd.Dir = "../.."
 	cmd.Env = append(os.Environ(),
 		"RELEASE_SIGNING_KEY="+base64.StdEncoding.EncodeToString(priv),
-		"GITHUB_REF_NAME=v9.9.9")
+		"GITHUB_REF_NAME=v9.9.9", "RELEASE_TAG=v9.9.9")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("signsums: %v\n%s", err, out)
 	} else if !strings.Contains(string(out), "v9.9.9") {
 		t.Fatalf("signsums did not say which tag it signed for: %s", out)
 	}
+	// A secret for another publisher must be rejected before producing a signature.
+	mismatch := exec.Command("go", "run", "./tools/signsums", sumsPath)
+	mismatch.Dir = cmd.Dir
+	mismatch.Env = cmd.Env
+	if out, err := mismatch.CombinedOutput(); err == nil || !strings.Contains(string(out), "does not match") {
+		t.Fatalf("the tool did not refuse an unrelated publisher key: %v\n%s", err, out)
+	}
+
 	sig, err := os.ReadFile(sumsPath + ".sig")
 	if err != nil {
 		t.Fatal(err)

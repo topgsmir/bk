@@ -7,7 +7,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/backpack/backpack/internal/metrics"
+	"github.com/topgsmir/BackPack/internal/metrics"
 )
 
 // How big the connection pool should be, decided once.

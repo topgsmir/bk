@@ -7,6 +7,16 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to publish
+        required: true
+        default: v1.8.5.1
+        type: string
+
+# Use the selected tag even when workflow_dispatch runs from the main branch.
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 permissions:
   contents: write
@@ -16,6 +26,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Require this distribution's signing key
+        env:
+          RELEASE_SIGNING_KEY: ${{ secrets.RELEASE_SIGNING_KEY }}
+        run: |
+          if [ -z "$RELEASE_SIGNING_KEY" ]; then
+            echo "Set RELEASE_SIGNING_KEY before publishing. See docs/publishing.md."
+            exit 1
+          fi
 
       - uses: actions/setup-go@v7
         with:
@@ -28,17 +49,15 @@ jobs:
         run: go test ./... -timeout 20m
 
       - name: Build release assets
-        # RELEASE_SIGNING_KEY signs release/SHA256SUMS. Without it the build
-        # still produces every asset and simply publishes no signature, which
-        # is what a fork gets — and what this repository got until a key was
-        # generated. See tools/signsums and internal/manage/releasesig.go.
+        # The distribution's private key is required. The signer verifies
+        # that it matches the public key shipped in this source tree.
         env:
           RELEASE_SIGNING_KEY: ${{ secrets.RELEASE_SIGNING_KEY }}
         run: make release
 
       - name: Verify the tag matches the built version
         run: |
-          tag="${GITHUB_REF_NAME}"
+          tag="${RELEASE_TAG}"
           declared="$(tr -d ' \n' < VERSION)"
           # A pre-release tag (v1.6.0-beta.1) carries the version it is a
           # pre-release of, so compare only the part before the suffix.
@@ -51,7 +70,7 @@ jobs:
       - name: Mark pre-releases
         id: kind
         run: |
-          case "${GITHUB_REF_NAME}" in
+          case "${RELEASE_TAG}" in
             *-*) echo "prerelease=true"  >> "$GITHUB_OUTPUT" ;;
             *)   echo "prerelease=false" >> "$GITHUB_OUTPUT" ;;
           esac
@@ -60,7 +79,7 @@ jobs:
         # The release description is this tag's section of CHANGELOG.md — from
         # its "## <tag>" heading up to the next version heading.
         run: |
-          tag="${GITHUB_REF_NAME}"
+          tag="${RELEASE_TAG}"
           awk -v h="## ${tag}" '
             index($0, h) == 1 { f = 1; next }
             f && /^## v/ { exit }
@@ -78,6 +97,7 @@ jobs:
         # SHA belongs to written beside it.
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
+          tag_name: ${{ env.RELEASE_TAG }}
           prerelease: ${{ steps.kind.outputs.prerelease }}
           body_path: RELEASE_NOTES.md
           # Every archive make release produced, by glob rather than by name.
@@ -92,3 +112,4 @@ jobs:
             release/SHA256SUMS.sig
             release/SBOM.txt
             install.sh
+            uninstall.sh

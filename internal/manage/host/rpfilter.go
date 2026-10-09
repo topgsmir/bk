@@ -7,8 +7,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/backpack/backpack/internal/tui"
-	"github.com/backpack/backpack/internal/utils/network"
+	"github.com/topgsmir/BackPack/internal/tui"
+	"github.com/topgsmir/BackPack/internal/utils/network"
 )
 
 // rpFilterSysctlFile persists the relaxation so it survives a reboot, alongside

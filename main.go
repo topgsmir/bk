@@ -9,16 +9,16 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/backpack/backpack/cmd"
-	"github.com/backpack/backpack/internal/app"
-	"github.com/backpack/backpack/internal/cli"
-	"github.com/backpack/backpack/internal/localproxy"
-	"github.com/backpack/backpack/internal/manage"
-	"github.com/backpack/backpack/internal/menu"
-	"github.com/backpack/backpack/internal/monitor"
-	"github.com/backpack/backpack/internal/telegram"
-	"github.com/backpack/backpack/internal/utils"
-	"github.com/backpack/backpack/internal/webui"
+	"github.com/topgsmir/BackPack/cmd"
+	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/BackPack/internal/cli"
+	"github.com/topgsmir/BackPack/internal/localproxy"
+	"github.com/topgsmir/BackPack/internal/manage"
+	"github.com/topgsmir/BackPack/internal/menu"
+	"github.com/topgsmir/BackPack/internal/monitor"
+	"github.com/topgsmir/BackPack/internal/telegram"
+	"github.com/topgsmir/BackPack/internal/utils"
+	"github.com/topgsmir/BackPack/internal/webui"
 )
 
 var logger = utils.NewLogger("info")

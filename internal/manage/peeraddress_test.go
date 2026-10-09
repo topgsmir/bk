@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/BurntSushi/toml"
-	"github.com/backpack/backpack/config"
+	"github.com/topgsmir/BackPack/config"
 )
 
 // Reported on v1.8.4: when the kharej's IP changed there was nowhere in Edit to

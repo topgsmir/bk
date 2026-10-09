@@ -5,10 +5,10 @@ import (
 	"net"
 	"strings"
 
-	"github.com/backpack/backpack/config"
-	"github.com/backpack/backpack/internal/app"
-	"github.com/backpack/backpack/internal/tui"
-	"github.com/backpack/backpack/internal/utils/network"
+	"github.com/topgsmir/BackPack/config"
+	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/BackPack/internal/tui"
+	"github.com/topgsmir/BackPack/internal/utils/network"
 )
 
 // transportEntry is one selectable transport. An empty value marks an entry

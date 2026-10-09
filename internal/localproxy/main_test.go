@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/backpack/backpack/internal/socks"
+	"github.com/topgsmir/BackPack/internal/socks"
 )
 
 // The tests have nothing to connect to but loopback, which the proxy refuses

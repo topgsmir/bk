@@ -7,13 +7,13 @@ import (
 
 	psnet "github.com/shirou/gopsutil/v4/net"
 
-	"github.com/backpack/backpack/internal/app"
-	"github.com/backpack/backpack/internal/geo"
-	"github.com/backpack/backpack/internal/localproxy"
-	"github.com/backpack/backpack/internal/manage"
-	"github.com/backpack/backpack/internal/metrics"
-	"github.com/backpack/backpack/internal/sysstat"
-	"github.com/backpack/backpack/internal/utils/network"
+	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/BackPack/internal/geo"
+	"github.com/topgsmir/BackPack/internal/localproxy"
+	"github.com/topgsmir/BackPack/internal/manage"
+	"github.com/topgsmir/BackPack/internal/metrics"
+	"github.com/topgsmir/BackPack/internal/sysstat"
+	"github.com/topgsmir/BackPack/internal/utils/network"
 )
 
 // The machine's own figures for the dashboard: CPU, memory, disk, network,

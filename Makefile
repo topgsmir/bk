@@ -12,7 +12,7 @@ tidy:
 # Sync the raw VERSION file (used by the updater's mirror path) with the
 # app.Version constant, so they can never drift.
 version:
-	@grep -oE 'Version = "[^"]+"' internal/app/app.go | grep -oE 'v[0-9.]+' > VERSION
+	@grep -oE '^[[:space:]]*Version = "[^"]+"' internal/app/app.go | grep -oE 'v[0-9.]+' > VERSION
 	@echo "VERSION -> $$(cat VERSION)"
 
 build: tidy
@@ -36,7 +36,7 @@ ARMS   := 5 6 7
 release-linux:
 	mkdir -p dist
 	@for a in $(ARCHES); do 	  echo "  building linux/$$a"; 	  CGO_ENABLED=0 GOOS=linux GOARCH=$$a 	    go build -trimpath -ldflags "$(LDFLAGS)" -o dist/backpack-linux-$$a . || exit 1; 	done
-	@for v in $(ARMS); do 	  echo "  building linux/armv$$v"; 	  CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=$$v 	    go build -trimpath -ldflags "$(LDFLAGS) -X github.com/backpack/backpack/internal/app.GOARM=$$v" 	    -o dist/backpack-linux-armv$$v . || exit 1; 	done
+	@for v in $(ARMS); do 	  echo "  building linux/armv$$v"; 	  CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=$$v 	    go build -trimpath -ldflags "$(LDFLAGS) -X github.com/topgsmir/BackPack/internal/app.GOARM=$$v" 	    -o dist/backpack-linux-armv$$v . || exit 1; 	done
 
 # GitHub release assets: backpack_linux_<arch>.tar.gz, each containing a single
 # `backpack` binary. These are what install.sh and the in-app updater download.

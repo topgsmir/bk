@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/backpack/backpack/internal/manage"
+	"github.com/topgsmir/BackPack/internal/manage"
 )
 
 // `backpack link apply` is what the one-line install runs on a kharej, so what

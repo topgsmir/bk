@@ -5,8 +5,8 @@ import (
 	"net"
 	"sync"
 
-	"github.com/backpack/backpack/internal/web"
 	"github.com/gorilla/websocket"
+	"github.com/topgsmir/BackPack/internal/web"
 )
 
 // A client transport rebuilds its state on every reconnect: Restart() swaps the

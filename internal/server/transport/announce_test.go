@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/backpack/backpack/internal/utils"
-	"github.com/backpack/backpack/internal/utils/network"
+	"github.com/topgsmir/BackPack/internal/utils"
+	"github.com/topgsmir/BackPack/internal/utils/network"
 
 	"github.com/sirupsen/logrus"
 )

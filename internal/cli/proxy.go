@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/backpack/backpack/internal/localproxy"
-	"github.com/backpack/backpack/internal/manage"
+	"github.com/topgsmir/BackPack/internal/localproxy"
+	"github.com/topgsmir/BackPack/internal/manage"
 )
 
 // `backpack proxy` — the menu's Built-in Proxy, without the menu.

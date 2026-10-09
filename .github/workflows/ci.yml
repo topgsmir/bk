@@ -43,6 +43,11 @@ jobs:
             exit 1
           fi
 
+      - name: Check installation and removal scripts
+        run: |
+          bash -n install.sh uninstall.sh tests/uninstall.sh
+          docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work golang:1.26.6-bookworm bash tests/uninstall.sh
+
       - name: Vet
         run: go vet ./...
 
@@ -97,7 +102,7 @@ jobs:
           check() {
             pkg="$1"; floor="$2"; why="$3"
             got="$(go tool cover -func=coverage.out \
-                    | grep "^github.com/backpack/backpack/$pkg/" \
+                    | grep "^github.com/topgsmir/BackPack/$pkg/" \
                     | awk '{gsub(/%/,"",$3); s+=$3; n++} END {if (n) printf "%.1f", s/n; else print "0"}')"
             echo "  $pkg: ${got}% (floor ${floor}%) — $why"
             awk -v g="$got" -v f="$floor" -v p="$pkg" 'BEGIN {

@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/backpack/backpack/internal/control"
-	"github.com/backpack/backpack/internal/manage"
-	"github.com/backpack/backpack/internal/node"
+	"github.com/topgsmir/BackPack/internal/control"
+	"github.com/topgsmir/BackPack/internal/manage"
+	"github.com/topgsmir/BackPack/internal/node"
 )
 
 // Managed servers.

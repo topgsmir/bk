@@ -12,8 +12,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/backpack/backpack/internal/app"
-	"github.com/backpack/backpack/internal/manage"
+	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/BackPack/internal/manage"
 )
 
 // Config is the persisted web-panel configuration.

@@ -5,15 +5,15 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"github.com/backpack/backpack/internal/manage/core"
+	"github.com/topgsmir/BackPack/internal/manage/core"
 	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"time"
 
-	"github.com/backpack/backpack/internal/app"
-	"github.com/backpack/backpack/internal/schedule"
+	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/BackPack/internal/schedule"
 )
 
 // backupMetaName is a synthetic entry stored inside the archive (not written to

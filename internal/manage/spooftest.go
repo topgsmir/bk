@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/backpack/backpack/internal/spooftest"
-	"github.com/backpack/backpack/internal/tui"
+	"github.com/topgsmir/BackPack/internal/spooftest"
+	"github.com/topgsmir/BackPack/internal/tui"
 )
 
 // SpoofTest is the interactive spoof-capability tester: it discovers which

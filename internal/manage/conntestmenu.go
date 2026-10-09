@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/backpack/backpack/internal/tui"
+	"github.com/topgsmir/BackPack/internal/tui"
 )
 
 // ConnectionTest is main-menu option 0, Connection Test: which transports work between

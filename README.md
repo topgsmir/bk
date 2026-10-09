@@ -4,25 +4,35 @@
 
 <h1 align="center">BackPack</h1>
 
+> Distribution maintained by **topgsmir**. This is an independent local customization, not the official upstream distribution.
+>
+> Based on BackPack by Amin Mohammadi (AminMGMT)
+> https://github.com/AminMGMT/BackPack
+>
+> **Publication is pending permission to keep the BackPack name.** See [TRADEMARK.md](TRADEMARK.md).
+
+Installation and removal use this repository. [Install, uninstall and private access](docs/install.md) · [Publishing this distribution](docs/publishing.md).
+
+
 <p align="center">
   <b>High-performance tunneling between Iran and abroad — built in Go.</b>
 </p>
 
 <p align="center">
-  <a href="https://github.com/AminMGMT/BackPack/releases/latest">
-    <img src="https://img.shields.io/github/v/release/AminMGMT/BackPack?logo=github&label=release&color=orange" alt="Latest release">
+  <a href="https://github.com/topgsmir/BackPack/releases/latest">
+    <img src="https://img.shields.io/github/v/release/topgsmir/BackPack?logo=github&label=release&color=orange" alt="Latest release">
   </a>
   <a href="go.mod">
-    <img src="https://img.shields.io/github/go-mod/go-version/AminMGMT/BackPack?logo=go&label=Go" alt="Go version">
+    <img src="https://img.shields.io/github/go-mod/go-version/topgsmir/BackPack?logo=go&label=Go" alt="Go version">
   </a>
   <a href="LICENSE">
-    <img src="https://img.shields.io/github/license/AminMGMT/BackPack?color=orange" alt="License">
+    <img src="https://img.shields.io/github/license/topgsmir/BackPack?color=orange" alt="License">
   </a>
-  <a href="https://github.com/AminMGMT/BackPack/stargazers">
-    <img src="https://img.shields.io/github/stars/AminMGMT/BackPack?style=flat&logo=github&color=orange" alt="GitHub stars">
+  <a href="https://github.com/topgsmir/BackPack/stargazers">
+    <img src="https://img.shields.io/github/stars/topgsmir/BackPack?style=flat&logo=github&color=orange" alt="GitHub stars">
   </a>
-  <a href="https://github.com/AminMGMT/BackPack/releases">
-    <img src="https://img.shields.io/github/downloads/AminMGMT/BackPack/total?logo=github&label=downloads&color=orange" alt="Downloads">
+  <a href="https://github.com/topgsmir/BackPack/releases">
+    <img src="https://img.shields.io/github/downloads/topgsmir/BackPack/total?logo=github&label=downloads&color=orange" alt="Downloads">
   </a>
 </p>
 
@@ -30,8 +40,7 @@
   <a href="tutorial/README.md">Tutorials</a> ·
   <a href="docs/README.md">Documentation</a> ·
   <a href="README_FA.md">فارسی</a> ·
-  <a href="https://t.me/BlackProtocols">Telegram</a> ·
-  <a href="https://t.me/BlackProtocolsGroup">Community</a>
+  <a href="https://github.com/topgsmir/BackPack/issues">Issues</a>
 </p>
 
 ---
@@ -234,7 +243,7 @@ See [Forwarded UDP](docs/forwarded-udp.md).
 On both servers:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/AminMGMT/BackPack/main/install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/topgsmir/BackPack/main/install.sh)
 ```
 
 Then:
@@ -965,12 +974,8 @@ If BackPack is useful to you:
 * Star the repository
 * Report bugs through GitHub Issues
 * Contribute improvements
-* Join the Telegram community
 
-### Telegram
-
-* Channel: [@BlackProtocols](https://t.me/BlackProtocols)
-* Community: [@BlackProtocolsGroup](https://t.me/BlackProtocolsGroup)
+Maintained by [topgsmir](https://github.com/topgsmir). Support and bug reports: [GitHub Issues](https://github.com/topgsmir/BackPack/issues).
 
 ---
 

@@ -3,7 +3,7 @@ package backup
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/backpack/backpack/internal/manage/core"
+	"github.com/topgsmir/BackPack/internal/manage/core"
 	"io"
 	"os"
 	"path/filepath"
@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/backpack/backpack/internal/app"
+	"github.com/topgsmir/BackPack/internal/app"
 )
 
 // snapshotRetention is how many pre-update snapshots are kept on disk.

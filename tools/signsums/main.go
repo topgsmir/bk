@@ -10,10 +10,11 @@
 package main
 
 import (
+	"bytes"
 	"crypto/ed25519"
 	"encoding/base64"
 	"fmt"
-	"github.com/backpack/backpack/internal/app"
+	"github.com/topgsmir/BackPack/internal/app"
 	"os"
 	"strings"
 )
@@ -46,6 +47,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	expected, err := base64.StdEncoding.DecodeString(strings.TrimSpace(app.ReleasePublicKey))
+	actual := ed25519.PrivateKey(key).Public().(ed25519.PublicKey)
+	if err != nil || !bytes.Equal(expected, actual) {
+		fmt.Fprintln(os.Stderr, "RELEASE_SIGNING_KEY does not match this distribution's public key")
+		os.Exit(1)
+	}
+
 	sums, err := os.ReadFile(path)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -62,6 +70,9 @@ func main() {
 
 // releaseTag is the tag being released: CI's, or the VERSION file's.
 func releaseTag() string {
+	if t := strings.TrimSpace(os.Getenv("RELEASE_TAG")); t != "" {
+		return t
+	}
 	if t := strings.TrimSpace(os.Getenv("GITHUB_REF_NAME")); t != "" {
 		return t
 	}

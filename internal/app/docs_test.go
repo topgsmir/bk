@@ -25,13 +25,20 @@ func TestEveryDocumentSaysWhenItWasVerified(t *testing.T) {
 		t.Fatalf("found %d documents — this test is looking in the wrong place", len(docs))
 	}
 
-	want := "Last verified against Backpack " + Version
 	for _, path := range docs {
 		b, err := os.ReadFile(path)
 		if err != nil {
 			t.Errorf("%s: %v", path, err)
 			continue
 		}
+		// Engine references retain their original upstream verification dates.
+		// Distribution-specific documents must be checked against this release.
+		version := UpstreamVersion
+		switch filepath.Base(path) {
+		case "install.md", "publishing.md", "config-reference.md":
+			version = Version
+		}
+		want := "Last verified against Backpack " + version
 		s := string(b)
 		if !strings.Contains(s, "Last verified against Backpack") {
 			t.Errorf("%s has no verification stamp. Add one, or a figure in it will be "+
@@ -41,7 +48,7 @@ func TestEveryDocumentSaysWhenItWasVerified(t *testing.T) {
 		if !strings.Contains(s, want) {
 			t.Errorf("%s was last verified against an older version than %s. Either "+
 				"re-read it and move the stamp, or leave the stamp where it is — "+
-				"but this failing means nobody has decided which.", filepath.Base(path), Version)
+				"but this failing means nobody has decided which.", filepath.Base(path), version)
 		}
 	}
 }

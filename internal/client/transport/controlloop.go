@@ -6,9 +6,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/backpack/backpack/internal/controlwire"
-	"github.com/backpack/backpack/internal/utils"
 	"github.com/sirupsen/logrus"
+	"github.com/topgsmir/BackPack/internal/controlwire"
+	"github.com/topgsmir/BackPack/internal/utils"
 )
 
 // controlLoop serves one generation's control channel on the client side: it

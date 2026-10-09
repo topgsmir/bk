@@ -1,6 +1,6 @@
 package manage
 
-import "github.com/backpack/backpack/internal/tui"
+import "github.com/topgsmir/BackPack/internal/tui"
 
 // Presets for a direct tunnel.
 //

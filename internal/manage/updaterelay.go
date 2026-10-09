@@ -6,7 +6,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/backpack/backpack/internal/socks"
+	"github.com/topgsmir/BackPack/internal/socks"
 )
 
 // Fetching an update through a tunnel when there is no way out directly.

@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/backpack/backpack/config"
 	"github.com/gorilla/websocket"
 	utls "github.com/refraction-networking/utls"
+	"github.com/topgsmir/BackPack/config"
 )
 
 func WebSocketDialer(ctx context.Context, out *Outbound, addr string, edgeIP string, path string, timeout time.Duration, keepalive time.Duration, nodelay bool, token string, mode config.TransportType, simpleAuth bool, retry int, SO_RCVBUF int, SO_SNDBUF int, mss int) (*websocket.Conn, error) {

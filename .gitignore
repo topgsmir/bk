@@ -24,3 +24,7 @@ premium-fa.html
 idea.md
 todo.md
 fix-*.html
+
+# Local distribution keys and verification caches
+/.publisher/
+/.tools/

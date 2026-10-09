@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/backpack/backpack/internal/controlwire"
-	"github.com/backpack/backpack/internal/utils"
+	"github.com/topgsmir/BackPack/internal/controlwire"
+	"github.com/topgsmir/BackPack/internal/utils"
 )
 
 // startLoop runs a control loop over one end of a loopback TCP connection and returns the other

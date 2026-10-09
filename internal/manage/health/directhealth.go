@@ -4,8 +4,8 @@ import (
 	"net"
 	"strings"
 
-	"github.com/backpack/backpack/internal/app"
-	"github.com/backpack/backpack/internal/manage/core"
+	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/BackPack/internal/manage/core"
 )
 
 // Is a direct tunnel up?

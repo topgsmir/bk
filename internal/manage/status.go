@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/backpack/backpack/internal/tui"
+	"github.com/topgsmir/BackPack/internal/tui"
 )
 
 // StatusLive renders a continuously refreshing status table of all tunnels

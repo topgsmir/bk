@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/backpack/backpack/internal/manage"
+	"github.com/topgsmir/BackPack/internal/manage"
 )
 
 // Choosing which tunnel carries the bot's traffic.

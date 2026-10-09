@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/backpack/backpack/internal/tunnel/mssclamp"
+	"github.com/topgsmir/BackPack/internal/tunnel/mssclamp"
 )
 
 // The clamp is the fix for the one failure a layer-3 tunnel produces that every

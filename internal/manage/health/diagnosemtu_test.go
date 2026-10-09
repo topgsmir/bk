@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/backpack/backpack/internal/manage/core"
+	"github.com/topgsmir/BackPack/internal/manage/core"
 )
 
 // The MTU check has to reach the transports most likely to be on a hostile

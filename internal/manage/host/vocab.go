@@ -1,8 +1,8 @@
 package host
 
 import (
-	"github.com/backpack/backpack/internal/manage/core"
-	"github.com/backpack/backpack/internal/manage/spec"
+	"github.com/topgsmir/BackPack/internal/manage/core"
+	"github.com/topgsmir/BackPack/internal/manage/spec"
 )
 
 // The tunnel listing and the address vocabulary, under the names the code in

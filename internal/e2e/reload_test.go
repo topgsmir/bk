@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/backpack/backpack/cmd"
+	"github.com/topgsmir/BackPack/cmd"
 )
 
 // Editing a tunnel's configuration file has to take effect on its own.

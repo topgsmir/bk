@@ -10,11 +10,14 @@ import (
 
 const (
 	// Version of the backpack engine.
-	Version = "v1.8.5"
+	Version = "v1.8.5.1"
+
+	// UpstreamVersion identifies the unchanged tunnel engine and its inherited documentation.
+	UpstreamVersion = "v1.8.5"
 
 	// RepoOwner/RepoName identify the GitHub repository used by the installer
 	// and the release-based updater.
-	RepoOwner = "AminMGMT"
+	RepoOwner = "topgsmir"
 	RepoName  = "BackPack"
 
 	// SourceURL is where the source lives, printed with the version.
@@ -103,7 +106,7 @@ func ServiceName(name string) string {
 // A var rather than a const so a test can pin a key of its own — the same
 // reason node.StorePath and optimize.sysctlFile are vars. Nothing at runtime
 // writes it.
-var ReleasePublicKey = "uDVeC9NUFceAuhg53ZWbBNTVSaMC8tEvtwWmcDZmV9Q="
+var ReleasePublicKey = "voCWb72SQ6j+0YUlehUec/vg8Z0IL9tKcINNHsfSxDQ="
 
 // TunnelConfigMode is the permission a tunnel's TOML config is written with.
 //

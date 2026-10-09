@@ -11,7 +11,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/backpack/backpack/internal/utils/network"
+	"github.com/topgsmir/BackPack/internal/utils/network"
 )
 
 // Proving both ends hold the token.

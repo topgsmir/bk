@@ -7,14 +7,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/backpack/backpack/internal/metrics"
+	"github.com/topgsmir/BackPack/internal/metrics"
 
-	"github.com/backpack/backpack/config"
-	"github.com/backpack/backpack/internal/client"
+	"github.com/topgsmir/BackPack/config"
+	"github.com/topgsmir/BackPack/internal/client"
 
-	"github.com/backpack/backpack/internal/server"
-	"github.com/backpack/backpack/internal/utils"
-	"github.com/backpack/backpack/internal/utils/handlers"
+	"github.com/topgsmir/BackPack/internal/server"
+	"github.com/topgsmir/BackPack/internal/utils"
+	"github.com/topgsmir/BackPack/internal/utils/handlers"
 
 	"github.com/BurntSushi/toml"
 )

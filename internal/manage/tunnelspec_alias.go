@@ -1,8 +1,8 @@
 package manage
 
 import (
-	"github.com/backpack/backpack/internal/manage/core"
-	"github.com/backpack/backpack/internal/manage/tunnelspec"
+	"github.com/topgsmir/BackPack/internal/manage/core"
+	"github.com/topgsmir/BackPack/internal/manage/tunnelspec"
 )
 
 // What a tunnel's configuration says and how a change to it is made safely now

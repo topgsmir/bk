@@ -32,7 +32,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/backpack/backpack/internal/alerthist"
+	"github.com/topgsmir/BackPack/internal/alerthist"
 )
 
 // terminalMax is how many shells may be open at once, across every browser.

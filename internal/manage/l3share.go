@@ -8,10 +8,10 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/backpack/backpack/config"
-	"github.com/backpack/backpack/internal/app"
-	"github.com/backpack/backpack/internal/tui"
-	"github.com/backpack/backpack/internal/tunnel/portmap"
+	"github.com/topgsmir/BackPack/config"
+	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/BackPack/internal/tui"
+	"github.com/topgsmir/BackPack/internal/tunnel/portmap"
 )
 
 // Several kharej servers behind one Iran server.

@@ -15,9 +15,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/backpack/backpack/internal/app"
-	"github.com/backpack/backpack/internal/socks"
-	"github.com/backpack/backpack/internal/utils"
+	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/BackPack/internal/socks"
+	"github.com/topgsmir/BackPack/internal/utils"
 )
 
 // Kind is which proxy protocol to serve on the port.

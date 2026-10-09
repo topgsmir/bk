@@ -1,8 +1,8 @@
 package manage
 
 import (
-	"github.com/backpack/backpack/internal/manage/backup"
-	"github.com/backpack/backpack/internal/manage/core"
+	"github.com/topgsmir/BackPack/internal/manage/backup"
+	"github.com/topgsmir/BackPack/internal/manage/core"
 )
 
 // The lowest layer of this package now lives in internal/manage/core: the

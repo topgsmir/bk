@@ -23,9 +23,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/backpack/backpack/internal/localproxy"
-	"github.com/backpack/backpack/internal/manage"
-	"github.com/backpack/backpack/internal/schedule"
+	"github.com/topgsmir/BackPack/internal/localproxy"
+	"github.com/topgsmir/BackPack/internal/manage"
+	"github.com/topgsmir/BackPack/internal/schedule"
 )
 
 // --- the section's state, in one read ----------------------------------------

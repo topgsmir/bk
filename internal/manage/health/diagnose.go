@@ -12,16 +12,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/backpack/backpack/internal/optimize"
+	"github.com/topgsmir/BackPack/internal/optimize"
 
-	"github.com/backpack/backpack/internal/manage/backup"
-	"github.com/backpack/backpack/internal/manage/core"
-	"github.com/backpack/backpack/internal/manage/host"
-	"github.com/backpack/backpack/internal/manage/tunnelspec"
+	"github.com/topgsmir/BackPack/internal/manage/backup"
+	"github.com/topgsmir/BackPack/internal/manage/core"
+	"github.com/topgsmir/BackPack/internal/manage/host"
+	"github.com/topgsmir/BackPack/internal/manage/tunnelspec"
 
-	"github.com/backpack/backpack/config"
-	"github.com/backpack/backpack/internal/app"
-	"github.com/backpack/backpack/internal/utils/network"
+	"github.com/topgsmir/BackPack/config"
+	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/BackPack/internal/utils/network"
 )
 
 // CheckLevel is how a diagnostic turned out.

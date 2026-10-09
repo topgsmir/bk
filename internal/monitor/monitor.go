@@ -17,15 +17,15 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/backpack/backpack/internal/alerthist"
-	"github.com/backpack/backpack/internal/app"
-	"github.com/backpack/backpack/internal/manage"
-	"github.com/backpack/backpack/internal/manage/core"
-	"github.com/backpack/backpack/internal/socks"
-	"github.com/backpack/backpack/internal/telegram"
-	"github.com/backpack/backpack/internal/tunhist"
-	"github.com/backpack/backpack/internal/utils"
 	"github.com/sirupsen/logrus"
+	"github.com/topgsmir/BackPack/internal/alerthist"
+	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/BackPack/internal/manage"
+	"github.com/topgsmir/BackPack/internal/manage/core"
+	"github.com/topgsmir/BackPack/internal/socks"
+	"github.com/topgsmir/BackPack/internal/telegram"
+	"github.com/topgsmir/BackPack/internal/tunhist"
+	"github.com/topgsmir/BackPack/internal/utils"
 )
 
 // How a job that panicked is brought back.

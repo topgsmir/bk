@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/backpack/backpack/internal/manage"
-	"github.com/backpack/backpack/internal/node"
+	"github.com/topgsmir/BackPack/internal/manage"
+	"github.com/topgsmir/BackPack/internal/node"
 )
 
 // The fleet endpoints.

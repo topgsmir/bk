@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/backpack/backpack/config"
-	"github.com/backpack/backpack/internal/tunnel/direct"
-	"github.com/backpack/backpack/internal/utils"
 	"github.com/sirupsen/logrus"
+	"github.com/topgsmir/BackPack/config"
+	"github.com/topgsmir/BackPack/internal/tunnel/direct"
+	"github.com/topgsmir/BackPack/internal/utils"
 )
 
 // The direct tunnel's entry point.

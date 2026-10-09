@@ -136,7 +136,7 @@ func Logo(version string) {
  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝`)
 	fmt.Print(Reset)
 	fmt.Printf("%s Backpack  %s%s%s\n", Bold+White, Red, version, Reset)
-	fmt.Println(Gray + " TeleGram : @BlackProtocols  |  GitHub : https://github.com/AminMGMT" + Reset)
+	fmt.Println(Gray + " Maintainer : topgsmir  |  GitHub : https://github.com/topgsmir/BackPack" + Reset)
 }
 
 // Prompt reads a trimmed line after printing label.

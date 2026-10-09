@@ -1,6 +1,6 @@
 package network
 
-import "github.com/backpack/backpack/config"
+import "github.com/topgsmir/BackPack/config"
 
 // SpoofDPIFromConfig maps the flat spoof_* obfuscation knobs of a SpoofConfig
 // onto the carrier's SpoofDPI struct. It lives in the network package (which

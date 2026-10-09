@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/backpack/backpack/internal/controlwire"
-	"github.com/backpack/backpack/internal/utils"
+	"github.com/topgsmir/BackPack/internal/controlwire"
+	"github.com/topgsmir/BackPack/internal/utils"
 )
 
 // A control channel that cannot be written to has to be given up on.

@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/backpack/backpack/config"
-	"github.com/backpack/backpack/internal/client/transport"
-	"github.com/backpack/backpack/internal/utils"
-	"github.com/backpack/backpack/internal/utils/network"
+	"github.com/topgsmir/BackPack/config"
+	"github.com/topgsmir/BackPack/internal/client/transport"
+	"github.com/topgsmir/BackPack/internal/utils"
+	"github.com/topgsmir/BackPack/internal/utils/network"
 )
 
 // startTransport is two hundred lines of copying fields from a config into a

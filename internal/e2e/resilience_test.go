@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/backpack/backpack/internal/server"
+	"github.com/topgsmir/BackPack/internal/server"
 )
 
 // TestFailoverToBackupAddress covers the feature that keeps a tunnel alive when

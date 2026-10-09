@@ -7,8 +7,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/backpack/backpack/internal/utils/network"
 	"github.com/gorilla/websocket"
+	"github.com/topgsmir/BackPack/internal/utils/network"
 )
 
 // Behaviour on the client transports that can be exercised without a tunnel.

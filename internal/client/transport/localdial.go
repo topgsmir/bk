@@ -8,8 +8,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/backpack/backpack/internal/metrics"
 	"github.com/sirupsen/logrus"
+	"github.com/topgsmir/BackPack/internal/metrics"
 )
 
 // Reporting a failed dial to the forwarded service.

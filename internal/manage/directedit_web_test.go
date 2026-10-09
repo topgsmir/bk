@@ -3,7 +3,7 @@ package manage
 import (
 	"testing"
 
-	"github.com/backpack/backpack/config"
+	"github.com/topgsmir/BackPack/config"
 )
 
 // The panel's Edit button must reach a direct tunnel.

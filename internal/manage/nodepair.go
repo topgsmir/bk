@@ -7,9 +7,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/backpack/backpack/internal/app"
-	"github.com/backpack/backpack/internal/manage/core"
-	"github.com/backpack/backpack/internal/manage/tunnelspec"
+	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/BackPack/internal/manage/core"
+	"github.com/topgsmir/BackPack/internal/manage/tunnelspec"
 )
 
 // Which tunnels have their other end on a managed server.

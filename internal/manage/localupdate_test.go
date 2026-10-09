@@ -196,7 +196,7 @@ func TestTheOperatorIsToldWhereToPutTheFile(t *testing.T) {
 func TestTheArchiveVersionIsTheFirstLineOfTheFlag(t *testing.T) {
 	dir := t.TempDir()
 	bin := filepath.Join(dir, "backpack")
-	if err := os.WriteFile(bin, []byte("#!/bin/sh\necho v9.9.9\necho https://github.com/AminMGMT/BackPack\n"), 0o755); err != nil {
+	if err := os.WriteFile(bin, []byte("#!/bin/sh\necho v9.9.9\necho https://github.com/topgsmir/BackPack\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	archive := filepath.Join(dir, "backpack_linux_amd64.tar.gz")

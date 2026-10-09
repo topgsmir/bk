@@ -6,8 +6,8 @@ import (
 	"net"
 	"strings"
 
-	"github.com/backpack/backpack/internal/app"
-	"github.com/backpack/backpack/internal/tui"
+	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/BackPack/internal/tui"
 )
 
 // How the other side is built from a setup link, as the Iran wizard, its

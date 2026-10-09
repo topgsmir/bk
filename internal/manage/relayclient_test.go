@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/backpack/backpack/internal/app"
+	"github.com/topgsmir/BackPack/internal/app"
 )
 
 // The updater reaches GitHub either directly or through the tunnel relay. On an

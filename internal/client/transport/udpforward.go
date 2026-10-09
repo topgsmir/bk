@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/backpack/backpack/internal/utils/network"
-	"github.com/backpack/backpack/internal/web"
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
+	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/BackPack/internal/web"
 )
 
 // The client end of a forwarded UDP flow: read framed datagrams off the tunnel,

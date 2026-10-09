@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/backpack/backpack/internal/server"
+	"github.com/topgsmir/BackPack/internal/server"
 )
 
 // A server that stops cleanly tells its client, on every transport.

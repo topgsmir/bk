@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/backpack/backpack/internal/metrics"
 	"github.com/sirupsen/logrus"
+	"github.com/topgsmir/BackPack/internal/metrics"
 )
 
 // Retiring sessions, and what the management screens read from it.

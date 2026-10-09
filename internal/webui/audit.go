@@ -15,8 +15,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/backpack/backpack/internal/alerthist"
-	"github.com/backpack/backpack/internal/app"
+	"github.com/topgsmir/BackPack/internal/alerthist"
+	"github.com/topgsmir/BackPack/internal/app"
 )
 
 // The record of what was done through the panel.

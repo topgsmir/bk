@@ -66,7 +66,7 @@ func TestEveryArchitectureBuiltIsAlsoPublished(t *testing.T) {
 	// The stamp, at the path the linker actually resolves. A wrong symbol path
 	// is ignored in silence, so every ARM build would ship unstamped and ask
 	// for an asset that does not exist.
-	if !strings.Contains(src, "github.com/backpack/backpack/internal/app.GOARM=$$v") {
+	if !strings.Contains(src, "github.com/topgsmir/BackPack/internal/app.GOARM=$$v") {
 		t.Error("the ARM builds are not stamped with their variant, so each would " +
 			"ask for backpack_linux_arm.tar.gz, which no release publishes")
 	}

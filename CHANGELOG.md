@@ -1,3 +1,13 @@
+# topgsmir distribution
+
+## v1.8.5.1
+
+- Configure installation, source links, support and updates for topgsmir/BackPack.
+- Use the distribution's own module path and release signing key.
+- Add a standalone uninstall.sh with confirmation and a dry-run mode.
+- Preserve upstream attribution and document private downloads and publication prerequisites.
+- Publish both installation and removal scripts with signed release assets.
+
 # Changelog
 
 All notable changes to Backpack are documented here.

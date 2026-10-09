@@ -1,4 +1,4 @@
-module github.com/backpack/backpack
+module github.com/topgsmir/BackPack
 
 go 1.26.6
 

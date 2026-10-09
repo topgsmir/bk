@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/backpack/backpack/internal/metrics"
-	"github.com/backpack/backpack/internal/utils/network"
-	"github.com/backpack/backpack/internal/web"
 	"github.com/sirupsen/logrus"
+	"github.com/topgsmir/BackPack/internal/metrics"
+	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/BackPack/internal/web"
 )
 
 // udpPayloadQueue is how many datagrams may wait for the goroutine that will
