@@ -32,6 +32,11 @@ var logger = utils.NewLogger("info")
 //   - Menu mode:    `bk`  (no arguments)
 //     Opens the interactive management CLI on the VPS.
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "external" {
+		runExternal(os.Args[2:])
+		return
+	}
+
 	// Handled before the flags, because it is a subcommand with flags of its
 	// own: `bk node setup --panel ... --key ...`. The flag package would
 	// stop at "node" and report the rest as unknown.
