@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/topgsmir/BackPack/internal/tunnel/bridge"
-	"github.com/topgsmir/BackPack/internal/tunnel/limits"
-	"github.com/topgsmir/BackPack/internal/tunnel/portmap"
+	"github.com/topgsmir/bk/internal/tunnel/bridge"
+	"github.com/topgsmir/bk/internal/tunnel/limits"
+	"github.com/topgsmir/bk/internal/tunnel/portmap"
 )
 
 // The forwarder.

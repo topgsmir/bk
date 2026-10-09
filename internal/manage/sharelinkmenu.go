@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/topgsmir/BackPack/internal/tui"
+	"github.com/topgsmir/bk/internal/tui"
 )
 
 // The setup link, from the operator's side.
@@ -55,7 +55,7 @@ func printShareLink(name string) bool {
 	if parsed.Kind == "direct" && parsed.PeerSide() == "kharej" {
 		tui.Warn("On The Kharej: Setup Kharej → Direct → Same Carrier → Setup Link.")
 	} else {
-		tui.Warn("On The Other Server: sudo backpack → Manage → Set Up From A Link.")
+		tui.Warn("On The Other Server: sudo bk → Manage → Set Up From A Link.")
 	}
 	fmt.Println()
 	tui.Info("For The " + titleWord(parsed.PeerSide()) + " Side.")
@@ -63,7 +63,7 @@ func printShareLink(name string) bool {
 		tui.Warn("No Public Address Found — The Other Side Will Ask For It.")
 	}
 	if parsed.PeerSide() == "kharej" {
-		printLinkBlock(link, "sudo backpack → Setup Kharej → Setup Link")
+		printLinkBlock(link, "sudo bk → Setup Kharej → Setup Link")
 	} else {
 		fmt.Println()
 		fmt.Println(link)

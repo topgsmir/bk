@@ -174,6 +174,7 @@ func SuggestedTCPFlagCycles() []struct{ Value, Desc string } {
 
 // pckSegment is what a received frame turned out to hold.
 type pckSegment struct {
+	DstIP   net.IP
 	SrcIP   net.IP
 	SrcPort uint16
 	DstPort uint16
@@ -409,6 +410,7 @@ func parsePckFrame(frame []byte, linkLen int, wantPort uint16) (pckSegment, bool
 	}
 
 	seg.SrcIP = net.IP(append([]byte(nil), ip[12:16]...))
+	seg.DstIP = net.IP(append([]byte(nil), ip[16:20]...))
 	seg.SrcPort = binary.BigEndian.Uint16(tcp[0:2])
 	seg.DstPort = dstPort
 	seg.Seq = binary.BigEndian.Uint32(tcp[4:8])

@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/bk/internal/app"
 )
 
 // A tunnel restarted on a schedule, at the same moment on both of its servers.
@@ -20,11 +20,11 @@ import (
 // link carries them to the kharej.
 
 // scheduledRestartUnit is the name of the timer, and of the one-shot service it
-// starts, for a tunnel. Not "backpack-<name>…": that is the tunnel's own unit
+// starts, for a tunnel. Not "bk-<name>…": that is the tunnel's own unit
 // pattern, and a second unit matching it would be read as a second tunnel by
 // anything that looks at unit names.
 func scheduledRestartUnit(name, kind string) string {
-	return "backpack-restart-" + name + "." + kind
+	return "bk-restart-" + name + "." + kind
 }
 
 // restartCalendar is the OnCalendar expression for every hours hours at minute
@@ -56,14 +56,14 @@ func SetScheduledRestart(name string, hours, minute int) error {
 	hours = EffectiveRestartHours(hours)
 	minute = ((minute % 60) + 60) % 60
 	svc := fmt.Sprintf(`[Unit]
-Description=Scheduled restart of Backpack tunnel %s
+Description=Scheduled restart of bk tunnel %s
 
 [Service]
 Type=oneshot
 ExecStart=/bin/systemctl try-restart %s
 `, name, app.ServiceName(name))
 	tmr := fmt.Sprintf(`[Unit]
-Description=Restart Backpack tunnel %s every %d hours (UTC, both servers at once)
+Description=Restart bk tunnel %s every %d hours (UTC, both servers at once)
 
 [Timer]
 OnCalendar=%s

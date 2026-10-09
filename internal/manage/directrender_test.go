@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/BurntSushi/toml"
-	"github.com/topgsmir/BackPack/config"
-	"github.com/topgsmir/BackPack/internal/tunnel/direct"
-	"github.com/topgsmir/BackPack/internal/tunnel/l3"
+	"github.com/topgsmir/bk/config"
+	"github.com/topgsmir/bk/internal/tunnel/direct"
+	"github.com/topgsmir/bk/internal/tunnel/l3"
 )
 
 // l3EncapForTest builds the encapsulation the engine would, from what the

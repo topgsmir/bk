@@ -8,20 +8,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/optimize"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/optimize"
 )
 
 // Building the kharej end from a setup link without a single question.
 //
 // The Iran wizard prints two things under its summary: the link, for a kharej
-// that already runs Backpack, and one command that installs Backpack and hands
+// that already runs bk, and one command that installs bk and hands
 // it the link, for one that does not. Both end here. The kharej wizard's Setup
 // Link answer builds the same tunnel, but asks this side's own questions — a
 // CDN edge, a proxy — which a command pasted into a fresh server has nobody to
 // ask, so here they keep their defaults.
 
-// LinkApplyOptions are what `backpack link apply` can be told beyond the link.
+// LinkApplyOptions are what `bk link apply` can be told beyond the link.
 type LinkApplyOptions struct {
 	// Name replaces the name the link suggests.
 	Name string
@@ -48,7 +48,7 @@ type LinkApplied struct {
 
 // ErrLinkNeedsHost is a link that does not say where the Iran server is.
 var ErrLinkNeedsHost = errors.New("the setup link does not say where the Iran server is — " +
-	"give its address with --host (backpack link apply --host 1.2.3.4 'backpack://…')")
+	"give its address with --host (bk link apply --host 1.2.3.4 'bk://…')")
 
 // linkChars is what a setup link is made of after its scheme.
 var linkChars = regexp.MustCompile(`^[A-Za-z0-9_\-=.]+`)
@@ -60,17 +60,17 @@ var linkChars = regexp.MustCompile(`^[A-Za-z0-9_\-=.]+`)
 // Pieces after a break are joined on only while the link does not decode yet,
 // so the word after a whole link is never taken for the rest of it.
 func FindSetupLink(text string) string {
-	i := strings.Index(text, "backpack://")
+	i := strings.Index(text, "bk://")
 	if i < 0 {
 		return strings.TrimSpace(text)
 	}
 	var pieces []string
 	for _, f := range strings.Fields(text[i:]) {
-		p := linkChars.FindString(strings.TrimPrefix(f, "backpack://"))
+		p := linkChars.FindString(strings.TrimPrefix(f, "bk://"))
 		if len(pieces) == 0 {
-			p = "backpack://" + p
+			p = "bk://" + p
 		}
-		if p == "" || p == "backpack://" {
+		if p == "" || p == "bk://" {
 			break
 		}
 		pieces = append(pieces, strings.TrimRight(p, "."))
@@ -100,7 +100,7 @@ func ApplySetupLink(raw string, o LinkApplyOptions) (LinkApplied, error) {
 	}
 	if !strings.EqualFold(link.From, "iran") {
 		return LinkApplied{}, fmt.Errorf("this link was made on a kharej server and is for the Iran side: " +
-			"paste it there, under sudo backpack → Setup from a link")
+			"paste it there, under sudo bk → Setup from a link")
 	}
 	if existing := tunnelWithToken(link.Tok); existing != "" {
 		// The same tunnel, set up again. That is what happens after the Iran

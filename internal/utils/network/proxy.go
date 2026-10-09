@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/socks"
+	"github.com/topgsmir/bk/internal/socks"
 )
 
 // Reaching the tunnel server through a local proxy.

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/topgsmir/BackPack/internal/metrics"
+	"github.com/topgsmir/bk/internal/metrics"
 )
 
 // A reload runs the next generation's collector in the same process, straight

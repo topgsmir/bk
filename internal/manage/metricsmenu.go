@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/metrics"
-	"github.com/topgsmir/BackPack/internal/sysstat"
-	"github.com/topgsmir/BackPack/internal/tui"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/metrics"
+	"github.com/topgsmir/bk/internal/sysstat"
+	"github.com/topgsmir/bk/internal/tui"
 )
 
 // TunnelMetrics shows what each tunnel has actually carried.

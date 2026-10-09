@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/manage"
+	"github.com/topgsmir/bk/internal/manage"
 )
 
 // How long a tunnel has been up, as systemd knows it.

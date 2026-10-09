@@ -3,7 +3,7 @@
 Every option in every menu, including the advanced ones. Open the menu as root:
 
 ```bash
-sudo backpack
+sudo bk
 ```
 
 Each option carries a short gray description in the terminal; this page is the
@@ -25,7 +25,7 @@ long form. For *how to set a tunnel up*, use the
 | 6 | **Optimize** | Applies system-wide kernel/network tuning: BBR + fq, socket-buffer ceilings, file-descriptor limits. Answer yes and it prints each change. A reboot is recommended for the file-limit changes. It also keeps the kernel's own ephemeral port range (`32768 60999`) rather than widening it, and reserves the ports your tunnels listen on — see [what it does to ports](#optimize-and-your-service-ports) |
 | 7 | **Telegram Bot** | Reports, alerts and control from Iran. [↓](#7-telegram-bot) |
 | 8 | **Update** | Verified update with automatic rollback. [↓](#8-update) |
-| 9 | **Uninstall** | Removes everything Backpack installed. |
+| 9 | **Uninstall** | Removes everything bk installed. |
 | 10 | **Exit** | |
 
 A red banner above the menu appears when a newer release exists. It reads a
@@ -54,7 +54,7 @@ server pastes.
 | **Tunnel Port** | what the client dials. Refused if already in use for that protocol. `85.10.11.51:443` pins it to one address — see [Port mappings](port-mappings.md#binding-to-one-local-address) |
 | **Listen On IPv6 As Well** `[y/N]` | only for a bare port; binds `::`, which accepts IPv4 too on a dual-stack host |
 | **Forwarded Ports** | `443`, `443=127.0.0.1:2096`, `443=a:1\|b:2`, `10000-10009`, `85.11.12.13:443=127.0.0.1:2096`, comma separated. [Every form](port-mappings.md) |
-| **Tunnel Name** | names the service (`backpack-<name>`) and the config file |
+| **Tunnel Name** | names the service (`bk-<name>`) and the config file |
 | **Security Token** | generated here — press Enter. The setup link carries it |
 | **Carry UDP As Well As TCP On Those Ports** `[y/N]` | off by default. [Forwarded UDP](forwarded-udp.md) |
 | **TLS Certificate** | wss/wssmux only — Self-Signed, Let's Encrypt, or Existing Files |
@@ -70,11 +70,11 @@ dials, the forwarded ports and where each lands on kharej, the certificate,
 tuning, config file — with two ways to build the kharej under it, and **Create
 This Tunnel**:
 
-- **Setup Link** — the `backpack://…` line, for a kharej that already runs
-  Backpack: paste it under Setup Kharej → Setup Link (or run
-  `backpack link apply '<link>'` there).
-- **Install BackPack And Set Up This Tunnel** — one command, run as root on a
-  kharej without Backpack: it installs Backpack, builds the tunnel from the
+- **Setup Link** — the `bk://…` line, for a kharej that already runs
+  bk: paste it under Setup Kharej → Setup Link (or run
+  `bk link apply '<link>'` there).
+- **Install bk And Set Up This Tunnel** — one command, run as root on a
+  kharej without bk: it installs bk, builds the tunnel from the
   link, starts it and says whether it connected. Nothing is asked.
 
 Both are shown again under **Manage tunnels → the tunnel → Setup Link**. A
@@ -84,7 +84,7 @@ with the same token would take the connection from the first.
 
 ### Setup Iran / Setup Kharej → Direct
 
-A direct tunnel is always a full IP tunnel wrapped in Backpack's own GRE, so
+A direct tunnel is always a full IP tunnel wrapped in bk's own GRE, so
 there is nothing to choose about the shape or the framing — only how it travels.
 [Direct tunnel](l3-direct-tunnel.md)
 
@@ -107,8 +107,8 @@ server pastes. The Iran questions, in order:
 | **Restart This Tunnel On Both Servers Every N Hours (0 = Off)** | as for reverse above |
 
 Then one short summary — interface, where it dials, forwarded ports, tuning,
-config file — with the **Setup Link** (`backpack://…`) and the one-line
-**Install BackPack And Set Up This Tunnel** under it, as for reverse, and
+config file — with the **Setup Link** (`bk://…`) and the one-line
+**Install bk And Set Up This Tunnel** under it, as for reverse, and
 **Create This Tunnel**. The link is shown again under **Manage tunnels → the
 tunnel → Setup Link**.
 
@@ -234,7 +234,7 @@ behind the kharej is a common reason to run it.
 
 A backup bundles **every tunnel, the web-panel password, Telegram settings, TLS
 certificates and the auto-refresh schedule** into one portable `.tar.gz` under
-`/root/BackPack/backups`.
+`/root/bk/backups`.
 
 | Option | Notes |
 |---|---|
@@ -419,7 +419,7 @@ range back.
 
 ## خلاصهٔ فارسی
 
-همه‌چیز از یک منو در دسترس است: `sudo backpack`.
+همه‌چیز از یک منو در دسترس است: `sudo bk`.
 
 **منوی اصلی:** ۱) ساخت سرور ایران ۲) ساخت کلاینت خارج ۳) مدیریت ۴) پشتیبان‌گیری
 و بازگردانی ۵) پنل وب ۶) بهینه‌سازی کرنل (BBR، بافرها، محدودیت فایل) ۷) ربات

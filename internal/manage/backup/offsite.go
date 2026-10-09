@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/bk/internal/app"
 )
 
 // Getting a backup off the machine it describes.
@@ -32,8 +32,8 @@ import (
 // So the setting is a command line with one placeholder. Everything else is
 // theirs.
 //
-//	offsite = "rclone copy {} remote:backpack/"
-//	offsite = "scp {} backup@10.0.0.9:/srv/backpack/"
+//	offsite = "rclone copy {} remote:bk/"
+//	offsite = "scp {} backup@10.0.0.9:/srv/bk/"
 //	offsite = "restic backup {}"
 //
 // # What it deliberately does not do

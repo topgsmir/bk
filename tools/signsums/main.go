@@ -14,7 +14,7 @@ import (
 	"crypto/ed25519"
 	"encoding/base64"
 	"fmt"
-	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/bk/internal/app"
 	"os"
 	"strings"
 )

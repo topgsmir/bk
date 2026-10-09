@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"github.com/topgsmir/BackPack/config"
+	"github.com/topgsmir/bk/config"
 )
 
 // ValidPort reports whether s is a valid TCP/UDP port number.

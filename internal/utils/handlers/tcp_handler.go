@@ -7,8 +7,8 @@ import (
 	"net"
 
 	"github.com/sirupsen/logrus"
-	"github.com/topgsmir/BackPack/internal/metrics"
-	"github.com/topgsmir/BackPack/internal/web"
+	"github.com/topgsmir/bk/internal/metrics"
+	"github.com/topgsmir/bk/internal/web"
 )
 
 func TCPConnectionHandler(ctx context.Context, proxyProtocol bool, from net.Conn, to net.Conn, logger *logrus.Logger, usage *web.Usage, remotePort int, sniffer bool) {

@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/metrics"
-	"github.com/topgsmir/BackPack/internal/utils"
+	"github.com/topgsmir/bk/internal/metrics"
+	"github.com/topgsmir/bk/internal/utils"
 )
 
 // The udp transport's forwarded ports: each source address is a flow, carried

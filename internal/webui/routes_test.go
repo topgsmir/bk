@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/alerthist"
+	"github.com/topgsmir/bk/internal/alerthist"
 )
 
 // These go through the route table as Serve wires it, not through guard on its

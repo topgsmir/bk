@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/bk/internal/app"
 )
 
 // withTempState points the update cache at a temporary file for the duration of

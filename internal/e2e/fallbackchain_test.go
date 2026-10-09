@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/config"
+	"github.com/topgsmir/bk/config"
 )
 
 // The transport fallback chain, end to end.

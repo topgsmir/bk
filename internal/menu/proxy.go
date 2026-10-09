@@ -5,9 +5,9 @@ package menu
 import (
 	"fmt"
 
-	"github.com/topgsmir/BackPack/internal/localproxy"
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/tui"
+	"github.com/topgsmir/bk/internal/localproxy"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/tui"
 )
 
 // proxyLabel summarises the built-in proxy for the menu row.

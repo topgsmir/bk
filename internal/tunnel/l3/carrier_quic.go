@@ -19,7 +19,7 @@ import (
 
 	"github.com/quic-go/quic-go"
 
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 // The QUIC carrier.

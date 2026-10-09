@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/node"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/node"
 )
 
 // A name from a managed server must not be able to carry markup into the panel.

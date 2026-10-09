@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/metrics"
+	"github.com/topgsmir/bk/internal/metrics"
 )
 
 // The watchdog has to ask the engine, not the kernel.

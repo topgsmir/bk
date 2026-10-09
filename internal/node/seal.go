@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/bk/internal/app"
 )
 
 // Sealing the one credential this machine holds for somebody else.

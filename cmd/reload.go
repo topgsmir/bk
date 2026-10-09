@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/topgsmir/BackPack/config"
+	"github.com/topgsmir/bk/config"
 )
 
 // Picking up a changed configuration without being told to.

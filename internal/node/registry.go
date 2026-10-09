@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/bk/internal/app"
 )
 
 // StorePath is where the panel keeps its side of the fleet: the servers it
@@ -170,7 +170,7 @@ func validName(name string) error {
 // Add records a server the panel will manage over SSH.
 //
 // Nothing is contacted here. Whether the address answers, whether the password
-// is right and whether Backpack is installed there are all questions with the
+// is right and whether bk is installed there are all questions with the
 // same answer — try it — and the caller does that once, so a failure is
 // reported as itself rather than as four checks that each half-worked.
 func Add(name, host string, sshPort int, user, password string) (Node, error) {

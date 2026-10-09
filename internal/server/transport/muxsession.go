@@ -7,10 +7,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/xtaci/smux"
 
-	"github.com/topgsmir/BackPack/internal/metrics"
-	"github.com/topgsmir/BackPack/internal/utils"
-	"github.com/topgsmir/BackPack/internal/utils/handlers"
-	"github.com/topgsmir/BackPack/internal/web"
+	"github.com/topgsmir/bk/internal/metrics"
+	"github.com/topgsmir/bk/internal/utils"
+	"github.com/topgsmir/bk/internal/utils/handlers"
+	"github.com/topgsmir/bk/internal/web"
 )
 
 // What a mux transport does with a session, written once.

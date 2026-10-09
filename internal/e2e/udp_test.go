@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/client"
-	"github.com/topgsmir/BackPack/internal/server"
-	"github.com/topgsmir/BackPack/internal/utils"
+	"github.com/topgsmir/bk/internal/client"
+	"github.com/topgsmir/bk/internal/server"
+	"github.com/topgsmir/bk/internal/utils"
 )
 
 // The raw UDP transport was the one protocol with no end-to-end coverage: the

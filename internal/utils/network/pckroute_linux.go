@@ -165,6 +165,21 @@ func firstIPv4Of(iface *net.Interface) net.IP {
 // of text with no dependency, no privilege and no cgo, and this is a lookup
 // done once per tunnel at startup rather than per packet.
 func routeToward(dst net.IP) (iface string, gateway net.IP, err error) {
+	// /proc/net/route omits the local routing table. Never send 127/8 through
+	// its default Ethernet route just because that is the only matching row.
+	if dst.IsLoopback() {
+		ifaces, e := net.Interfaces()
+		if e != nil {
+			return "", nil, e
+		}
+		for _, in := range ifaces {
+			if in.Flags&net.FlagLoopback != 0 && in.Flags&net.FlagUp != 0 {
+				return in.Name, nil, nil
+			}
+		}
+		return "", nil, fmt.Errorf("pck: no loopback interface for %s", dst)
+	}
+
 	f, err := os.Open("/proc/net/route")
 	if err != nil {
 		return "", nil, fmt.Errorf("pck: cannot read the routing table: %w", err)

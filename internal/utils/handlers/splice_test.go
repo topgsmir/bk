@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/sirupsen/logrus"
-	"github.com/topgsmir/BackPack/internal/metrics"
+	"github.com/topgsmir/bk/internal/metrics"
 )
 
 // The fast path must decline anything that is not two plain TCP sockets, on

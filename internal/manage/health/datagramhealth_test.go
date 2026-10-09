@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/manage/core"
-	"github.com/topgsmir/BackPack/internal/metrics"
+	"github.com/topgsmir/bk/internal/manage/core"
+	"github.com/topgsmir/bk/internal/metrics"
 )
 
 // A KCP or UDP tunnel carries no TCP sockets, so anything that decides "is it

@@ -16,7 +16,7 @@
 const OFFLINE = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Backpack · Offline</title>
+<title>bk · Offline</title>
 <style>
   :root{color-scheme:dark light;--bg:#070707;--s1:#111111;--ln:rgba(255,255,255,.1);
     --tx:#fafafa;--dim:#8e8e8e}
@@ -37,7 +37,7 @@ const OFFLINE = `<!doctype html>
     font:inherit;font-size:13.5px;font-weight:620;color:var(--bg);background:var(--tx)}
 </style></head>
 <body><div class="card">
-  <div class="mark"><svg viewBox="0 0 24 24"><path d="M8 6V5a4 4 0 018 0v1"/><path d="M5 8h14a2 2 0 012 2v8a3 3 0 01-3 3H6a3 3 0 01-3-3v-8a2 2 0 012-2z"/><path d="M9 12h6"/></svg></div>
+  <div class="mark"><svg viewBox="0 0 24 24"><path d="M4 4v14h4l3-3v-3L8 10H4M15 4v14m6-9-6 5 6 5"/></svg></div>
   <h1>No connection</h1>
   <p>The panel could not be reached. It runs on your server, so this usually
      means this device is offline &mdash; or the server is.</p>

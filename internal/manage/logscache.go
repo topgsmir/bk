@@ -3,7 +3,7 @@ package manage
 import (
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/manage/core"
+	"github.com/topgsmir/bk/internal/manage/core"
 )
 
 // Reading a service's journal is expensive, and it was done once per request.

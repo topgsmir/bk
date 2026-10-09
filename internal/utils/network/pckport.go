@@ -165,7 +165,7 @@ func portSpec(lo, hi uint16) string {
 // An empty id is the untagged spelling v1.8.4 and earlier wrote.
 func pckRules(id string, lo, hi uint16) [][]string {
 	p := portSpec(lo, hi)
-	comment := "backpack-pck-" + p
+	comment := "bk-pck-" + p
 	if id != "" {
 		comment = pckRulePrefix(id) + p
 	}
@@ -188,7 +188,7 @@ func pckRules(id string, lo, hi uint16) [][]string {
 }
 
 // pckRulePrefix is how every rule of one tunnel's comment begins.
-func pckRulePrefix(id string) string { return "backpack-pck-" + id + "-" }
+func pckRulePrefix(id string) string { return "bk-pck-" + id + "-" }
 
 // tunnelRuleDeletions turns `iptables -S` output into the delete commands for
 // the rules whose comment starts with prefix. Our comments carry no spaces, so

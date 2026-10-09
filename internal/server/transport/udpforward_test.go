@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 // A source whose flow could not be started must be able to start one on its

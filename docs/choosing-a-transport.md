@@ -1,6 +1,6 @@
 # Choosing a transport (Link Test)
 
-Not sure which transport suits your route? Let Backpack measure it.
+Not sure which transport suits your route? Let bk measure it.
 
 ## Run the test
 

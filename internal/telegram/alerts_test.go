@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/alerthist"
-	"github.com/topgsmir/BackPack/internal/sysstat"
+	"github.com/topgsmir/bk/internal/alerthist"
+	"github.com/topgsmir/bk/internal/sysstat"
 )
 
 // The value of an alert system is entirely in when it stays quiet. These tests
@@ -228,14 +228,14 @@ func TestSummaryReportsOffState(t *testing.T) {
 
 func TestCommandParsing(t *testing.T) {
 	cases := map[string]string{
-		"/status":             "status",
-		"/status@backpackbot": "status",
-		"/System":             "system",
-		"/metrics extra arg":  "metrics",
-		"  /help  ":           "help",
-		"hello":               "",
-		"":                    "",
-		"/":                   "",
+		"/status":            "status",
+		"/status@bkbot":      "status",
+		"/System":            "system",
+		"/metrics extra arg": "metrics",
+		"  /help  ":          "help",
+		"hello":              "",
+		"":                   "",
+		"/":                  "",
 	}
 	for in, want := range cases {
 		if got := command(in); got != want {

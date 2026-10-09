@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/topgsmir/BackPack/internal/node"
+	"github.com/topgsmir/bk/internal/node"
 )
 
 // The comparison is the whole feature, so it is tested without a fleet: every

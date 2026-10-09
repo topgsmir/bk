@@ -11,7 +11,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/topgsmir/BackPack/config"
+	"github.com/topgsmir/bk/config"
 )
 
 // Handing a tunnel's settings to the other server.
@@ -45,7 +45,7 @@ import (
 // shareScheme and shareVersion make the string recognisable and let a later
 // format be told apart before anything is decoded.
 const (
-	shareScheme  = "backpack://"
+	shareScheme  = "bk://"
 	shareVersion = "1"
 )
 
@@ -184,11 +184,11 @@ func DecodeShareLink(s string) (ShareLink, error) {
 		return out, fmt.Errorf("paste the setup link from the other server")
 	}
 	if !strings.HasPrefix(s, shareScheme) {
-		return out, fmt.Errorf("that does not look like a Backpack setup link — it should begin with %s", shareScheme)
+		return out, fmt.Errorf("that does not look like a bk setup link — it should begin with %s", shareScheme)
 	}
 	if strings.HasPrefix(s, connTestScheme) {
 		return out, fmt.Errorf("this is a connection-test link, not a setup link — on the kharej run " +
-			"sudo backpack → 0) Connection Test, or: backpack link apply '<the link>'")
+			"sudo bk → 0) Connection Test, or: bk link apply '<the link>'")
 	}
 	body := strings.TrimPrefix(s, shareScheme)
 	ver, payload, ok := strings.Cut(body, ".")
@@ -230,7 +230,7 @@ func DecodeShareLink(s string) (ShareLink, error) {
 	}
 	if json.Unmarshal(raw, &kind) == nil && kind.Kind == connTestKind {
 		return out, fmt.Errorf("this is a connection-test link, not a setup link — on the kharej run " +
-			"sudo backpack → 0) Connection Test, or: backpack link apply '<the link>'")
+			"sudo bk → 0) Connection Test, or: bk link apply '<the link>'")
 	}
 	if err := json.Unmarshal(raw, &out); err != nil {
 		return out, fmt.Errorf("the setup link is damaged — copy it again, all of it")

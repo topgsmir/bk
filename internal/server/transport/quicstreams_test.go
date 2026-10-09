@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 // freeUDPAddr takes a loopback UDP port the kernel is not using.

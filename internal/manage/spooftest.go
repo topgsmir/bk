@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/spooftest"
-	"github.com/topgsmir/BackPack/internal/tui"
+	"github.com/topgsmir/bk/internal/spooftest"
+	"github.com/topgsmir/bk/internal/tui"
 )
 
 // SpoofTest is the interactive spoof-capability tester: it discovers which
@@ -43,7 +43,7 @@ func SpoofTest() {
 }
 
 func spoofTestReceiver() {
-	token := tui.PromptDefault("Shared Token (Same On Both)", "backpack")
+	token := tui.PromptDefault("Shared Token (Same On Both)", "bk")
 	port := tui.PromptInt("UDP Port", 45000)
 	attempts := tui.PromptInt("Probes Per IP (Same On Both)", 5)
 	windowSec := tui.PromptInt("Listen For (Seconds)", 30)
@@ -96,7 +96,7 @@ func spoofTestSender() {
 		tui.PressEnter()
 		return
 	}
-	token := tui.PromptDefault("Shared Token (Same On Both)", "backpack")
+	token := tui.PromptDefault("Shared Token (Same On Both)", "bk")
 
 	var target net.IP
 	for {

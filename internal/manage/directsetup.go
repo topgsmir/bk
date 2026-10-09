@@ -10,12 +10,12 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/topgsmir/BackPack/config"
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/optimize"
-	"github.com/topgsmir/BackPack/internal/snispoof"
-	"github.com/topgsmir/BackPack/internal/tui"
-	"github.com/topgsmir/BackPack/internal/tunnel/l3"
+	"github.com/topgsmir/bk/config"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/optimize"
+	"github.com/topgsmir/bk/internal/snispoof"
+	"github.com/topgsmir/bk/internal/tui"
+	"github.com/topgsmir/bk/internal/tunnel/l3"
 )
 
 // The direct tunnel wizard.
@@ -116,7 +116,7 @@ func setupL3(side directSide) {
 	}
 
 	// There is nothing to ask about the encapsulation. Every direct tunnel is
-	// GRE inside the Noise session — the framing Backpack writes itself, not
+	// GRE inside the Noise session — the framing bk writes itself, not
 	// the kernel's protocol 47 — and offering a choice between that and IPIP
 	// was offering four bytes of saving in exchange for one more decision and
 	// one more thing the two ends can silently disagree about. The engine still
@@ -616,7 +616,7 @@ func summariseL3(cfg l3Spec, link string) {
 	row("Tuning", presetLabel(cfg.Preset))
 	row("Config File", app.ConfigPath(cfg.Name))
 	if link != "" {
-		printLinkBlock(link, "sudo backpack → Setup Kharej → Direct → Setup Link")
+		printLinkBlock(link, "sudo bk → Setup Kharej → Direct → Setup Link")
 	}
 	tui.Rule()
 	fmt.Println()

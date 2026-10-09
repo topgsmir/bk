@@ -5,7 +5,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 // addrHost returns the host part of a host:port address (brackets stripped for

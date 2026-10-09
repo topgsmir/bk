@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/node"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/node"
 )
 
 // A measurement that cannot be taken here is taken where it can be.

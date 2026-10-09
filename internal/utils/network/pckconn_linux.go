@@ -95,10 +95,11 @@ type pckConn struct {
 	txConn syscall.RawConn
 	txAddr *unix.SockaddrLinklayer
 
-	egress *pckEgress
-	port   uint16 // the port our segments are addressed TO on the peer
-	local  uint16 // the port our segments come FROM, and that we accept
-	server bool
+	egress     *pckEgress
+	port       uint16 // the port our segments are addressed TO on the peer
+	local      uint16 // the port our segments come FROM, and that we accept
+	server     bool
+	autoServer bool
 
 	flags   []TCPFlags
 	flagRot atomic.Uint32
@@ -135,12 +136,13 @@ type pckConn struct {
 
 // pckPeer is the numbering of one conversation.
 type pckPeer struct {
-	used   int64 // unix nanoseconds of the last segment to or from it, for eviction
-	sent   bool  // this carrier has sent to it: a peer the tunnel accepted
-	addr   *net.UDPAddr
-	seq    uint32 // our next sequence number
-	ack    uint32 // the next byte we expect from them
-	lastTS uint32 // their most recent timestamp, echoed back in ours
+	used    int64 // unix nanoseconds of the last segment to or from it, for eviction
+	sent    bool  // this carrier has sent to it: a peer the tunnel accepted
+	addr    *net.UDPAddr
+	localIP net.IP
+	seq     uint32 // our next sequence number
+	ack     uint32 // the next byte we expect from them
+	lastTS  uint32 // their most recent timestamp, echoed back in ours
 }
 
 // pckPeerKey identifies a peer without building a string for every packet.
@@ -204,13 +206,14 @@ func newPckConn(server bool, listenPort uint16, carrier PcapCarrier) (net.Packet
 	}
 
 	c := &pckConn{
-		egress:  egress,
-		port:    carrier.Port,
-		server:  server,
-		flags:   flags,
-		tsBase:  rand.Uint32(),
-		tsStart: time.Now(),
-		peers:   make(map[pckPeerKey]*pckPeer),
+		egress:     egress,
+		port:       carrier.Port,
+		server:     server,
+		autoServer: server && carrier.Interface == "",
+		flags:      flags,
+		tsBase:     rand.Uint32(),
+		tsStart:    time.Now(),
+		peers:      make(map[pckPeerKey]*pckPeer),
 
 		tunnelID: pckTunnelID(carrier.Token),
 	}
@@ -277,16 +280,23 @@ func newPckConn(server bool, listenPort uint16, carrier PcapCarrier) (net.Packet
 // openRx opens the AF_PACKET receive socket and filters it down to this
 // tunnel's segments in the kernel.
 func (c *pckConn) openRx() error {
-	fd, err := unix.Socket(unix.AF_PACKET, unix.SOCK_RAW|unix.SOCK_CLOEXEC, int(htons(unix.ETH_P_IP)))
+	fd, err := unix.Socket(unix.AF_PACKET, unix.SOCK_DGRAM|unix.SOCK_CLOEXEC, int(htons(unix.ETH_P_IP)))
 	if err != nil {
 		if errors.Is(err, unix.EPERM) {
 			return fmt.Errorf("pck: a packet socket needs root or CAP_NET_RAW: %w", err)
 		}
 		return fmt.Errorf("pck: could not open the packet socket: %w", err)
 	}
+	// A listener without an explicit interface must also receive local and
+	// secondary-interface peers. Cooked packet sockets strip each link's L2
+	// header, so the filter/parser always see IPv4 at offset zero.
+	index := c.egress.Iface.Index
+	if c.autoServer {
+		index = 0
+	}
 	if err := unix.Bind(fd, &unix.SockaddrLinklayer{
 		Protocol: htons(unix.ETH_P_IP),
-		Ifindex:  c.egress.Iface.Index,
+		Ifindex:  index,
 	}); err != nil {
 		unix.Close(fd)
 		return fmt.Errorf("pck: could not bind the packet socket to %s: %w", c.egress.Iface.Name, err)
@@ -295,7 +305,7 @@ func (c *pckConn) openRx() error {
 	// between waking on this tunnel's packets and waking on every packet the
 	// machine receives. Best effort: parsePckFrame checks the port again, so a
 	// kernel that refuses the filter costs CPU rather than correctness.
-	if prog, err := pckBPFProgram(c.local, c.egress.LinkLen); err == nil {
+	if prog, err := pckBPFProgram(c.local, 0); err == nil {
 		_ = attachSockFilter(fd, prog)
 	}
 	// A burst that arrives while the reader is busy is held here rather than
@@ -321,6 +331,15 @@ func (c *pckConn) openRx() error {
 // openTx opens the send path: a second packet socket where the link has an
 // Ethernet header this process can build, and a raw IP socket where it does not.
 func (c *pckConn) openTx() error {
+	// Keep a kernel-routed send path for local peers even when normal remote
+	// peers use Ethernet injection. Binding it to the default NIC would make
+	// a listener unable to reply to a loopback connection.
+	if c.autoServer {
+		if err := c.openRawTx(); err != nil {
+			return err
+		}
+	}
+
 	if c.egress.Ethernet && c.egress.NextHop != nil {
 		fd, err := unix.Socket(unix.AF_PACKET, unix.SOCK_RAW|unix.SOCK_CLOEXEC, int(htons(unix.ETH_P_IP)))
 		if err == nil {
@@ -352,15 +371,24 @@ func (c *pckConn) openTx() error {
 				// fall through to the raw IP socket below.
 				_ = c.txFile.Close()
 				c.txFile = nil
-				return nil
+				fd = -1
 			}
-			unix.Close(fd)
+			if fd >= 0 {
+				unix.Close(fd)
+			}
 		}
 		// Fall through to the raw IP socket rather than fail: a machine that
 		// cannot open a second packet socket can still send perfectly well
 		// through the kernel's routing.
 	}
 
+	if c.txRaw != nil {
+		return nil
+	}
+	return c.openRawTx()
+}
+
+func (c *pckConn) openRawTx() error {
 	pc, err := net.ListenPacket("ip4:tcp", "0.0.0.0")
 	if err != nil {
 		if errors.Is(err, os.ErrPermission) {
@@ -368,7 +396,7 @@ func (c *pckConn) openTx() error {
 		}
 		return fmt.Errorf("pck: could not open the raw send socket: %w", err)
 	}
-	if c.egress.Iface != nil {
+	if c.egress.Iface != nil && !c.autoServer {
 		_ = bindPacketConnToInterface(pc, c.egress.Iface.Name)
 	}
 	raw, err := ipv4.NewRawConn(pc)
@@ -502,6 +530,10 @@ func (c *pckConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 
 	c.mu.Lock()
 	seq, ack, tsEcr := peer.seq, peer.ack, peer.lastTS
+	srcIP := c.egress.LocalIP
+	if c.autoServer && peer.localIP != nil {
+		srcIP = peer.localIP
+	}
 	// The sequence number advances by the bytes sent, exactly as a real
 	// connection's does, so a middlebox following the stream sees it stay
 	// consistent instead of jumping.
@@ -528,14 +560,14 @@ func (c *pckConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 
 	frame := assemblePckFrame(buf, pckFrameParams{
 		SrcMAC: c.egress.SrcMAC, DstMAC: c.egress.NextHop,
-		SrcIP: c.egress.LocalIP, DstIP: dst.IP.To4(),
+		SrcIP: srcIP, DstIP: dst.IP.To4(),
 		SrcPort: c.local, DstPort: uint16(dst.Port),
 		Seq: seq, Ack: ack, Flags: f,
 		TSVal: c.timestamp(), TSEcr: tsEcr,
 		ID: id, Payload: p,
 	})
 
-	if c.txFile != nil {
+	if c.txFile != nil && !dst.IP.IsLoopback() {
 		if err := c.sendFrame(frame); err != nil {
 			return c.writeFailed(len(p), err)
 		}
@@ -555,7 +587,7 @@ func (c *pckConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 		Flags:    ipv4.DontFragment,
 		TTL:      64,
 		Protocol: 6,
-		Src:      c.egress.LocalIP,
+		Src:      srcIP,
 		Dst:      dst.IP.To4(),
 	}
 	if err := c.txRaw.WriteTo(h, tcp, nil); err != nil {
@@ -651,7 +683,7 @@ func (c *pckConn) ReadFrom(p []byte) (int, net.Addr, error) {
 // it acknowledges and returns its payload and sender. The payload points into
 // frame.
 func (c *pckConn) accept(frame []byte) ([]byte, *net.UDPAddr, bool) {
-	seg, ok := parsePckFrame(frame, c.egress.LinkLen, c.local)
+	seg, ok := parsePckFrame(frame, 0, c.local)
 	if !ok || len(seg.Payload) == 0 {
 		return nil, nil, false
 	}
@@ -666,6 +698,7 @@ func (c *pckConn) accept(frame []byte) ([]byte, *net.UDPAddr, bool) {
 	peer := c.peerFor(addr, false)
 
 	c.mu.Lock()
+	peer.localIP = seg.DstIP
 	// Acknowledge what we have actually received, as a real receiver does.
 	if next := seg.Seq + uint32(len(seg.Payload)); peer.ack == 0 || int32(next-peer.ack) > 0 {
 		peer.ack = next

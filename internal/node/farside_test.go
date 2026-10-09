@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/bk/internal/app"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -17,7 +17,7 @@ import (
 // Everything else in this package answers the panel with answerTo, which echoes
 // the request back: it proves what the panel sends, and nothing about what a
 // server does with it. Here the far side is a real build of this tree, run as
-// `backpack node exec -` behind the SSH server, reading the request from the
+// `bk node exec -` behind the SSH server, reading the request from the
 // channel's stdin exactly as it does on a managed machine. What crosses between
 // them — the command line the panel chooses, base64 on stdin, a Response on
 // stdout, the exit status — is the contract, and both halves of it are real.
@@ -56,7 +56,7 @@ func farSideBinary(t *testing.T) string {
 	if testing.Short() {
 		t.Skip("builds the whole binary; skipped under -short")
 	}
-	out := filepath.Join(t.TempDir(), "backpack")
+	out := filepath.Join(t.TempDir(), "bk")
 	cmd := exec.Command("go", "build", "-o", out, "../..")
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {

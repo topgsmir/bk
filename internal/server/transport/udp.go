@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/topgsmir/BackPack/internal/metrics"
-	"github.com/topgsmir/BackPack/internal/utils/network"
-	"github.com/topgsmir/BackPack/internal/web"
+	"github.com/topgsmir/bk/internal/metrics"
+	"github.com/topgsmir/bk/internal/utils/network"
+	"github.com/topgsmir/bk/internal/web"
 )
 
 // udpPayloadQueue is how many datagrams may wait for the goroutine that will

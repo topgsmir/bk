@@ -17,11 +17,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/control"
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/node"
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/control"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/node"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 //go:embed assets/login.html
@@ -30,7 +30,7 @@ var loginHTML []byte
 //go:embed assets/twofactor.html
 var twoFactorHTML []byte
 
-const sessionCookie = "backpack_session"
+const sessionCookie = "bk_session"
 
 // sessionTTL is how long a signed-in browser stays signed in. It was written
 // out as `12 * time.Hour` in the store and as `12 * 3600` in the cookie; one
@@ -224,7 +224,7 @@ func (s *server) updatePassword(pw string) error {
 	return Save(c)
 }
 
-// Serve starts the web panel and blocks. Invoked by `backpack --webui`.
+// Serve starts the web panel and blocks. Invoked by `bk --webui`.
 func Serve() error {
 	cfg, err := EnsurePassword()
 	if err != nil {
@@ -233,7 +233,7 @@ func Serve() error {
 	srv := newServer()
 
 	// The SOCKS5 relay, the watchdog, the Telegram bot and the alerts all
-	// deliberately run elsewhere — in the backpack-monitor service. See
+	// deliberately run elsewhere — in the bk-monitor service. See
 	// internal/monitor for why.
 
 	// The panel shows live stats, tunnel state and logs, and — through the

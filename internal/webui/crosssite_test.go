@@ -1,7 +1,7 @@
 package webui
 
 import (
-	"github.com/topgsmir/BackPack/internal/control"
+	"github.com/topgsmir/bk/internal/control"
 	"net/http"
 	"net/http/httptest"
 	"strings"

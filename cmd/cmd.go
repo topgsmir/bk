@@ -7,14 +7,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/metrics"
+	"github.com/topgsmir/bk/internal/metrics"
 
-	"github.com/topgsmir/BackPack/config"
-	"github.com/topgsmir/BackPack/internal/client"
+	"github.com/topgsmir/bk/config"
+	"github.com/topgsmir/bk/internal/client"
 
-	"github.com/topgsmir/BackPack/internal/server"
-	"github.com/topgsmir/BackPack/internal/utils"
-	"github.com/topgsmir/BackPack/internal/utils/handlers"
+	"github.com/topgsmir/bk/internal/server"
+	"github.com/topgsmir/bk/internal/utils"
+	"github.com/topgsmir/bk/internal/utils/handlers"
 
 	"github.com/BurntSushi/toml"
 )
@@ -251,11 +251,11 @@ func runEngine(cfg *config.Config, ctx context.Context, configPath string, apply
 }
 
 // CheckConfigFile is the load-time validation Run applies to a config file,
-// without starting anything: `backpack check` asks it, so the question "would
+// without starting anything: `bk check` asks it, so the question "would
 // this start?" has one answer, the engine's. See cli.EngineCheck.
 //
 // The engine logs to stdout, which is right under systemd and wrong here:
-// `backpack check --json` owns stdout, and a warning ahead of the JSON breaks
+// `bk check --json` owns stdout, and a warning ahead of the JSON breaks
 // whatever parses it. For the check, the log goes to stderr.
 func CheckConfigFile(path string) error {
 	out := logger.Out

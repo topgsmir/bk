@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/manage/core"
-	"github.com/topgsmir/BackPack/internal/metrics"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/manage/core"
+	"github.com/topgsmir/bk/internal/metrics"
 )
 
 // The two questions a tunnel could not answer about itself.

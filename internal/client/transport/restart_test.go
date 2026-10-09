@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/metrics"
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/internal/metrics"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 // Restart on the client transports, on the branches the end-to-end suite

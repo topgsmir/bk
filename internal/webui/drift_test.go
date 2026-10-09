@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/topgsmir/BackPack/internal/control"
-	"github.com/topgsmir/BackPack/internal/node"
+	"github.com/topgsmir/bk/internal/control"
+	"github.com/topgsmir/bk/internal/node"
 )
 
 // The drift endpoint, driven through the handler.

@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/alerthist"
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/enginectl"
-	"github.com/topgsmir/BackPack/internal/manage/core"
-	"github.com/topgsmir/BackPack/internal/manage/tunnelspec"
-	"github.com/topgsmir/BackPack/internal/metrics"
+	"github.com/topgsmir/bk/internal/alerthist"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/enginectl"
+	"github.com/topgsmir/bk/internal/manage/core"
+	"github.com/topgsmir/bk/internal/manage/tunnelspec"
+	"github.com/topgsmir/bk/internal/metrics"
 )
 
 // Watchdog tuning.

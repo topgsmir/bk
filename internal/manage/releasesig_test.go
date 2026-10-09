@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/bk/internal/app"
 )
 
 // A release's checksum list proves the archive is intact. It does not prove the
@@ -21,7 +21,7 @@ func TestASignatureOverTheChecksumsIsCheckedAgainstThePinnedKey(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sums := []byte("abc123  backpack_linux_amd64.tar.gz\n")
+	sums := []byte("abc123  bk_linux_amd64.tar.gz\n")
 
 	// The publisher's signature verifies.
 	sig := ed25519.Sign(priv, sums)

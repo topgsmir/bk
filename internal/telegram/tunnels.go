@@ -6,12 +6,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/geo"
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/metrics"
-	"github.com/topgsmir/BackPack/internal/sysstat"
-	"github.com/topgsmir/BackPack/internal/tunhist"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/geo"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/metrics"
+	"github.com/topgsmir/bk/internal/sysstat"
+	"github.com/topgsmir/bk/internal/tunhist"
 )
 
 // Driving the tunnels from the chat.

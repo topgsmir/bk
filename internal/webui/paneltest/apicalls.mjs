@@ -94,16 +94,16 @@ const samples = {
   proxyDisable: [[]], proxyTest: [[]],
   tunnelLink: [['fr-relay'], ['fr-relay', '203.0.113.7']],
   tunnelQuota: [['fr-relay']], setTunnelQuota: [['fr-relay', 5e12], ['fr-relay', 0]],
-  backups: [[]], backupCreate: [[]], backupTest: [['backpack-backup-1.tar.gz']],
-  backupRestoreSaved: [['backpack-backup-1.tar.gz']], backupDelete: [['backpack-backup-1.tar.gz']],
-  setOffsite: [['rclone copy {} remote:backpack/']], sendOffsite: [[]],
+  backups: [[]], backupCreate: [[]], backupTest: [['bk-backup-1.tar.gz']],
+  backupRestoreSaved: [['bk-backup-1.tar.gz']], backupDelete: [['bk-backup-1.tar.gz']],
+  setOffsite: [['rclone copy {} remote:bk/']], sendOffsite: [[]],
   localUpdate: [[]], uploadUpdate: [[new Blob(['x']), new Blob(['y'])]], installLocalUpdate: [[]],
   rollback: [['20260901-1200']],
   panelSelf: [[]], panelNewCode: [[]], panelPath: [['random'], ['custom', 'my-panel']], panelRestart: [[]],
 };
 // Exports that build an address instead of fetching one; the address is
 // checked as the GET a browser makes when it follows it.
-const addresses = { backupExportURL: [[]], savedBackupURL: [['backpack-backup-1.tar.gz']] };
+const addresses = { backupExportURL: [[]], savedBackupURL: [['bk-backup-1.tar.gz']] };
 const notRoutes = new Set(['base', 'terminalURL']);
 
 const api = await import(new URL('../panel/js/api.js', import.meta.url));

@@ -9,11 +9,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/node"
-	"github.com/topgsmir/BackPack/internal/tui"
-	"github.com/topgsmir/BackPack/internal/webui"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/node"
+	"github.com/topgsmir/bk/internal/tui"
+	"github.com/topgsmir/bk/internal/webui"
 )
 
 // backupMenu creates or restores a full configuration backup (all tunnels, the
@@ -224,7 +224,7 @@ func configureOffsite() {
 	fmt.Println()
 	tui.Info("Now: " + offsiteLabel())
 	fmt.Println()
-	tui.Warn("{} = The Backup File, e.g.  rclone copy {} remote:backpack/   (Blank = Off)")
+	tui.Warn("{} = The Backup File, e.g.  rclone copy {} remote:bk/   (Blank = Off)")
 	fmt.Println()
 	fmt.Println()
 

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/snispoof"
+	"github.com/topgsmir/bk/internal/snispoof"
 )
 
 // a carrier that records what was written and replays what it is given.

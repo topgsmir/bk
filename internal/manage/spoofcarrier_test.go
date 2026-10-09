@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/BurntSushi/toml"
-	"github.com/topgsmir/BackPack/config"
+	"github.com/topgsmir/bk/config"
 )
 
 // The forged-source carrier belongs to the direct tunnel now, and its settings

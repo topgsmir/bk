@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/metrics"
+	"github.com/topgsmir/bk/internal/metrics"
 )
 
 // Only KCP ever reported traffic, because kcp-go happens to keep its own byte

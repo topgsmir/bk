@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/topgsmir/BackPack/config"
-	"github.com/topgsmir/BackPack/internal/tunnel/l3"
-	"github.com/topgsmir/BackPack/internal/utils"
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/config"
+	"github.com/topgsmir/bk/internal/tunnel/l3"
+	"github.com/topgsmir/bk/internal/utils"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 // The layer-3 tunnel's entry point.

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/bk/internal/app"
 )
 
 // The whole point of the change: 1080 is bound only when a tunnel genuinely

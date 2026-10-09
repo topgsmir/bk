@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/alerthist"
-	"github.com/topgsmir/BackPack/internal/control"
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/node"
-	"github.com/topgsmir/BackPack/internal/tunhist"
+	"github.com/topgsmir/bk/internal/alerthist"
+	"github.com/topgsmir/bk/internal/control"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/node"
+	"github.com/topgsmir/bk/internal/tunhist"
 )
 
 // The read-only monitoring endpoints: health checks, alert history and the
@@ -51,7 +51,7 @@ func healthLevel(l manage.CheckLevel) string {
 
 // handleAlerts returns what the monitor's alert watcher has recorded: the
 // conditions active right now and the recent messages. The panel only reads;
-// the watcher in backpack-monitor writes.
+// the watcher in bk-monitor writes.
 func (s *server) handleAlerts(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, alerthist.Load())
 }
@@ -329,6 +329,6 @@ func findTunnel(name string) (manage.Tunnel, bool) {
 // put that remedy in front of the operator instead of a sentence describing it.
 // The sentence stays — it is what somebody reading a log or a curl sees.
 const (
-	fixHeader     = "X-Backpack-Fix"
+	fixHeader     = "X-bk-Fix"
 	fixLinkTunnel = "link-tunnel"
 )

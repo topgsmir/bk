@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/optimize"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/optimize"
 )
 
 // Everything in this file exists so a caller outside the package — the web

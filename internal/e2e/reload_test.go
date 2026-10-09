@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/cmd"
+	"github.com/topgsmir/bk/cmd"
 )
 
 // Editing a tunnel's configuration file has to take effect on its own.
@@ -106,7 +106,7 @@ func TestConfigReloadKeepsRunningOnABrokenFile(t *testing.T) {
 // tidiness of /tmp.
 func scratchDir(t *testing.T) string {
 	t.Helper()
-	dir, err := os.MkdirTemp("", "backpack-reload-")
+	dir, err := os.MkdirTemp("", "bk-reload-")
 	if err != nil {
 		t.Fatalf("MkdirTemp: %v", err)
 	}

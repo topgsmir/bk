@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/manage"
+	"github.com/topgsmir/bk/internal/manage"
 )
 
 // Everything that changes something.

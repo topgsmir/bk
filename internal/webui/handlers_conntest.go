@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/manage"
+	"github.com/topgsmir/bk/internal/manage"
 )
 
 // conntestState is where a test is.
@@ -148,7 +148,7 @@ func (c *conntestRunner) start(parent context.Context, host, preset string) erro
 	wait := manage.ConnTestJoinWait()
 	c.update(func(v *conntestView) {
 		v.State, v.Link = ctWaiting, link
-		v.Command = "sudo backpack link apply '" + link + "'"
+		v.Command = "sudo bk link apply '" + link + "'"
 		v.Install = manage.InstallCommand(link)
 		v.Deadline = time.Now().Add(wait).Unix()
 	})

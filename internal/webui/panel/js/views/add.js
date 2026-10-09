@@ -758,7 +758,7 @@ export function addView(ctx) {
         .filter(b => /show as a cli command/i.test(b.textContent.trim()))
         .forEach(b => b.addEventListener('click', async () => {
           const get = n => root.querySelector(`[name="${n}"], #${n}`)?.value?.trim() || '';
-          const line = ['sudo backpack',
+          const line = ['sudo bk',
             chosen.direction === 'direct' ? 'direct' : 'reverse',
             chosen.side === 'server' ? '--iran' : '--kharej',
             chosen.transport ? '--transport ' + chosen.transport : '',

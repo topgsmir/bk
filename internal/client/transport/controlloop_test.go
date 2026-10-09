@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/controlwire"
-	"github.com/topgsmir/BackPack/internal/utils"
+	"github.com/topgsmir/bk/internal/controlwire"
+	"github.com/topgsmir/bk/internal/utils"
 )
 
 type loopProbe struct {

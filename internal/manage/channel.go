@@ -4,8 +4,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/tui"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/tui"
 )
 
 // Release channels.

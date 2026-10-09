@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/telegram"
-	"github.com/topgsmir/BackPack/internal/tui"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/telegram"
+	"github.com/topgsmir/bk/internal/tui"
 )
 
 // telegramMenu is main-menu item 7.
@@ -161,7 +161,7 @@ func configureAlerts(cfg telegram.Config) {
 		a.MemPercent = tui.PromptInt("Memory %", a.MemPercent)
 		a.DiskPercent = tui.PromptInt("Disk %", a.DiskPercent)
 		a.TunnelDown = tui.Confirm("Tunnel Down / Back", a.TunnelDown)
-		a.NewRelease = tui.Confirm("New Backpack Release", a.NewRelease)
+		a.NewRelease = tui.Confirm("New bk Release", a.NewRelease)
 		a.CheckSeconds = tui.PromptInt("Check Every (Seconds)", a.CheckSeconds)
 		a.CooldownMinutes = tui.PromptInt("Repeat Every (Minutes)", a.CooldownMinutes)
 	}
@@ -181,7 +181,7 @@ func configureAlerts(cfg telegram.Config) {
 }
 
 // configureTelegram sets up the bot. On an Iran server Telegram is blocked, so
-// the primary path relays traffic through a tunnel: backpack forwards a
+// the primary path relays traffic through a tunnel: bk forwards a
 // loopback port on the chosen tunnel straight to api.telegram.org and sends
 // every bot request through it, with the peer making the outbound connection.
 func configureTelegram(cfg telegram.Config) {

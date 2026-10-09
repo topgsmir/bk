@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/topgsmir/BackPack/config"
-	"github.com/topgsmir/BackPack/internal/client"
-	"github.com/topgsmir/BackPack/internal/server"
+	"github.com/topgsmir/bk/config"
+	"github.com/topgsmir/bk/internal/client"
+	"github.com/topgsmir/bk/internal/server"
 )
 
 // Upgrade safety.

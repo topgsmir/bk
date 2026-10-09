@@ -5,7 +5,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/bk/internal/app"
 )
 
 // tunnelMeta holds extra per-tunnel info that isn't part of the engine config

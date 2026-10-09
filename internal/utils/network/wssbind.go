@@ -99,7 +99,7 @@ func WSSServerProof(cs *tls.ConnectionState, token string) (string, error) {
 // to date, from its first successful connection on.
 
 // WSSServerProofHeader carries the server's answer on the upgrade response.
-const WSSServerProofHeader = "X-Backpack-Proof"
+const WSSServerProofHeader = "X-bk-Proof"
 
 // wssServerAnswer is the server's proof for a session's keying material.
 func wssServerAnswer(ekm []byte, token string) string {

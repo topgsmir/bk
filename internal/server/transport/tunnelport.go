@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/topgsmir/BackPack/internal/utils/acceptloop"
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/internal/utils/acceptloop"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 // tcpTunnelPort is the tunnel port of the transports that carry the tunnel over

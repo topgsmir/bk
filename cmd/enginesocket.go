@@ -6,9 +6,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/topgsmir/BackPack/config"
-	"github.com/topgsmir/BackPack/internal/enginectl"
-	"github.com/topgsmir/BackPack/internal/metrics"
+	"github.com/topgsmir/bk/config"
+	"github.com/topgsmir/bk/internal/enginectl"
+	"github.com/topgsmir/bk/internal/metrics"
 )
 
 // The engine's side of the control socket.

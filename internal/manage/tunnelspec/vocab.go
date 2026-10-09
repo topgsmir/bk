@@ -1,8 +1,8 @@
 package tunnelspec
 
 import (
-	"github.com/topgsmir/BackPack/internal/manage/core"
-	"github.com/topgsmir/BackPack/internal/manage/spec"
+	"github.com/topgsmir/bk/internal/manage/core"
+	"github.com/topgsmir/bk/internal/manage/spec"
 )
 
 // The transport and address vocabulary, under the names the code in this

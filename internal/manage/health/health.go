@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/manage/core"
-	"github.com/topgsmir/BackPack/internal/manage/tunnelspec"
-	"github.com/topgsmir/BackPack/internal/metrics"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/manage/core"
+	"github.com/topgsmir/bk/internal/manage/tunnelspec"
+	"github.com/topgsmir/bk/internal/metrics"
 )
 
 // Health describes how a single tunnel is doing right now.

@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/utils"
-	"github.com/topgsmir/BackPack/internal/utils/acceptloop"
+	"github.com/topgsmir/bk/internal/utils"
+	"github.com/topgsmir/bk/internal/utils/acceptloop"
 )
 
 // A stranger who connects and says nothing cannot hold the door shut.

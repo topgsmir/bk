@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/node"
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/internal/node"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 // What the path between this panel and each managed server is actually like.

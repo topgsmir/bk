@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/metrics"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/metrics"
 )
 
 // Renaming a tunnel.

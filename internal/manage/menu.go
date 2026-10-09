@@ -5,9 +5,9 @@ import (
 	"net"
 	"strings"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/tui"
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/tui"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 // stateLabel returns a themed running/stopped label for a service.

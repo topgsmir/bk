@@ -32,7 +32,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/topgsmir/BackPack/internal/alerthist"
+	"github.com/topgsmir/bk/internal/alerthist"
 )
 
 // terminalMax is how many shells may be open at once, across every browser.
@@ -138,7 +138,7 @@ func (s *server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 		"TERM=xterm-256color", "COLORTERM=truecolor", "LANG=C.UTF-8", "LC_ALL=C.UTF-8",
 		"HOME=" + home, "SHELL=" + shell, "USER=root", "LOGNAME=root",
 		"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-		"BACKPACK_PANEL_TERMINAL=1",
+		"BK_PANEL_TERMINAL=1",
 	}
 	q := r.URL.Query()
 	pty, err := startPTY(cmd, dim(q.Get("rows"), 24), dim(q.Get("cols"), 80))

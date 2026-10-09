@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/topgsmir/BackPack/internal/manage"
+	"github.com/topgsmir/bk/internal/manage"
 )
 
 // handleChannel reads (GET) or switches (POST) the release channel the
@@ -44,9 +44,9 @@ func (s *server) handleChannel(w http.ResponseWriter, r *http.Request) {
 // every installed app at the root, where the panel no longer answers.
 var manifestJSON = []byte(`{
   "id": "./",
-  "name": "Backpack Panel",
-  "short_name": "Backpack",
-  "description": "Live tunnel and server monitoring for Backpack.",
+  "name": "bk Panel",
+  "short_name": "bk",
+  "description": "Live tunnel and server monitoring for bk.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -80,16 +80,15 @@ var (
 //go:embed assets/sw.js
 var serviceWorkerJS []byte
 
-// iconSVG is the header's backpack mark on the panel's dark ground, as a file.
+// iconSVG is the header's bk mark on the panel's dark ground, as a file.
 var iconSVG = []byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
   <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
     <stop offset="0" stop-color="#262626"/><stop offset="1" stop-color="#070707"/>
   </linearGradient></defs>
   <rect width="128" height="128" rx="30" fill="url(#g)"/>
   <g fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M46 38v-4a18 18 0 0 1 36 0v4"/>
-    <path d="M32 46h64a9 9 0 0 1 9 9v36a13 13 0 0 1-13 13H36a13 13 0 0 1-13-13V55a9 9 0 0 1 9-9z"/>
-    <path d="M51 72h26"/>
+    <path d="M28 32v56h18l10-10v-8L46 60H28"/>
+    <path d="M76 32v56m24-30L76 76l26 14"/>
   </g>
 </svg>`)
 

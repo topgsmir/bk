@@ -7,13 +7,13 @@ import (
 
 	psnet "github.com/shirou/gopsutil/v4/net"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/geo"
-	"github.com/topgsmir/BackPack/internal/localproxy"
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/metrics"
-	"github.com/topgsmir/BackPack/internal/sysstat"
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/geo"
+	"github.com/topgsmir/bk/internal/localproxy"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/metrics"
+	"github.com/topgsmir/bk/internal/sysstat"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 // The machine's own figures for the dashboard: CPU, memory, disk, network,
@@ -87,7 +87,7 @@ type SystemStats struct {
 	TunnelsTotal   int `json:"tunnelsTotal"`
 	TunnelsRunning int `json:"tunnelsRunning"`
 
-	// MonitorRunning reports the backpack-monitor service — the watchdog, the
+	// MonitorRunning reports the bk-monitor service — the watchdog, the
 	// Telegram bot and the alerts live there, not in this panel. When it is
 	// down, dropped tunnels are not restarted and no alert fires, and nothing
 	// else visibly breaks — which is exactly why the panel must say so.

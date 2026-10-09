@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/alerthist"
+	"github.com/topgsmir/bk/internal/alerthist"
 )
 
 // A tunnel that fails repeatedly has to be reported as failing repeatedly.

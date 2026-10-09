@@ -15,7 +15,7 @@ import (
 
 // The direct tunnel, built the way an operator builds it now: the Iran side by
 // its wizard, the kharej from the setup link it printed — by the same path
-// `backpack link apply` takes — and both run for real on a TUN between two
+// `bk link apply` takes — and both run for real on a TUN between two
 // network namespaces, with bytes required to cross.
 //
 // It needs what TestL3CarriersOverARealTUN needs:
@@ -25,9 +25,9 @@ func TestADirectKharejFromTheSetupLinkCarriesTraffic(t *testing.T) {
 	if os.Getenv("BP_L3_LIVE") == "" {
 		t.Skip("set BP_L3_LIVE=1 on a host that allows unprivileged user namespaces to run this")
 	}
-	bin := os.Getenv("BACKPACK_CURRENT_BINARY")
+	bin := os.Getenv("BK_CURRENT_BINARY")
 	if bin == "" {
-		bin = filepath.Join(t.TempDir(), "backpack")
+		bin = filepath.Join(t.TempDir(), "bk")
 		build := exec.Command("go", "build", "-o", bin, "../..")
 		build.Stderr = os.Stderr
 		if err := build.Run(); err != nil {

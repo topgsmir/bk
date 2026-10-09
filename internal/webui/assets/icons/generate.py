@@ -3,7 +3,7 @@
 
     python3 internal/webui/assets/icons/generate.py internal/webui/assets/icons
 
-Rasterises the panel's backpack mark to PNG.
+Rasterises the panel's bk mark to PNG.
 
 The mark already exists as an SVG (internal/webui/handlers_app.go) and that is
 what desktop browsers use. iOS ignores SVG for a home-screen icon, and Android's
@@ -14,14 +14,9 @@ SVG's own path data.
 """
 import math, struct, zlib
 
-# --- the artwork, in the SVG's 128x128 coordinate space -----------------------
-SW = 4.0                     # half of the SVG's stroke-width:8
-ARC_C, ARC_R = (64.0, 34.0), 18.0            # the handle's semicircle
-STUBS = [((46, 34), (46, 38)), ((82, 34), (82, 38))]
-BODY = (23.0, 46.0, 105.0, 104.0)            # x0,y0,x1,y1
-BODY_R = (9.0, 9.0, 13.0, 13.0)              # tl, tr, br, bl
-FLAP = ((51.0, 72.0), (77.0, 72.0))
-GRAD = ((0x26, 0x26, 0x26), (0x07, 0x07, 0x07))   # the panel's dark ground
+# Monogram stroke width and panel background in SVG coordinates.
+SW = 4.0
+GRAD = ((0x26, 0x26, 0x26), (0x07, 0x07, 0x07))
 
 
 def sd_segment(px, py, ax, ay, bx, by):
@@ -44,18 +39,16 @@ def sd_round_box(px, py, x0, y0, x1, y1, r):
     return outside + min(max(dx, dy), 0.0) - rr
 
 
+# bk monogram: two continuous strokes in the SVG's 128-unit view box.
+BK_STROKES = [
+    ((28, 32), (28, 88)), ((28, 60), (46, 60)), ((46, 60), (56, 70)),
+    ((56, 70), (56, 78)), ((56, 78), (46, 88)), ((46, 88), (28, 88)),
+    ((76, 32), (76, 88)), ((100, 58), (76, 76)), ((76, 76), (102, 90)),
+]
+
+
 def glyph_distance(x, y):
-    """Distance to the stroked mark: <=0 is ink."""
-    d = sd_segment(x, y, *FLAP[0], *FLAP[1]) - SW
-    for a, b in STUBS:
-        d = min(d, sd_segment(x, y, *a, *b) - SW)
-    # The handle is the upper half of a ring; below its centre the two stubs
-    # already carry the line, so clipping there leaves no seam.
-    if y <= ARC_C[1]:
-        ring = abs(math.hypot(x - ARC_C[0], y - ARC_C[1]) - ARC_R) - SW
-        d = min(d, ring)
-    body = abs(sd_round_box(x, y, *BODY, BODY_R)) - SW
-    return min(d, body)
+    return min(sd_segment(x, y, *a, *b) - SW for a, b in BK_STROKES)
 
 
 def cover(d, px_per_unit):

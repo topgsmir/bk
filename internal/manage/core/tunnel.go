@@ -7,10 +7,10 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"github.com/topgsmir/BackPack/config"
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/metrics"
-	"github.com/topgsmir/BackPack/internal/quota"
+	"github.com/topgsmir/bk/config"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/metrics"
+	"github.com/topgsmir/bk/internal/quota"
 )
 
 // Tunnel is a discovered tunnel derived from a config file on disk.

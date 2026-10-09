@@ -34,13 +34,15 @@ func TestEveryDocumentSaysWhenItWasVerified(t *testing.T) {
 		// Engine references retain their original upstream verification dates.
 		// Distribution-specific documents must be checked against this release.
 		version := UpstreamVersion
+		product := "Backpack"
 		switch filepath.Base(path) {
 		case "install.md", "publishing.md", "config-reference.md":
 			version = Version
+			product = "bk"
 		}
-		want := "Last verified against Backpack " + version
+		want := "Last verified against " + product + " " + version
 		s := string(b)
-		if !strings.Contains(s, "Last verified against Backpack") {
+		if !strings.Contains(s, "Last verified against ") {
 			t.Errorf("%s has no verification stamp. Add one, or a figure in it will be "+
 				"read as current however old it is.", filepath.Base(path))
 			continue

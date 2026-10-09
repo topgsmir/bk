@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/topgsmir/BackPack/internal/tui"
+	"github.com/topgsmir/bk/internal/tui"
 )
 
 // HealthCheck runs every diagnostic and prints a grouped report with a ✓/!/✗
@@ -67,7 +67,7 @@ func checkMark(l CheckLevel) string {
 	}
 }
 
-// FileLocations prints every path Backpack uses with a ✓/✗ so the user can see
+// FileLocations prints every path bk uses with a ✓/✗ so the user can see
 // what is installed and where everything lives.
 func FileLocations() {
 	tui.Clear()

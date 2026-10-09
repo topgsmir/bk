@@ -4,7 +4,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/topgsmir/BackPack/internal/snispoof"
+	"github.com/topgsmir/bk/internal/snispoof"
 )
 
 // The SNI-spoofing carrier.

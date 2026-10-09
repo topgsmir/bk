@@ -1,1 +1,1 @@
-BackPack tunnel distribution maintained by topgsmir; based on BackPack by Amin Mohammadi (AminMGMT): https://github.com/AminMGMT/BackPack
+bk tunnel maintained by topgsmir. Based on BackPack by Amin Mohammadi (AminMGMT): https://github.com/AminMGMT/BackPack

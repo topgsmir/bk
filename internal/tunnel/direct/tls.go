@@ -6,7 +6,7 @@ import (
 	"net"
 
 	"github.com/sirupsen/logrus"
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 // The origin's certificate for wss.

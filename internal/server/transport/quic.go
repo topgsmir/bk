@@ -7,12 +7,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/controlwire"
-	"github.com/topgsmir/BackPack/internal/metrics"
-	"github.com/topgsmir/BackPack/internal/utils"
-	"github.com/topgsmir/BackPack/internal/utils/handlers"
-	"github.com/topgsmir/BackPack/internal/utils/network"
-	"github.com/topgsmir/BackPack/internal/web"
+	"github.com/topgsmir/bk/internal/controlwire"
+	"github.com/topgsmir/bk/internal/metrics"
+	"github.com/topgsmir/bk/internal/utils"
+	"github.com/topgsmir/bk/internal/utils/handlers"
+	"github.com/topgsmir/bk/internal/utils/network"
+	"github.com/topgsmir/bk/internal/web"
 
 	"github.com/quic-go/quic-go"
 	"github.com/sirupsen/logrus"

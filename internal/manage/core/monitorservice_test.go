@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/bk/internal/app"
 )
 
 // TestMonitorUnitContents checks the generated unit, because a unit file that

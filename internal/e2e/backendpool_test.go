@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/client"
-	"github.com/topgsmir/BackPack/internal/server"
+	"github.com/topgsmir/bk/internal/client"
+	"github.com/topgsmir/bk/internal/server"
 )
 
 // A forwarded port with two backends must carry traffic end to end: the

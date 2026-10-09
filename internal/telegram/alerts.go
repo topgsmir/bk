@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/alerthist"
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/sysstat"
+	"github.com/topgsmir/bk/internal/alerthist"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/sysstat"
 )
 
 // Alerting.
@@ -334,8 +334,8 @@ func releaseMessages(lang string) []string {
 	}
 	manage.MarkUpdateNotified(tag)
 	return []string{
-		fmt.Sprintf(tr(lang, "⬆️ Backpack %s has been released (you are on %s)."), tag, app.Version) +
-			"\n\n" + tr(lang, "Update from the CLI: sudo backpack → Update.") +
+		fmt.Sprintf(tr(lang, "⬆️ bk %s has been released (you are on %s)."), tag, app.Version) +
+			"\n\n" + tr(lang, "Update from the CLI: sudo bk → Update.") +
 			"\n" + tr(lang, "It saves a restore point first and rolls back by itself if the tunnel does not come back up."),
 	}
 }

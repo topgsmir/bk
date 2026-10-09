@@ -3,7 +3,7 @@ package l3
 import (
 	"testing"
 
-	"github.com/topgsmir/BackPack/config"
+	"github.com/topgsmir/bk/config"
 )
 
 // The spoof carrier has two keys for one setting and used to read the wrong one.

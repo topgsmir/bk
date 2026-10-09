@@ -8,8 +8,8 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
-	"github.com/topgsmir/BackPack/internal/utils/network"
-	"github.com/topgsmir/BackPack/internal/web"
+	"github.com/topgsmir/bk/internal/utils/network"
+	"github.com/topgsmir/bk/internal/web"
 )
 
 // The client end of a forwarded UDP flow: read framed datagrams off the tunnel,

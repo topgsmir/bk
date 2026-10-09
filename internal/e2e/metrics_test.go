@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/metrics"
+	"github.com/topgsmir/bk/internal/metrics"
 )
 
 // TestMetricsRecordFECRecovery is the proof that the metrics screen tells the

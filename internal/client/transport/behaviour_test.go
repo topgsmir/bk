@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/gorilla/websocket"
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 // Behaviour on the client transports that can be exercised without a tunnel.

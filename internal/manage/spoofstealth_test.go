@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/topgsmir/BackPack/config"
+	"github.com/topgsmir/bk/config"
 )
 
 // Stealth is one answer standing for several settings, and the reason it is one

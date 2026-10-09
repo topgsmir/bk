@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/topgsmir/BackPack/internal/telegram"
-	"github.com/topgsmir/BackPack/internal/webui"
+	"github.com/topgsmir/bk/internal/telegram"
+	"github.com/topgsmir/bk/internal/webui"
 )
 
 // The lines the main menu is made of.

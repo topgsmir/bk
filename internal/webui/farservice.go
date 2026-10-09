@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/node"
+	"github.com/topgsmir/bk/internal/node"
 )
 
 // What the far end says about the last hop.

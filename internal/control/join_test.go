@@ -6,13 +6,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/topgsmir/BackPack/internal/node"
+	"github.com/topgsmir/bk/internal/node"
 )
 
 // Joining a server, without a server.
 //
 // What is held here is the decision, which is the part that was unreachable
-// from anywhere but a POST: reach the machine now, install Backpack when it has
+// from anywhere but a POST: reach the machine now, install bk when it has
 // none, and take the entry back out when it cannot be reached at all. The last
 // of those is the one that matters — a fleet entry that has never worked is a
 // typo, and leaving it is how a fleet fills with servers that do nothing and
@@ -96,30 +96,30 @@ func TestJoiningWithNoRunnerFailsAtReaching(t *testing.T) {
 }
 
 // The ordinary case for a server somebody has just bought: it answers, it has
-// no Backpack, and the panel installs it rather than sending them to a terminal
+// no bk, and the panel installs it rather than sending them to a terminal
 // on that machine.
-func TestAMachineWithNoBackpackIsInstalled(t *testing.T) {
+func TestAMachineWithNobkIsInstalled(t *testing.T) {
 	r := &joinRunner{err: node.ErrNeedsInstall}
 	got, err := fleetWith(t, r).Join("de-1", "192.0.2.1", 22, "root", "pw", true)
 	if err != nil {
 		t.Fatalf("a machine that needed installing was refused: %v", err)
 	}
 	if !got.Installed {
-		t.Error("the result does not say Backpack was installed, which is the difference " +
+		t.Error("the result does not say bk was installed, which is the difference " +
 			"between 'added' and 'added and set up'")
 	}
 }
 
 // And when the operator said not to, it is not installed and the join fails —
 // rather than quietly installing anyway.
-func TestAMachineWithNoBackpackIsNotInstalledWhenItWasNotAsked(t *testing.T) {
+func TestAMachineWithNobkIsNotInstalledWhenItWasNotAsked(t *testing.T) {
 	r := &joinRunner{err: node.ErrNeedsInstall}
 	_, err := fleetWith(t, r).Join("de-1", "192.0.2.1", 22, "root", "pw", false)
 	if err == nil {
-		t.Fatal("a machine with no Backpack joined without being installed")
+		t.Fatal("a machine with no bk joined without being installed")
 	}
 	if r.installed {
-		t.Fatal("Backpack was installed on a machine after the operator declined")
+		t.Fatal("bk was installed on a machine after the operator declined")
 	}
 }
 

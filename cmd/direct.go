@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/topgsmir/BackPack/config"
-	"github.com/topgsmir/BackPack/internal/tunnel/direct"
-	"github.com/topgsmir/BackPack/internal/utils"
+	"github.com/topgsmir/bk/config"
+	"github.com/topgsmir/bk/internal/tunnel/direct"
+	"github.com/topgsmir/bk/internal/utils"
 )
 
 // The direct tunnel's entry point.

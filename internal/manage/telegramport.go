@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/bk/internal/app"
 )
 
 // Reaching Telegram through a tunnel, without a proxy.

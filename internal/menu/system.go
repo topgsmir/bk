@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/optimize"
-	"github.com/topgsmir/BackPack/internal/schedule"
-	"github.com/topgsmir/BackPack/internal/telegram"
-	"github.com/topgsmir/BackPack/internal/tui"
-	"github.com/topgsmir/BackPack/internal/webui"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/optimize"
+	"github.com/topgsmir/bk/internal/schedule"
+	"github.com/topgsmir/bk/internal/telegram"
+	"github.com/topgsmir/bk/internal/tui"
+	"github.com/topgsmir/bk/internal/webui"
 )
 
 // autoRefreshMenu lives under Manage.
@@ -60,7 +60,7 @@ func optimizeMenu() {
 // uninstallMenu is main-menu item 9.
 func uninstallMenu() {
 	tui.Clear()
-	tui.Title("Uninstall Backpack")
+	tui.Title("Uninstall bk")
 	fmt.Println()
 	tui.Warn("Removes Everything: Tunnels, Configs, The Binary And " + app.InstallDir + " (Backups Too).")
 	if !tui.Confirm("Are You Sure", false) {

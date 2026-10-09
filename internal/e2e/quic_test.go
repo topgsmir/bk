@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/server"
-	"github.com/topgsmir/BackPack/internal/utils"
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/internal/server"
+	"github.com/topgsmir/bk/internal/utils"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 // TestQUICServerReadoptsRestartedClient proves the re-adopt path: a client that

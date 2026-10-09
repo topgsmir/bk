@@ -5,10 +5,10 @@ import (
 	"net"
 	"strings"
 
-	"github.com/topgsmir/BackPack/config"
-	"github.com/topgsmir/BackPack/internal/tunnel/mssclamp"
-	"github.com/topgsmir/BackPack/internal/tunnel/portmap"
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/config"
+	"github.com/topgsmir/bk/internal/tunnel/mssclamp"
+	"github.com/topgsmir/bk/internal/tunnel/portmap"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 // Which end dials. A layer-3 tunnel is symmetric once it is up — both ends

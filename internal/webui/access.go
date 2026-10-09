@@ -17,7 +17,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/bk/internal/app"
 )
 
 // Who is allowed to do what, decided in one place.

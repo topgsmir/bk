@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/tui"
-	"github.com/topgsmir/BackPack/internal/webui"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/tui"
+	"github.com/topgsmir/bk/internal/webui"
 )
 
 // panelHeader prints the web panel's live status, URL and login code — shown

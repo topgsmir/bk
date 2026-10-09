@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/config"
-	"github.com/topgsmir/BackPack/internal/client"
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/server"
+	"github.com/topgsmir/bk/config"
+	"github.com/topgsmir/bk/internal/client"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/server"
 )
 
 // kcpFromSpec mirrors the preset's KCP knobs into an engine config.

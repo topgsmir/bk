@@ -11,7 +11,7 @@ on:
       tag:
         description: Existing version tag to publish
         required: true
-        default: v1.8.5.1
+        default: v1.8.6
         type: string
 
 # Use the selected tag even when workflow_dispatch runs from the main branch.
@@ -86,7 +86,7 @@ jobs:
             f { print }
           ' CHANGELOG.md > RELEASE_NOTES.md
           if [ ! -s RELEASE_NOTES.md ]; then
-            echo "Backpack ${tag}" > RELEASE_NOTES.md
+            echo "bk ${tag}" > RELEASE_NOTES.md
           fi
 
       - name: Publish
@@ -107,7 +107,7 @@ jobs:
           # this did not, and nothing failed — the assets simply were not there,
           # and an update on those machines 404s.
           files: |
-            release/backpack_linux_*.tar.gz
+            release/bk_linux_*.tar.gz
             release/SHA256SUMS
             release/SHA256SUMS.sig
             release/SBOM.txt

@@ -1,4 +1,4 @@
-// Package schedule manages recurring backpack jobs via the system crontab
+// Package schedule manages recurring bk jobs via the system crontab
 // (auto-refresh of tunnels and periodic Telegram reports).
 package schedule
 
@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/bk/internal/app"
 )
 
 // EffectiveHours returns the interval a request for `hours` actually produces.
@@ -56,7 +56,7 @@ func HourlySpec(hours int) string {
 //
 // It used to answer both with nil, and SetCron then wrote a crontab built from
 // that nil — which is a crontab containing one line, ours. So any transient
-// failure of `crontab -l` turned installing a backpack job into deleting every
+// failure of `crontab -l` turned installing a bk job into deleting every
 // other job on the machine: the operator's backups, their certificate renewals,
 // their own scripts, gone, with the program reporting success.
 //
@@ -175,7 +175,7 @@ func intervalFromLine(l string) int {
 	return 0
 }
 
-// SetAutoRefresh schedules `backpack --restart-all` every `hours` hours.
+// SetAutoRefresh schedules `bk --restart-all` every `hours` hours.
 // hours == 0 disables it.
 func SetAutoRefresh(hours int) error {
 	return SetCron(app.AutoRefreshMarker, HourlySpec(hours), app.BinPath+" --restart-all")

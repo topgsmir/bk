@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/topgsmir/BackPack/internal/manage/core"
-	"github.com/topgsmir/BackPack/internal/manage/tunnelspec"
+	"github.com/topgsmir/bk/internal/manage/core"
+	"github.com/topgsmir/bk/internal/manage/tunnelspec"
 )
 
 // The watchdog and the health screen both judge a tunnel from the kernel's

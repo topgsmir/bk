@@ -3,7 +3,7 @@ package webui
 import (
 	"testing"
 
-	"github.com/topgsmir/BackPack/internal/localproxy"
+	"github.com/topgsmir/bk/internal/localproxy"
 )
 
 // The built-in proxy is off by default, and a panel field for something nobody

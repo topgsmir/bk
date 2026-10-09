@@ -3,8 +3,8 @@ package webui
 import (
 	"net/http"
 
-	"github.com/topgsmir/BackPack/internal/control"
-	"github.com/topgsmir/BackPack/internal/node"
+	"github.com/topgsmir/bk/internal/control"
+	"github.com/topgsmir/bk/internal/node"
 )
 
 // What the fleet is supposed to be running, against what it is.

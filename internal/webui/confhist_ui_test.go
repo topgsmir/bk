@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/topgsmir/BackPack/internal/manage"
+	"github.com/topgsmir/bk/internal/manage"
 )
 
 // The stored configurations must never leave the machine.

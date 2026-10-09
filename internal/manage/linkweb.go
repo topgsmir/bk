@@ -18,7 +18,7 @@ type SetupLinkInfo struct {
 	// For is the side the link builds: "kharej" or "iran".
 	For  string `json:"for"`
 	Kind string `json:"kind"` // reverse | direct
-	// Apply and Install are the two commands for a kharej: with Backpack
+	// Apply and Install are the two commands for a kharej: with bk
 	// already on it, and without. Empty when the link is for the Iran side,
 	// which is built from its menu.
 	Apply   string `json:"apply,omitempty"`
@@ -49,11 +49,11 @@ func SetupLinkFor(name, host string) (SetupLinkInfo, error) {
 	info := SetupLinkInfo{Name: name, Link: raw, For: l.PeerSide(), Kind: l.Kind, Host: host,
 		NeedsAddress: host == "" && l.PeerNeedsAddress()}
 	if info.For == "kharej" {
-		info.Apply = "sudo backpack link apply '" + raw + "'"
+		info.Apply = "sudo bk link apply '" + raw + "'"
 		info.Install = InstallCommand(raw)
-		info.Where = "sudo backpack → Setup Kharej → Setup Link"
+		info.Where = "sudo bk → Setup Kharej → Setup Link"
 	} else {
-		info.Where = "sudo backpack → Manage → Set Up From A Link"
+		info.Where = "sudo bk → Manage → Set Up From A Link"
 	}
 	return info, nil
 }

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/topgsmir/BackPack/internal/alerthist"
+	"github.com/topgsmir/bk/internal/alerthist"
 )
 
 func writeSome(t *testing.T, n int) {

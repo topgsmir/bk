@@ -8,11 +8,11 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/topgsmir/BackPack/config"
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/optimize"
-	"github.com/topgsmir/BackPack/internal/tui"
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/config"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/optimize"
+	"github.com/topgsmir/bk/internal/tui"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 // The reverse wizard, in the direct wizard's style.
@@ -485,7 +485,7 @@ func summariseReverse(s TunnelSpec, host, link string) {
 	row("Tuning", presetLabel(s.Preset))
 	row("Config File", app.ConfigPath(s.Name))
 	if link != "" {
-		printLinkBlock(link, "sudo backpack → Setup Kharej → Reverse → Setup Link")
+		printLinkBlock(link, "sudo bk → Setup Kharej → Reverse → Setup Link")
 	}
 	tui.Rule()
 	fmt.Println()

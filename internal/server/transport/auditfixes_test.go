@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/utils"
+	"github.com/topgsmir/bk/internal/utils"
 )
 
 // Connections still waiting in a generation's queue when that generation ends

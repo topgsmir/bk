@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/tui"
+	"github.com/topgsmir/bk/internal/tui"
 )
 
 // ConnectionTest is main-menu option 0, Connection Test: which transports work between
@@ -78,7 +78,7 @@ func connTestIranMenu() {
 	defer s.Close()
 
 	fmt.Println()
-	tui.Info("Test Link (On The Kharej: sudo backpack → 0 → Kharej):")
+	tui.Info("Test Link (On The Kharej: sudo bk → 0 → Kharej):")
 	fmt.Println(tui.Color(tui.Bold+tui.White, link))
 	fmt.Println()
 	tui.Warn(fmt.Sprintf("Waiting For The Kharej (Up To %d Min, Ctrl+C Stops).", int(connTestJoinWait.Minutes())))

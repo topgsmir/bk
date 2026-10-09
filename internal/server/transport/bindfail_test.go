@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/topgsmir/BackPack/internal/utils/acceptloop"
+	"github.com/topgsmir/bk/internal/utils/acceptloop"
 )
 
 // transportSources is every transport whose listeners this guards.

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/topgsmir/BackPack/internal/manage"
+	"github.com/topgsmir/bk/internal/manage"
 )
 
 // The direct form is the panel's half of the forged-source carrier. Until this,

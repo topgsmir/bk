@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/topgsmir/BackPack/config"
+	"github.com/topgsmir/bk/config"
 )
 
 // The panel's half of the forged-source carrier. The CLI has a screen for it;

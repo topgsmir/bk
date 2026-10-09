@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/utils"
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/internal/utils"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 // Reading a connection's announcement off the accept path.

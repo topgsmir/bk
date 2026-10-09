@@ -32,7 +32,7 @@ const at = path => BASE + path;
    person; rewording them must not quietly take the button away. */
 async function refusal(r) {
   const e = new Error(await r.text() || r.statusText);
-  e.fix = r.headers.get('X-Backpack-Fix') || '';
+  e.fix = r.headers.get('X-bk-Fix') || '';
   e.status = r.status;
   return e;
 }
@@ -109,7 +109,7 @@ export const fleetDrift = () => get('/api/fleet/drift');
 export const nodesCached = () => get('/api/nodes?cached=1');
 const nodePost = form => post('/api/nodes', new URLSearchParams(form));
 export const nodeRemove = name => nodePost({ action: 'remove', name });
-/* Adding reaches the server while the operator waits, and installs Backpack on
+/* Adding reaches the server while the operator waits, and installs bk on
    it if it has none, so this is the one node call that can take minutes. */
 export const nodeAdd = fields => nodePost({ action: 'add', ...fields });
 export const nodeCredentials = fields => nodePost({ action: 'credentials', ...fields });

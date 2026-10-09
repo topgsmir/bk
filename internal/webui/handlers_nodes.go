@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/control"
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/node"
+	"github.com/topgsmir/bk/internal/control"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/node"
 )
 
 // Managed servers.
@@ -245,7 +245,7 @@ func (s *server) nodeAdd(w http.ResponseWriter, r *http.Request) {
 	name := strings.TrimSpace(r.FormValue("name"))
 
 	// The decision is control.Fleet.Join's — reach the machine now, install
-	// Backpack if it has none, take the entry back out if it cannot be
+	// bk if it has none, take the entry back out if it cannot be
 	// reached. None of that is about HTTP, and having it here was why a CLI
 	// that wanted to add a server had to drive the panel. See
 	// internal/control/join.go.
@@ -301,7 +301,7 @@ func (s *server) nodeCredentials(w http.ResponseWriter, r *http.Request) {
 // nodeUpgrade serves the "upgrade" action.
 //
 // One click, from here, for a server the operator may never log into.
-// It is the same installer that put Backpack there: it fetches the
+// It is the same installer that put bk there: it fetches the
 // current release, replaces the binary and restarts what was running.
 func (s *server) nodeUpgrade(w http.ResponseWriter, r *http.Request) {
 	run := s.nodes.Runner()

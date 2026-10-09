@@ -5,13 +5,13 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"github.com/topgsmir/BackPack/internal/manage/core"
+	"github.com/topgsmir/bk/internal/manage/core"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/bk/internal/app"
 )
 
 // Restoring is all-or-nothing.

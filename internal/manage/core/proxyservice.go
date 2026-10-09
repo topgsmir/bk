@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/localproxy"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/localproxy"
 )
 
 // The built-in-proxy service.
@@ -16,7 +16,7 @@ import (
 // running behind the tunnel. The unit is only present while the feature is on.
 
 const proxyUnit = `[Unit]
-Description=Backpack built-in proxy (SOCKS5/HTTP)
+Description=bk built-in proxy (SOCKS5/HTTP)
 After=network.target
 
 [Service]

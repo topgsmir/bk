@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/topgsmir/BackPack/internal/tunnel/l3"
+	"github.com/topgsmir/bk/internal/tunnel/l3"
 )
 
 // Every preset must survive the round trip and be one the engine accepts.

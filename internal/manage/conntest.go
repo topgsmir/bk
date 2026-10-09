@@ -25,7 +25,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/spooftest"
+	"github.com/topgsmir/bk/internal/spooftest"
 )
 
 // Connection Test: which transports survive the path between two servers.
@@ -46,7 +46,7 @@ import (
 // tunnel — an echo a second for a minute, and a bulk transfer at the end — and
 // reports which carried it all, which dropped, and which never came up. Both
 // sides print the table, and nothing is left behind: no unit, no config under
-// /etc/backpack, no rule once the engines have stopped.
+// /etc/bk, no rule once the engines have stopped.
 //
 // The Iran side is the judge because it is where users arrive: every tunnel,
 // reverse or direct, is used from there. The kharej hears the verdict through
@@ -120,7 +120,7 @@ type ConnTestLink struct {
 }
 
 // The link the operator copies is only where the Iran side's coordinator is
-// and the test's secret: backpack://t. and some twenty-seven characters. The
+// and the test's secret: bk://t. and some twenty-seven characters. The
 // rest — every tunnel's settings — the kharej asks the coordinator for (see
 // ctConfig), and every tunnel's token is derived from the secret rather than
 // carried, which is what keeps that answer inside one packet: a path that cuts
@@ -160,7 +160,7 @@ type connTestAddr struct {
 func parseConnTestLink(s string) (connTestAddr, error) {
 	s = FindSetupLink(s)
 	if !strings.HasPrefix(s, connTestScheme) {
-		return connTestAddr{}, fmt.Errorf("that is not a Backpack connection-test link — it begins with %s", connTestScheme)
+		return connTestAddr{}, fmt.Errorf("that is not a bk connection-test link — it begins with %s", connTestScheme)
 	}
 	b, err := base64.RawURLEncoding.DecodeString(strings.TrimPrefix(s, connTestScheme))
 	if err != nil || len(b) <= connTestFixedLen || b[0] != connTestLinkVer {
@@ -200,7 +200,7 @@ func ctNewSecret() string {
 // neither the link nor the coordinator's answer has to carry it.
 func ctCaseToken(secret, kind, tr string) string {
 	m := hmac.New(sha256.New, []byte(secret))
-	m.Write([]byte("backpack-conntest/" + kind + "/" + tr))
+	m.Write([]byte("bk-conntest/" + kind + "/" + tr))
 	return hex.EncodeToString(m.Sum(nil))[:32]
 }
 
@@ -341,7 +341,7 @@ func StartConnTestIran(o ConnTestOptions) (*ConnTestIran, string, error) {
 	if host == "" {
 		return nil, "", fmt.Errorf("this server's address is needed: it is what the kharej dials")
 	}
-	dir, err := os.MkdirTemp("", "backpack-conntest-")
+	dir, err := os.MkdirTemp("", "bk-conntest-")
 	if err != nil {
 		return nil, "", err
 	}
@@ -1301,7 +1301,7 @@ func RunConnTestKharej(ctx context.Context, raw string, out io.Writer, live func
 	defer cancel()
 	root := os.Geteuid() == 0
 
-	dir, err := os.MkdirTemp("", "backpack-conntest-")
+	dir, err := os.MkdirTemp("", "bk-conntest-")
 	if err != nil {
 		return nil, ConnTestBest{}, err
 	}

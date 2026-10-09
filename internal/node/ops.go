@@ -3,17 +3,17 @@ package node
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/topgsmir/BackPack/internal/metrics"
+	"github.com/topgsmir/bk/internal/metrics"
 	"os"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/geo"
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/sysstat"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/geo"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/sysstat"
 )
 
 // ApplyRequest is the complete desired state of one tunnel.
@@ -259,7 +259,7 @@ func LocalInfo() Info {
 		Uptime:   sysstat.HumanDuration(m.Uptime),
 
 		// Sampled over a real window rather than taken from the snapshot. This
-		// runs inside `backpack node exec`, which starts, answers and exits, so
+		// runs inside `bk node exec`, which starts, answers and exits, so
 		// the snapshot's instantaneous reading has no earlier sample to
 		// subtract and comes back as 0 or 100 almost at random. See
 		// sysstat.CPUPercentOver.

@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/topgsmir/BackPack/internal/metrics"
-	"github.com/topgsmir/BackPack/internal/utils/acceptloop"
-	"github.com/topgsmir/BackPack/internal/web"
+	"github.com/topgsmir/bk/internal/metrics"
+	"github.com/topgsmir/bk/internal/utils/acceptloop"
+	"github.com/topgsmir/bk/internal/web"
 )
 
 // lifecycle is the part of every reverse server transport that owns its runs.

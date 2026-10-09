@@ -18,10 +18,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/config"
-	"github.com/topgsmir/BackPack/internal/client"
-	"github.com/topgsmir/BackPack/internal/server"
-	"github.com/topgsmir/BackPack/internal/testport"
+	"github.com/topgsmir/bk/config"
+	"github.com/topgsmir/bk/internal/client"
+	"github.com/topgsmir/bk/internal/server"
+	"github.com/topgsmir/bk/internal/testport"
 )
 
 // tunnelReadyTimeout is how long a tunnel gets to come up before a test fails.

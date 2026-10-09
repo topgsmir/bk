@@ -25,13 +25,13 @@ func TestAReleaseSignatureIsGoodForItsOwnTagOnly(t *testing.T) {
 	}
 	dir := t.TempDir()
 	sumsPath := filepath.Join(dir, "SHA256SUMS")
-	sums := []byte("0123abcd  backpack_linux_amd64.tar.gz\n")
+	sums := []byte("0123abcd  bk_linux_amd64.tar.gz\n")
 	if err := os.WriteFile(sumsPath, sums, 0o644); err != nil {
 		t.Fatal(err)
 	}
 
 	// The child signing tool must trust the same fixture publisher as this test.
-	flags := "-X github.com/topgsmir/BackPack/internal/app.ReleasePublicKey=" + base64.StdEncoding.EncodeToString(pub)
+	flags := "-X github.com/topgsmir/bk/internal/app.ReleasePublicKey=" + base64.StdEncoding.EncodeToString(pub)
 	cmd := exec.Command("go", "run", "-ldflags", flags, "./tools/signsums", sumsPath)
 	cmd.Dir = "../.."
 	cmd.Env = append(os.Environ(),

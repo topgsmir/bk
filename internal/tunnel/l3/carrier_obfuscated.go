@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 // The obfuscated carriers.

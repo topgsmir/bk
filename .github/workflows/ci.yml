@@ -48,6 +48,11 @@ jobs:
           bash -n install.sh uninstall.sh tests/uninstall.sh
           docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work golang:1.26.6-bookworm bash tests/uninstall.sh
 
+      - name: PCK real sockets and Connection Test
+        # Packet sockets require privileges; use an isolated container network.
+        run: |
+          docker run --rm --cap-add=NET_RAW --cap-add=NET_ADMIN -e BK_REQUIRE_PCK=1 -v "$GITHUB_WORKSPACE:/work" -w /work golang:1.26.6-bookworm bash -c 'go test ./internal/utils/network -run TestPckLoopback -count=1 -v && go test ./internal/manage -run TestAConnectionTestOverLoopbackPassesEveryReverseTransport -count=1 -v -timeout 3m'
+
       - name: Vet
         run: go vet ./...
 
@@ -102,7 +107,7 @@ jobs:
           check() {
             pkg="$1"; floor="$2"; why="$3"
             got="$(go tool cover -func=coverage.out \
-                    | grep "^github.com/topgsmir/BackPack/$pkg/" \
+                    | grep "^github.com/topgsmir/bk/$pkg/" \
                     | awk '{gsub(/%/,"",$3); s+=$3; n++} END {if (n) printf "%.1f", s/n; else print "0"}')"
             echo "  $pkg: ${got}% (floor ${floor}%) — $why"
             awk -v g="$got" -v f="$floor" -v p="$pkg" 'BEGIN {
@@ -218,7 +223,7 @@ jobs:
         # wobble with scheduling and the heap saws between collections, so a
         # threshold on any single reading would fail on runner noise.
         env:
-          BACKPACK_SOAK_SECONDS: "120"
+          BK_SOAK_SECONDS: "120"
         run: go test ./internal/e2e/ -run TestASustainedRunDoesNotLeak -count=1 -v -timeout 10m
 
   compat:
@@ -247,21 +252,23 @@ jobs:
         # A repository with no tag yet has nothing to compare against, which is a
         # reason to skip rather than to fail.
         run: |
-          tag="$(git describe --tags --abbrev=0 2>/dev/null || true)"
-          if [ -z "$tag" ]; then
-            echo "no previous tag to compare against; skipping"
+          tag="$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)"
+          # First bk release compares with its preserved upstream engine baseline.
+          if [ -z "$tag" ]; then tag="ff86354bcafbd054e7888e48343145323c9b2207"; fi
+          if ! git cat-file -e "${tag}^{commit}" 2>/dev/null; then
+            echo "no previous revision available; skipping"
             echo "binary=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           echo "previous release: $tag"
           git worktree add --detach /tmp/prev "$tag"
-          (cd /tmp/prev && go build -o /tmp/backpack-prev .)
-          echo "binary=/tmp/backpack-prev" >> "$GITHUB_OUTPUT"
+          (cd /tmp/prev && go build -o /tmp/bk-prev .)
+          echo "binary=/tmp/bk-prev" >> "$GITHUB_OUTPUT"
 
       - name: Old and new ends of one tunnel, both directions
         if: steps.prev.outputs.binary != ''
         env:
-          BACKPACK_PREV_BINARY: ${{ steps.prev.outputs.binary }}
+          BK_PREV_BINARY: ${{ steps.prev.outputs.binary }}
         run: go test ./internal/e2e/ -run TestThePreviousReleaseStillTalksToThisOne -count=1 -v
 
   build:
@@ -288,7 +295,7 @@ jobs:
         # had drifted. A guard that cannot fire is worse than no guard, because
         # it is read as one.
         run: |
-          embedded="$(grep -oE 'Version = "v[0-9.]+"' internal/app/app.go | grep -oE 'v[0-9.]+')"
+          embedded="$(grep -oE '^[[:space:]]*Version = "v[0-9.]+"' internal/app/app.go | grep -oE 'v[0-9.]+')"
           declared="$(tr -d ' \n' < VERSION)"
           echo "embedded=$embedded declared=$declared"
           if [ "$embedded" != "$declared" ]; then
@@ -300,11 +307,14 @@ jobs:
       - name: Build both architectures
         run: make release
 
+      - name: Install the built release and open bk
+        run: docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work golang:1.26.6-bookworm bash tests/install-release.sh
+
       - uses: actions/upload-artifact@v7
         with:
           name: release-assets
           path: |
-            release/backpack_linux_amd64.tar.gz
-            release/backpack_linux_arm64.tar.gz
+            release/bk_linux_amd64.tar.gz
+            release/bk_linux_arm64.tar.gz
             release/SHA256SUMS
           retention-days: 14

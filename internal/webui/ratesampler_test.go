@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/metrics"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/metrics"
 )
 
 // The rate history grows with nobody polling.

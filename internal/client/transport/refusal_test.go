@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/topgsmir/BackPack/internal/utils"
+	"github.com/topgsmir/bk/internal/utils"
 )
 
 // Three different faults used to reach the operator as one symptom.

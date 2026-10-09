@@ -3,8 +3,8 @@ package manage
 import (
 	"fmt"
 
-	"github.com/topgsmir/BackPack/internal/tui"
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/internal/tui"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 // ExitHealth scores every server address a client tunnel can use and ranks them,

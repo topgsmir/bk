@@ -40,9 +40,9 @@ it says a program answered, not a file.
 
 ## Every server is a different server
 
-Looking ordinary is only half of it. If every Backpack install answered with the
+Looking ordinary is only half of it. If every bk install answered with the
 same bytes, a single internet-wide scan for that exact response would find every
-Backpack server there is — no token and no probing needed. Camouflage everyone
+bk server there is — no token and no probing needed. Camouflage everyone
 wears identically is a uniform.
 
 So each install derives its own web-server identity from **its tunnel token**:

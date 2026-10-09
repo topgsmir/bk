@@ -23,9 +23,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/localproxy"
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/schedule"
+	"github.com/topgsmir/bk/internal/localproxy"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/schedule"
 )
 
 // --- the section's state, in one read ----------------------------------------
@@ -68,7 +68,7 @@ func fileGroup(label string) string {
 	case strings.Contains(label, "Backup") || strings.Contains(label, "Snapshot"):
 		return "Backups"
 	default:
-		return "Backpack"
+		return "bk"
 	}
 }
 

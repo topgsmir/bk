@@ -9,31 +9,31 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/topgsmir/BackPack/cmd"
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/cli"
-	"github.com/topgsmir/BackPack/internal/localproxy"
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/menu"
-	"github.com/topgsmir/BackPack/internal/monitor"
-	"github.com/topgsmir/BackPack/internal/telegram"
-	"github.com/topgsmir/BackPack/internal/utils"
-	"github.com/topgsmir/BackPack/internal/webui"
+	"github.com/topgsmir/bk/cmd"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/cli"
+	"github.com/topgsmir/bk/internal/localproxy"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/menu"
+	"github.com/topgsmir/bk/internal/monitor"
+	"github.com/topgsmir/bk/internal/telegram"
+	"github.com/topgsmir/bk/internal/utils"
+	"github.com/topgsmir/bk/internal/webui"
 )
 
 var logger = utils.NewLogger("info")
 
 // main has two modes:
 //
-//   - Engine mode:  `backpack -c /etc/backpack/<name>.toml`
+//   - Engine mode:  `bk -c /etc/bk/<name>.toml`
 //     Runs a single tunnel (server or client). This is what the systemd
 //     units execute. Behaviour is identical to the original engine.
 //
-//   - Menu mode:    `backpack`  (no arguments)
+//   - Menu mode:    `bk`  (no arguments)
 //     Opens the interactive management CLI on the VPS.
 func main() {
 	// Handled before the flags, because it is a subcommand with flags of its
-	// own: `backpack node setup --panel ... --key ...`. The flag package would
+	// own: `bk node setup --panel ... --key ...`. The flag package would
 	// stop at "node" and report the rest as unknown.
 	if len(os.Args) > 1 && os.Args[1] == "node" {
 		runNode(os.Args[2:])
@@ -67,9 +67,9 @@ func main() {
 	showVersion := flag.Bool("v", false, "print the version and exit")
 	restartAll := flag.Bool("restart-all", false, "restart every configured tunnel and exit (used by the auto-refresh job)")
 	tgReport := flag.Bool("telegram-report", false, "send a Telegram status report and exit (used by the scheduled job)")
-	webPanel := flag.Bool("webui", false, "run the web panel (used by the backpack-webui service)")
-	monitorMode := flag.Bool("monitor", false, "run the watchdog, Telegram bot and alerts (used by the backpack-monitor service)")
-	proxyMode := flag.Bool("proxy", false, "run the built-in SOCKS5/HTTP proxy (used by the backpack-proxy service)")
+	webPanel := flag.Bool("webui", false, "run the web panel (used by the bk-webui service)")
+	monitorMode := flag.Bool("monitor", false, "run the watchdog, Telegram bot and alerts (used by the bk-monitor service)")
+	proxyMode := flag.Bool("proxy", false, "run the built-in SOCKS5/HTTP proxy (used by the bk-proxy service)")
 	flag.Parse()
 
 	switch {
@@ -119,7 +119,7 @@ func runProxy() {
 	go localproxy.Run(ctx)
 	<-sigChan
 	cancel()
-	logger.Info("backpack proxy stopped")
+	logger.Info("bk proxy stopped")
 }
 
 // runEngine starts a single tunnel from a TOML config and blocks until a
@@ -135,5 +135,5 @@ func runEngine(configPath string) {
 	<-sigChan
 	cancel()
 	time.Sleep(1 * time.Second)
-	logger.Info("backpack engine stopped")
+	logger.Info("bk engine stopped")
 }

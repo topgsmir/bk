@@ -123,7 +123,7 @@ function waitPane(v) {
         <button class="tl-btn" data-copy="#ctCmd">${ICON.copy}<span>Copy</span></button>
       </div>
       <details class="ct-more">
-        <summary>${ICON.down}The kharej has no Backpack yet</summary>
+        <summary>${ICON.down}The kharej has no bk yet</summary>
         <p>This installs it and runs the test in one go. Nothing stays installed as a tunnel.</p>
         <div class="ct-cmd sm"><code id="ctInst">${esc(v.install || '')}</code>
           <button class="tl-btn" data-copy="#ctInst">${ICON.copy}<span>Copy</span></button></div>

@@ -11,17 +11,17 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/telegram"
-	"github.com/topgsmir/BackPack/internal/tui"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/telegram"
+	"github.com/topgsmir/bk/internal/tui"
 )
 
 // updateMenu offers a safe update and the restore points it creates.
 func updateMenu() {
 	for {
 		tui.Clear()
-		tui.Title("Update Backpack")
+		tui.Title("Update bk")
 		tui.Warn("Version : " + app.Version)
 		tui.Warn("Channel : " + manage.ChannelLabel())
 		fmt.Println()
@@ -304,13 +304,13 @@ func restorePointMenu() {
 //
 // An update or a rollback swaps the file on disk, and this process is still
 // the build it was started as: the menu came back showing the old version and
-// the old screens until the operator quit and ran sudo backpack again. Every
+// the old screens until the operator quit and ran sudo bk again. Every
 // tunnel has already been restarted on the new binary by then; this puts the
 // menu on it too.
 func reopen() {
 	tui.Info("Opening The New Version...")
 	if err := execSelf(); err != nil {
-		tui.Warn("Could Not Reopen (" + err.Error() + ") — Run sudo backpack Again.")
+		tui.Warn("Could Not Reopen (" + err.Error() + ") — Run sudo bk Again.")
 		tui.PressEnter()
 	}
 }

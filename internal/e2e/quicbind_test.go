@@ -12,9 +12,9 @@ import (
 
 	"github.com/quic-go/quic-go"
 
-	"github.com/topgsmir/BackPack/internal/server"
-	"github.com/topgsmir/BackPack/internal/utils"
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/internal/server"
+	"github.com/topgsmir/bk/internal/utils"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 // The reverse QUIC transport does not verify the server's certificate, so

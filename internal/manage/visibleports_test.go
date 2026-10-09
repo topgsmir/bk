@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/topgsmir/BackPack/internal/app"
+	"github.com/topgsmir/bk/internal/app"
 )
 
 // The relay mappings are internal plumbing the bot adds for itself. Showing

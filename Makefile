@@ -1,5 +1,5 @@
-BIN      := backpack
-BIN_PATH := /usr/local/bin/backpack
+BIN      := bk
+BIN_PATH := /usr/local/bin/bk
 LDFLAGS  := -s -w
 
 .PHONY: all build install uninstall clean tidy run vendor release-linux release version sbom reproducible check
@@ -35,19 +35,19 @@ ARMS   := 5 6 7
 
 release-linux:
 	mkdir -p dist
-	@for a in $(ARCHES); do 	  echo "  building linux/$$a"; 	  CGO_ENABLED=0 GOOS=linux GOARCH=$$a 	    go build -trimpath -ldflags "$(LDFLAGS)" -o dist/backpack-linux-$$a . || exit 1; 	done
-	@for v in $(ARMS); do 	  echo "  building linux/armv$$v"; 	  CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=$$v 	    go build -trimpath -ldflags "$(LDFLAGS) -X github.com/topgsmir/BackPack/internal/app.GOARM=$$v" 	    -o dist/backpack-linux-armv$$v . || exit 1; 	done
+	@for a in $(ARCHES); do 	  echo "  building linux/$$a"; 	  CGO_ENABLED=0 GOOS=linux GOARCH=$$a 	    go build -trimpath -ldflags "$(LDFLAGS)" -o dist/bk-linux-$$a . || exit 1; 	done
+	@for v in $(ARMS); do 	  echo "  building linux/armv$$v"; 	  CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=$$v 	    go build -trimpath -ldflags "$(LDFLAGS) -X github.com/topgsmir/bk/internal/app.GOARM=$$v" 	    -o dist/bk-linux-armv$$v . || exit 1; 	done
 
-# GitHub release assets: backpack_linux_<arch>.tar.gz, each containing a single
-# `backpack` binary. These are what install.sh and the in-app updater download.
+# GitHub release assets: bk_linux_<arch>.tar.gz, each containing a single
+# `bk` binary. These are what install.sh and the in-app updater download.
 release: version release-linux
 	mkdir -p release
-	@for a in $(ARCHES) $(addprefix armv,$(ARMS)); do 	  cp dist/backpack-linux-$$a dist/backpack && 	  tar -czf release/backpack_linux_$$a.tar.gz -C dist backpack && 	  rm dist/backpack || exit 1; 	done
+	@for a in $(ARCHES) $(addprefix armv,$(ARMS)); do 	  cp dist/bk-linux-$$a dist/bk && 	  tar -czf release/bk_linux_$$a.tar.gz -C dist bk && 	  rm dist/bk || exit 1; 	done
 	@# A checksum file published beside the assets is what lets the installer and
 	@# the updater prove that a mirror handed them the real binary. Users on
 	@# restricted networks fetch these through third-party proxies, so this is
 	@# the only integrity check they get.
-	cd release && (sha256sum backpack_linux_*.tar.gz > SHA256SUMS 2>/dev/null || shasum -a 256 backpack_linux_*.tar.gz > SHA256SUMS)
+	cd release && (sha256sum bk_linux_*.tar.gz > SHA256SUMS 2>/dev/null || shasum -a 256 bk_linux_*.tar.gz > SHA256SUMS)
 	@# And a signature over that list. The checksum proves the download is
 	@# intact; the signature proves the list is the publisher's, which the
 	@# checksum cannot, because it travels the same channel as the archive it
@@ -75,7 +75,7 @@ release: version release-linux
 # the artefact somebody will actually run.
 sbom:
 	@mkdir -p release
-	@{ 	  echo "# Backpack $$(cat VERSION) — bill of materials"; 	  echo "#"; 	  echo "# Read out of the built binary, so it describes what was linked"; 	  echo "# rather than what go.mod asked for."; 	  echo "#"; 	  echo "# Verify a binary you downloaded against this with:"; 	  echo "#     go version -m ./backpack"; 	  echo; 	  go version -m dist/backpack-linux-amd64; 	} > release/SBOM.txt
+	@{ 	  echo "# bk $$(cat VERSION) — bill of materials"; 	  echo "#"; 	  echo "# Read out of the built binary, so it describes what was linked"; 	  echo "# rather than what go.mod asked for."; 	  echo "#"; 	  echo "# Verify a binary you downloaded against this with:"; 	  echo "#     go version -m ./bk"; 	  echo; 	  go version -m dist/bk-linux-amd64; 	} > release/SBOM.txt
 	@echo "SBOM -> release/SBOM.txt"
 
 # reproducible checks that two builds of the same source are byte-identical.
@@ -86,10 +86,10 @@ sbom:
 # the whole point of a reproducible build, since the property is only useful if
 # a third party can confirm it.
 reproducible:
-	@CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o /tmp/backpack-repro-a .
-	@CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o /tmp/backpack-repro-b .
-	@if cmp -s /tmp/backpack-repro-a /tmp/backpack-repro-b; then 	  echo "reproducible: two builds are byte-identical"; 	else 	  echo "NOT reproducible: two builds of the same source differ"; exit 1; 	fi
-	@rm -f /tmp/backpack-repro-a /tmp/backpack-repro-b
+	@CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o /tmp/bk-repro-a .
+	@CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o /tmp/bk-repro-b .
+	@if cmp -s /tmp/bk-repro-a /tmp/bk-repro-b; then 	  echo "reproducible: two builds are byte-identical"; 	else 	  echo "NOT reproducible: two builds of the same source differ"; exit 1; 	fi
+	@rm -f /tmp/bk-repro-a /tmp/bk-repro-b
 
 # release-key generates the signing pair, once. It prints both halves and keeps
 # neither: the public half is pasted into app.ReleasePublicKey, the private half
@@ -99,8 +99,8 @@ release-key:
 
 install: build
 	install -m 0755 $(BIN) $(BIN_PATH)
-	mkdir -p /etc/backpack
-	@echo "Installed. Run: backpack"
+	mkdir -p /etc/bk
+	@echo "Installed. Run: bk"
 
 uninstall:
 	rm -f $(BIN_PATH)

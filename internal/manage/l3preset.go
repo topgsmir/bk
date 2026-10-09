@@ -3,7 +3,7 @@ package manage
 import (
 	"fmt"
 
-	"github.com/topgsmir/BackPack/internal/tui"
+	"github.com/topgsmir/bk/internal/tui"
 )
 
 // Presets for a full IP tunnel.

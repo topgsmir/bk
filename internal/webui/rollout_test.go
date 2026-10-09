@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/topgsmir/BackPack/internal/node"
+	"github.com/topgsmir/bk/internal/node"
 )
 
 // What a rollout accepts as a healthy canary.

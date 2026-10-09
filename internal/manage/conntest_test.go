@@ -46,7 +46,7 @@ func TestATestLinkIsShortAndIsNotTakenForASetupLink(t *testing.T) {
 	if _, err := parseConnTestLink(setup); err == nil {
 		t.Error("a setup link parsed as a test link")
 	}
-	if IsConnTestLink("backpack://t.AAAA") {
+	if IsConnTestLink("bk://t.AAAA") {
 		t.Error("a cut-short test link was accepted")
 	}
 }
@@ -137,7 +137,7 @@ func TestAConnectionTestOverLoopbackPassesEveryReverseTransport(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds and runs the engine; skipped under -short")
 	}
-	bin := filepath.Join(t.TempDir(), "backpack")
+	bin := filepath.Join(t.TempDir(), "bk")
 	build := exec.Command("go", "build", "-o", bin, "../..")
 	build.Stderr = os.Stderr
 	if err := build.Run(); err != nil {

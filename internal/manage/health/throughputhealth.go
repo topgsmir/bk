@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/metrics"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/metrics"
 )
 
 // Health defined by what a tunnel is carrying, not by whether it is running.

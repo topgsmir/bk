@@ -153,6 +153,9 @@ func (c *pckConn) WriteBatch(bufs [][]byte, to net.Addr) (int, error) {
 	if !ok {
 		return 0, net.InvalidAddrError("pck: unusable destination address")
 	}
+	if dst.IP.IsLoopback() {
+		return 0, errPckNoBatch
+	}
 	n := len(bufs)
 	if n == 0 {
 		return 0, nil
@@ -181,6 +184,10 @@ func (c *pckConn) WriteBatch(bufs [][]byte, to net.Addr) (int, error) {
 	// advancing by each payload exactly as consecutive sends would.
 	c.mu.Lock()
 	seq0, ack, tsEcr := peer.seq, peer.ack, peer.lastTS
+	srcIP := c.egress.LocalIP
+	if c.autoServer && peer.localIP != nil {
+		srcIP = peer.localIP
+	}
 	for _, p := range bufs {
 		peer.seq += uint32(len(p))
 	}
@@ -198,7 +205,7 @@ func (c *pckConn) WriteBatch(bufs [][]byte, to net.Addr) (int, error) {
 		}
 		frame := assemblePckFrame(b.frames[i][:cap(b.frames[i])], pckFrameParams{
 			SrcMAC: c.egress.SrcMAC, DstMAC: c.egress.NextHop,
-			SrcIP: c.egress.LocalIP, DstIP: dstIP,
+			SrcIP: srcIP, DstIP: dstIP,
 			SrcPort: c.local, DstPort: uint16(dst.Port),
 			Seq: seq, Ack: ack,
 			Flags: c.flags[int(c.flagRot.Add(1)-1)%len(c.flags)],

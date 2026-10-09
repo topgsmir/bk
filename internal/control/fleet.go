@@ -4,7 +4,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/topgsmir/BackPack/internal/node"
+	"github.com/topgsmir/bk/internal/node"
 )
 
 // Fleet owns the connections to the managed servers.

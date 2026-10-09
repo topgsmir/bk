@@ -160,7 +160,7 @@ func runOver(c *ssh.Client, cmd string, stdin []byte) ([]byte, error) {
 
 // runLong runs a command that is allowed to take minutes.
 //
-// Installing Backpack downloads a release, and on a platform with no build for
+// Installing bk downloads a release, and on a platform with no build for
 // it, compiles one. The ordinary op timeout is for an operation the panel is
 // waiting on with a page open; this is for a job the operator started knowing
 // it would take a while.

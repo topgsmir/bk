@@ -3,7 +3,7 @@ package manage
 import (
 	"fmt"
 
-	"github.com/topgsmir/BackPack/internal/tui"
+	"github.com/topgsmir/bk/internal/tui"
 )
 
 // editConfigHistory is the menu entry: what this tunnel used to be, and the

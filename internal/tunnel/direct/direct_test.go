@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/topgsmir/BackPack/internal/testport"
+	"github.com/topgsmir/bk/internal/testport"
 )
 
 func quietLogger() *logrus.Logger {

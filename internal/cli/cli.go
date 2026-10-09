@@ -1,7 +1,7 @@
 // Package cli is the non-interactive face of the same operations the menu
 // offers.
 //
-// Everything BackPack does from a terminal has until now gone through
+// Everything bk does from a terminal has until now gone through
 // internal/menu: 1,400 lines that read stdin and write stdout directly. That
 // shape has two costs and they are the same cost seen from two sides. Nothing
 // can drive it, so nothing tests it — it is the largest package in the tree
@@ -35,11 +35,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/metrics"
-	"github.com/topgsmir/BackPack/internal/tunhist"
+	"github.com/topgsmir/bk/internal/metrics"
+	"github.com/topgsmir/bk/internal/tunhist"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/manage"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/manage"
 )
 
 // Result is everything a command produced: what to print, what to print on
@@ -70,19 +70,19 @@ const (
 	CodeFailed    = 1
 )
 
-const usage = `backpack — non-interactive commands
+const usage = `bk — non-interactive commands
 
-  backpack tunnel list [--json]         every tunnel and its state
-  backpack tunnel status <name> [--json]  one tunnel: state, peer, and what it has carried
-  backpack check -c <file>              validate a config without starting it
-  backpack link apply [--name N] [--host IP] '<setup link>'
+  bk tunnel list [--json]         every tunnel and its state
+  bk tunnel status <name> [--json]  one tunnel: state, peer, and what it has carried
+  bk check -c <file>              validate a config without starting it
+  bk link apply [--name N] [--host IP] '<setup link>'
                                         build and start the tunnel a setup link describes
-  backpack proxy enable <socks5|http> <port> [--user U --pass P]
-  backpack proxy disable | status [--json]
+  bk proxy enable <socks5|http> <port> [--user U --pass P]
+  bk proxy disable | status [--json]
                                         the built-in proxy a tunnel's port forwards to
-  backpack version [--json]
+  bk version [--json]
 
-Run backpack with no arguments for the interactive menu.
+Run bk with no arguments for the interactive menu.
 Exit codes: 0 ok, 1 failed, 2 usage, 3 not found, 4 unhealthy.
 `
 
@@ -316,7 +316,7 @@ func tunnelStatus(name string, asJSON bool) Result {
 		}
 		r = ok(b.String())
 	}
-	// The exit code carries the answer as well as the output, so `backpack
+	// The exit code carries the answer as well as the output, so `bk
 	// tunnel status x >/dev/null || alert` is a whole monitoring integration.
 	if v.State != "online" {
 		r.Code = CodeUnhealthy
@@ -325,7 +325,7 @@ func tunnelStatus(name string, asJSON bool) Result {
 }
 
 // EngineCheck is the engine's own load-time validation of a config file —
-// the checks that decide whether `backpack -c` starts, machine-dependent ones
+// the checks that decide whether `bk -c` starts, machine-dependent ones
 // included. It lives in package cmd, which this package cannot import, so
 // main installs it; nil leaves check to its static checks alone.
 var EngineCheck func(path string) error
@@ -356,13 +356,13 @@ func runCheck(args []string) Result {
 			continue
 		}
 		if path == "" {
-			path = rest[i] // `backpack check file.toml` as well as `-c file.toml`
+			path = rest[i] // `bk check file.toml` as well as `-c file.toml`
 			continue
 		}
 		return fail(CodeUsage, "check takes one config file\n")
 	}
 	if path == "" {
-		return fail(CodeUsage, "check needs a config file: backpack check -c /etc/backpack/x.toml\n")
+		return fail(CodeUsage, "check needs a config file: bk check -c /etc/bk/x.toml\n")
 	}
 
 	problems := manage.ValidateConfigFile(path)
@@ -487,9 +487,9 @@ var (
 // linkAwait is how long `link apply` waits to see the tunnel reach the far end.
 var linkAwait = 25 * time.Second
 
-// runLink is `backpack link apply`: the kharej end of a tunnel from the setup
+// runLink is `bk link apply`: the kharej end of a tunnel from the setup
 // link the Iran server printed, with nothing asked. It is also what the
-// one-line install runs once Backpack is on the machine.
+// one-line install runs once bk is on the machine.
 func runLink(args []string) Result {
 	if len(args) == 0 || args[0] != "apply" {
 		return fail(CodeUsage, "link needs a subcommand: apply\n\n%s", usage)
@@ -522,7 +522,7 @@ func runLink(args []string) Result {
 		}
 	}
 	if strings.TrimSpace(link) == "" {
-		return fail(CodeUsage, "link apply needs the setup link: backpack link apply 'backpack://…'\n")
+		return fail(CodeUsage, "link apply needs the setup link: bk link apply 'bk://…'\n")
 	}
 	if manage.IsConnTestLink(link) {
 		// A Connection Test link from the Iran server: nothing is installed,
@@ -579,7 +579,7 @@ func linkReport(done manage.LinkApplied) Result {
 	ok := paint("32;1", "✓")
 	row := func(k, v string) { say("    %s %s\n", paint("2", fmt.Sprintf("%-9s", k)), v) }
 
-	say("\n  %s\n%s", paint("1", "Backpack · setup link"), rule)
+	say("\n  %s\n%s", paint("1", "bk · setup link"), rule)
 	verb := "created"
 	if done.Updated {
 		verb = "updated to match the Iran side"
@@ -616,7 +616,7 @@ func linkReport(done manage.LinkApplied) Result {
 	} else {
 		say("  %s Not connected yet (%s). It keeps trying on its own; if it stays down, check that the "+
 			"Iran server's tunnel port is open and that both ends are on the same version: "+
-			"backpack tunnel status %s\n%s", paint("33;1", "!"), strings.TrimSpace(detail), done.Name, rule)
+			"bk tunnel status %s\n%s", paint("33;1", "!"), strings.TrimSpace(detail), done.Name, rule)
 		return Result{Out: b.String(), Code: CodeUnhealthy}
 	}
 }

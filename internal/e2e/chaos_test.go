@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/server"
+	"github.com/topgsmir/bk/internal/server"
 )
 
 // Faults that are not network faults.

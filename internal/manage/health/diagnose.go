@@ -12,16 +12,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/optimize"
+	"github.com/topgsmir/bk/internal/optimize"
 
-	"github.com/topgsmir/BackPack/internal/manage/backup"
-	"github.com/topgsmir/BackPack/internal/manage/core"
-	"github.com/topgsmir/BackPack/internal/manage/host"
-	"github.com/topgsmir/BackPack/internal/manage/tunnelspec"
+	"github.com/topgsmir/bk/internal/manage/backup"
+	"github.com/topgsmir/bk/internal/manage/core"
+	"github.com/topgsmir/bk/internal/manage/host"
+	"github.com/topgsmir/bk/internal/manage/tunnelspec"
 
-	"github.com/topgsmir/BackPack/config"
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/config"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 // CheckLevel is how a diagnostic turned out.
@@ -76,7 +76,7 @@ func systemChecks() []Check {
 	const g = "System"
 	var out []Check
 
-	out = append(out, Check{Group: g, Name: "Backpack version", Level: CheckInfo, Detail: app.Version})
+	out = append(out, Check{Group: g, Name: "bk version", Level: CheckInfo, Detail: app.Version})
 
 	// Binary present and executable.
 	if fi, err := os.Stat(app.BinPath); err == nil {
@@ -87,7 +87,7 @@ func systemChecks() []Check {
 		out = append(out, Check{Group: g, Name: "Binary", Level: lvl, Detail: app.BinPath, Fix: fix})
 	} else {
 		out = append(out, Check{Group: g, Name: "Binary", Level: CheckFail,
-			Detail: "missing at " + app.BinPath, Fix: "reinstall Backpack"})
+			Detail: "missing at " + app.BinPath, Fix: "reinstall bk"})
 	}
 
 	// Running as root — everything here needs it.
@@ -95,7 +95,7 @@ func systemChecks() []Check {
 		out = append(out, Check{Group: g, Name: "Root privileges", Level: CheckOK, Detail: "running as root"})
 	} else {
 		out = append(out, Check{Group: g, Name: "Root privileges", Level: CheckFail,
-			Detail: "not root", Fix: "run: sudo backpack"})
+			Detail: "not root", Fix: "run: sudo bk"})
 	}
 
 	// systemd must be usable, otherwise nothing survives a reboot.
@@ -103,12 +103,12 @@ func systemChecks() []Check {
 		out = append(out, Check{Group: g, Name: "systemd", Level: CheckOK, Detail: "available"})
 	} else {
 		out = append(out, Check{Group: g, Name: "systemd", Level: CheckFail,
-			Detail: "systemctl not found", Fix: "Backpack needs systemd to manage services"})
+			Detail: "systemctl not found", Fix: "bk needs systemd to manage services"})
 	}
 
 	if runtime.GOOS != "linux" {
 		out = append(out, Check{Group: g, Name: "Platform", Level: CheckWarn,
-			Detail: runtime.GOOS, Fix: "Backpack is designed for Linux servers"})
+			Detail: runtime.GOOS, Fix: "bk is designed for Linux servers"})
 		return out
 	}
 
@@ -205,7 +205,7 @@ func monitorChecks() []Check {
 	if !core.FileExists(app.ServiceDir + "/" + app.MonitorService) {
 		return append(out, Check{Group: g, Name: "Service", Level: CheckWarn,
 			Detail: "not installed — no watchdog and no alerts",
-			Fix:    "restart the CLI (sudo backpack); it installs the service on launch"})
+			Fix:    "restart the CLI (sudo bk); it installs the service on launch"})
 	}
 	if core.MonitorRunning() {
 		out = append(out, Check{Group: g, Name: "Service", Level: CheckOK,
@@ -468,7 +468,7 @@ func tunnelChecksFor(t core.Tunnel, pairs [][2]string) []Check {
 	case spec.Token == "":
 		out = append(out, Check{Group: g, Name: "Token", Level: CheckFail,
 			Detail: "empty", Fix: "recreate the tunnel with a generated token"})
-	case len(spec.Token) < 16 || spec.Token == "backpack":
+	case len(spec.Token) < 16 || spec.Token == "bk":
 		out = append(out, Check{Group: g, Name: "Token", Level: CheckWarn,
 			Detail: "weak or default", Fix: "recreate the tunnel to get a 64-char token"})
 	default:
@@ -661,7 +661,7 @@ func humanSize(n int) string {
 
 // --- file locations ---------------------------------------------------------
 
-// Location is one file or directory Backpack owns, and whether it exists.
+// Location is one file or directory bk owns, and whether it exists.
 type Location struct {
 	Label  string
 	Path   string
@@ -669,7 +669,7 @@ type Location struct {
 	Note   string
 }
 
-// Locations lists every file and folder Backpack uses, so a user can see at a
+// Locations lists every file and folder bk uses, so a user can see at a
 // glance what is installed and where things live.
 func Locations() []Location {
 	out := []Location{

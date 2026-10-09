@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/utils/acceptloop"
+	"github.com/topgsmir/bk/internal/utils/acceptloop"
 )
 
 // A host that fills the origin's allowance of unproven connections has its

@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/topgsmir/BackPack/internal/utils"
+	"github.com/topgsmir/bk/internal/utils"
 )
 
 // WriteTimeout bounds a write on the control channel.

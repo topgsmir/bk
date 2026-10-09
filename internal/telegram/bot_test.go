@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/tunhist"
+	"github.com/topgsmir/bk/internal/tunhist"
 )
 
 // A tunnel's handle must survive a restart, because the buttons in the chat do.

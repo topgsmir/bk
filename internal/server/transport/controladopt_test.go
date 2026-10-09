@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/utils"
+	"github.com/topgsmir/bk/internal/utils"
 )
 
 // The report this exists for: a tunnel that ran for three weeks, then began

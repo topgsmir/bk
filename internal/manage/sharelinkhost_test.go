@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/BurntSushi/toml"
-	"github.com/topgsmir/BackPack/config"
-	"github.com/topgsmir/BackPack/internal/tui"
+	"github.com/topgsmir/bk/config"
+	"github.com/topgsmir/bk/internal/tui"
 )
 
 // Reported on v1.8.4: a reverse tunnel set up from the setup link did not

@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/topgsmir/BackPack/internal/optimize"
+	"github.com/topgsmir/bk/internal/optimize"
 )
 
 // ApplyTCPTuning applies the socket and TCP settings a tunnel wants, at start.

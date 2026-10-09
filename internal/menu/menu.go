@@ -1,4 +1,4 @@
-// Package menu implements the interactive backpack CLI shown when the binary
+// Package menu implements the interactive bk CLI shown when the binary
 // is run without a config file.
 package menu
 
@@ -8,11 +8,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/schedule"
-	"github.com/topgsmir/BackPack/internal/tui"
-	"github.com/topgsmir/BackPack/internal/webui"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/schedule"
+	"github.com/topgsmir/bk/internal/tui"
+	"github.com/topgsmir/bk/internal/webui"
 )
 
 // ipStore caches the server's public IPv4 so menus never block on a lookup.
@@ -177,7 +177,7 @@ func refreshLabel() string {
 
 func requireRoot() {
 	if os.Geteuid() != 0 {
-		tui.Error("Run as root: sudo backpack")
+		tui.Error("Run as root: sudo bk")
 		os.Exit(1)
 	}
 }

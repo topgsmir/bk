@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/topgsmir/BackPack/internal/node"
+	"github.com/topgsmir/bk/internal/node"
 )
 
 // The panel's half of a staged fleet update. The sequencing itself lives in

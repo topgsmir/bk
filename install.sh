@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
-# Backpack installer — one command on the VPS (as root):
+# bk installer — one command on the VPS (as root):
 #
-#   bash <(curl -fsSL https://raw.githubusercontent.com/topgsmir/BackPack/main/install.sh)
+#   bash <(curl -fsSL https://raw.githubusercontent.com/topgsmir/bk/main/install.sh)
 #
 # It downloads the prebuilt release tar.gz for this architecture into
-# /root/BackPack and installs the binary, verifying it against the checksum
+# /root/bk and installs the binary, verifying it against the checksum
 # published with the release. If run inside a source checkout and the download
 # fails, it builds from source as a last resort.
 #
@@ -16,7 +16,7 @@
 # one against the other would prove nothing.
 #
 # When it finishes it opens the menu automatically (on an interactive terminal).
-# Later, reopen it any time with:  sudo backpack
+# Later, reopen it any time with:  sudo bk
 #
 set -euo pipefail
 
@@ -25,9 +25,9 @@ info() { echo -e "${WHITE}[*]${NC} $*"; }
 warn() { echo -e "${GRAY}[!]${NC} $*"; }
 err()  { echo -e "${RED}[x]${NC} $*" >&2; }
 
-REPO="topgsmir/BackPack"
-BIN_PATH="/usr/local/bin/backpack"
-INSTALL_DIR="/root/BackPack"
+REPO="topgsmir/bk"
+BIN_PATH="/usr/local/bin/bk"
+INSTALL_DIR="/root/bk"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-/tmp}")" 2>/dev/null && pwd || echo /tmp)"
 
 # Which Go the source build needs, and the oldest toolchain already on the
@@ -60,28 +60,28 @@ fi
 
 if [[ $EUID -ne 0 ]]; then err "Please run as root (sudo)."; exit 1; fi
 
-# One thing may follow the script: a setup link to apply once Backpack is in.
+# One thing may follow the script: a setup link to apply once bk is in.
 #
-#   bash <(curl -fsSL …/install.sh) link apply 'backpack://…'
+#   bash <(curl -fsSL …/install.sh) link apply 'bk://…'
 #
 # That is the line the Iran server prints for a kharej that does not run
-# Backpack yet: install, then build the tunnel the link describes, with nothing
-# asked. A leading "backpack" is accepted too, since the line is often written
+# bk yet: install, then build the tunnel the link describes, with nothing
+# asked. A leading "bk" is accepted too, since the line is often written
 # as the command it runs. Anything else is refused, as before.
 #
 # It used to accept `node --panel <host:port> --key <setup-key>`, which
-# installed Backpack and then enrolled the machine with a panel. A panel reaches
+# installed bk and then enrolled the machine with a panel. A panel reaches
 # a managed server over its own SSH now, so there is nothing to enrol: the
 # operator adds the server from the panel and never touches this machine again.
-BP_ARGS=("$@")
-if [[ ${#BP_ARGS[@]} -gt 0 && "${BP_ARGS[0]}" == "backpack" ]]; then
-  BP_ARGS=("${BP_ARGS[@]:1}")
+BK_ARGS=("$@")
+if [[ ${#BK_ARGS[@]} -gt 0 && "${BK_ARGS[0]}" == "bk" ]]; then
+  BK_ARGS=("${BK_ARGS[@]:1}")
 fi
-if [[ ${#BP_ARGS[@]} -gt 0 ]]; then
-  if [[ "${BP_ARGS[0]}" != "link" || "${BP_ARGS[1]:-}" != "apply" || ${#BP_ARGS[@]} -lt 3 ]]; then
-    err "Unknown argument: ${BP_ARGS[0]}"
+if [[ ${#BK_ARGS[@]} -gt 0 ]]; then
+  if [[ "${BK_ARGS[0]}" != "link" || "${BK_ARGS[1]:-}" != "apply" || ${#BK_ARGS[@]} -lt 3 ]]; then
+    err "Unknown argument: ${BK_ARGS[0]}"
     err "This script takes no arguments, or a setup link to apply after installing:"
-    err "  bash <(curl -fsSL …/install.sh) link apply 'backpack://…'"
+    err "  bash <(curl -fsSL …/install.sh) link apply 'bk://…'"
     exit 2
   fi
 fi
@@ -116,8 +116,8 @@ case "$(uname -m)" in
   *) err "Unsupported architecture: $(uname -m)"; exit 1 ;;
 esac
 
-ASSET="backpack_linux_${ARCH}.tar.gz"
-mkdir -p /etc/backpack "$INSTALL_DIR/backups"
+ASSET="bk_linux_${ARCH}.tar.gz"
+mkdir -p /etc/bk "$INSTALL_DIR/backups"
 
 # fetch <url> <out> — straight to GitHub, so TLS terminates there.
 fetch() {
@@ -179,7 +179,7 @@ verify_asset() {
 # /tmp is world-writable, and its sticky bit does not help with this. Sticky
 # stops one account deleting or replacing another's file, so the scp'd
 # install.sh is safe — but it does nothing about CREATING a file that is not
-# there yet. An account on the box pre-creates backpack_linux_<arch>.tar.gz and
+# there yet. An account on the box pre-creates bk_linux_<arch>.tar.gz and
 # waits, and the branch below prefers a local asset over the download.
 #
 # The test is therefore the other-write bit, not ownership: a directory only the
@@ -252,10 +252,10 @@ install_release() {
 }
 
 install_binary_from_tar() {
-  tar -xzf "$INSTALL_DIR/$ASSET" -C "$INSTALL_DIR" backpack
-  install -m 0755 "$INSTALL_DIR/backpack" "$BIN_PATH"
-  rm -f "$INSTALL_DIR/backpack"
-  echo "$INSTALL_DIR" > /etc/backpack/install_path
+  tar -xzf "$INSTALL_DIR/$ASSET" -C "$INSTALL_DIR" bk
+  install -m 0755 "$INSTALL_DIR/bk" "$BIN_PATH"
+  rm -f "$INSTALL_DIR/bk"
+  echo "$INSTALL_DIR" > /etc/bk/install_path
 }
 
 # ---------------------------------------------------------------------------
@@ -388,7 +388,7 @@ build_from_source() {
   export GOSUMDB=off GOTOOLCHAIN=local
   info "Building from source (proxy order: direct first, then mirrors)."
   CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o "$BIN_PATH" .
-  echo "$INSTALL_DIR" > /etc/backpack/install_path
+  echo "$INSTALL_DIR" > /etc/bk/install_path
 }
 
 if install_release; then
@@ -412,23 +412,23 @@ chmod +x "$BIN_PATH"
 echo
 echo -e "${WHITE}Done!${NC}"
 
-# Open the menu straight away — people miss the "now run sudo backpack" step.
+# Open the menu straight away — people miss the "now run sudo bk" step.
 # Only when there is an interactive terminal to read from: a piped install
 # (curl ... | bash) has no tty on stdin, so it just prints the instruction. The
 # script already runs as root, so the binary is launched directly. `exec`
 # replaces this shell so the menu owns the terminal cleanly.
 # A setup link given on the command line is applied now, instead of opening the
 # menu: the binary builds the tunnel, starts it, and says whether it connected.
-if [[ ${#BP_ARGS[@]} -gt 0 ]]; then
+if [[ ${#BK_ARGS[@]} -gt 0 ]]; then
   echo
   info "Setting up the tunnel from the setup link..."
-  exec "$BIN_PATH" "${BP_ARGS[@]}"
+  exec "$BIN_PATH" "${BK_ARGS[@]}"
 fi
 
 if [ -t 0 ]; then
-  echo -e "Starting the menu... ${GRAY}(next time, just run ${NC}${RED}sudo backpack${GRAY})${NC}"
+  echo -e "Starting the menu... ${GRAY}(next time, just run ${NC}${RED}sudo bk${GRAY})${NC}"
   echo
   exec "$BIN_PATH"
 else
-  echo -e "Open the menu with:  ${RED}sudo backpack${NC}"
+  echo -e "Open the menu with:  ${RED}sudo bk${NC}"
 fi

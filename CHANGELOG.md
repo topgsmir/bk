@@ -1,5 +1,13 @@
 # topgsmir distribution
 
+## v1.8.6 — bk distribution (2026-10-09)
+
+- Publish bk maintained by topgsmir, based on BackPack by Amin Mohammadi (AminMGMT): https://github.com/AminMGMT/BackPack.
+- Align command, services, installation/configuration paths, panel, share links and release assets with bk.
+- Fix PCK loopback routing, receive filtering across interfaces, and replies from the contacted local address; add real-socket regression tests and privileged CI validation.
+- Preserve engine wire identifiers for compatibility. Retain AGPL-3.0 and original attribution.
+- Install and uninstall from topgsmir/bk; independently signed releases and standalone repository visibility.
+
 ## v1.8.5.1
 
 - Configure installation, source links, support and updates for topgsmir/BackPack.

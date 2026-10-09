@@ -5,10 +5,10 @@ import (
 	"net"
 	"strings"
 
-	"github.com/topgsmir/BackPack/config"
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/tui"
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/config"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/tui"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 // transportEntry is one selectable transport. An empty value marks an entry
@@ -169,7 +169,7 @@ func applyManualTuning(s *TunnelSpec) {
 // that wants a real certificate is finished in one pass instead of being built
 // and then reconfigured.
 func setupServerTLS(s *TunnelSpec) bool {
-	// Self-signed encrypts exactly as well — the client is Backpack's own code
+	// Self-signed encrypts exactly as well — the client is bk's own code
 	// and does not verify it. A real certificate matters for how the
 	// connection looks from outside, and it is what a CDN requires.
 	choice := tui.ChooseOpt("TLS Certificate", []tui.Option{

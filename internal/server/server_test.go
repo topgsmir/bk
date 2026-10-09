@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/config"
-	"github.com/topgsmir/BackPack/internal/utils"
+	"github.com/topgsmir/bk/config"
+	"github.com/topgsmir/bk/internal/utils"
 )
 
 // startTransport on this side is the same shape of code as on the client: a

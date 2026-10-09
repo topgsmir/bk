@@ -5,9 +5,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/controlwire"
-	"github.com/topgsmir/BackPack/internal/metrics"
-	"github.com/topgsmir/BackPack/internal/utils"
+	"github.com/topgsmir/bk/internal/controlwire"
+	"github.com/topgsmir/bk/internal/metrics"
+	"github.com/topgsmir/bk/internal/utils"
 )
 
 // The udp transport's control port: TCP, even though its data is not. Claims

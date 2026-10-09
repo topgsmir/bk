@@ -8,7 +8,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/internal/utils/network"
 )
 
 // The tester answers one question: starting from host A, can a packet whose

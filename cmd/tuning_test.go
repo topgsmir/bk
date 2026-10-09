@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/topgsmir/BackPack/internal/optimize"
+	"github.com/topgsmir/bk/internal/optimize"
 )
 
 // The engine tunes the kernel on every start, and its table disagreed with the

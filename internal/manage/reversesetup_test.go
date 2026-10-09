@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/tui"
+	"github.com/topgsmir/bk/internal/tui"
 )
 
 // The link the Iran summary shows, before anything is written, builds the
@@ -36,7 +36,7 @@ func TestTheReverseLinkBuildsTheMatchingKharej(t *testing.T) {
 			}
 			if needsTLS(tr) {
 				s.SimpleAuth = true
-				s.TLSCert, s.TLSKey = "/etc/backpack/c.pem", "/etc/backpack/k.pem"
+				s.TLSCert, s.TLSKey = "/etc/bk/c.pem", "/etc/bk/k.pem"
 			}
 
 			raw := pendingReverseLink(s, "203.0.113.9", linkExtras{})
@@ -96,9 +96,9 @@ func TestTheReverseSummaryIsShortAndCarriesTheLink(t *testing.T) {
 	for _, want := range []string{
 		"Reverse TCP", "0.0.0.0:443", "203.0.113.9:443", "443, 8080=2096  (TCP + UDP)",
 		"443 → 127.0.0.1:443", "8080 → 127.0.0.1:2096", "Turbo",
-		"Setup Link (sudo backpack → Setup Kharej → Reverse → Setup Link):",
-		"Install BackPack And Set Up This Tunnel (Kharej Without BackPack, As Root):",
-		"install.sh) link apply 'backpack://", link,
+		"Setup Link (sudo bk → Setup Kharej → Reverse → Setup Link):",
+		"Install bk And Set Up This Tunnel (Kharej Without bk, As Root):",
+		"install.sh) link apply 'bk://", link,
 	} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("the reverse summary is missing %q:\n%s", want, out)
@@ -242,7 +242,7 @@ func TestSetupFromALinkKeepsThePairedReverseSettings(t *testing.T) {
 			}
 			if needsTLS(tr) {
 				srv.SimpleAuth = true
-				srv.TLSCert, srv.TLSKey = "/etc/backpack/c.pem", "/etc/backpack/k.pem"
+				srv.TLSCert, srv.TLSKey = "/etc/bk/c.pem", "/etc/bk/k.pem"
 			}
 			if tr == "kcp" {
 				srv.KCPDataShards, srv.KCPParityShards = 0, 0

@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/topgsmir/BackPack/internal/metrics"
-	"github.com/topgsmir/BackPack/internal/tunnel/bridge"
-	"github.com/topgsmir/BackPack/internal/utils/acceptloop"
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/internal/metrics"
+	"github.com/topgsmir/bk/internal/tunnel/bridge"
+	"github.com/topgsmir/bk/internal/utils/acceptloop"
+	"github.com/topgsmir/bk/internal/utils/network"
 	"github.com/xtaci/smux"
 )
 

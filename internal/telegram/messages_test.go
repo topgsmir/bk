@@ -68,7 +68,7 @@ func TestSystemTextIsTrimmed(t *testing.T) {
 func TestSupportTextFormat(t *testing.T) {
 	got := supportText(LangEN)
 	for _, want := range []string{
-		"GitHub : https://github.com/topgsmir/BackPack",
+		"GitHub : https://github.com/topgsmir/bk",
 		"Maintainer : topgsmir", "Issues : ",
 	} {
 		if !strings.Contains(got, want) {

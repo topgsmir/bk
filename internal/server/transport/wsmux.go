@@ -10,11 +10,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/topgsmir/BackPack/config" // for mode
-	"github.com/topgsmir/BackPack/internal/controlwire"
-	"github.com/topgsmir/BackPack/internal/metrics"
-	"github.com/topgsmir/BackPack/internal/utils/network"
-	"github.com/topgsmir/BackPack/internal/web"
+	"github.com/topgsmir/bk/config" // for mode
+	"github.com/topgsmir/bk/internal/controlwire"
+	"github.com/topgsmir/bk/internal/metrics"
+	"github.com/topgsmir/bk/internal/utils/network"
+	"github.com/topgsmir/bk/internal/web"
 	"github.com/xtaci/smux"
 
 	"github.com/gorilla/websocket"

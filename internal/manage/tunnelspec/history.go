@@ -8,8 +8,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/manage/core"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/manage/core"
 )
 
 // What a tunnel's configuration used to be, and when it stopped being that.

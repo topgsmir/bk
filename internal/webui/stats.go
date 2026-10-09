@@ -6,14 +6,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/topgsmir/BackPack/config"
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/geo"
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/metrics"
-	"github.com/topgsmir/BackPack/internal/node"
-	"github.com/topgsmir/BackPack/internal/quota"
-	"github.com/topgsmir/BackPack/internal/sysstat"
+	"github.com/topgsmir/bk/config"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/geo"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/metrics"
+	"github.com/topgsmir/bk/internal/node"
+	"github.com/topgsmir/bk/internal/quota"
+	"github.com/topgsmir/bk/internal/sysstat"
 )
 
 // TunnelInfo is one row for /api/tunnels.

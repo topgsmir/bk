@@ -3,7 +3,7 @@ package transport
 import (
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/metrics"
+	"github.com/topgsmir/bk/internal/metrics"
 )
 
 // Scaling the connection pool on throughput, not only on churn.

@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/node"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/node"
 )
 
 // Tunnel management endpoints.

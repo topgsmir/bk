@@ -8,8 +8,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/metrics"
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/internal/metrics"
+	"github.com/topgsmir/bk/internal/utils/network"
 	"github.com/xtaci/smux"
 )
 

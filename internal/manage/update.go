@@ -1,7 +1,7 @@
 package manage
 
-// Release-based updater. Backpack updates itself from GitHub release assets
-// (backpack_linux_amd64.tar.gz / backpack_linux_arm64.tar.gz). Every network
+// Release-based updater. bk updates itself from GitHub release assets
+// (bk_linux_amd64.tar.gz / bk_linux_arm64.tar.gz). Every network
 // step is tried in order:
 //
 //  1. direct GitHub
@@ -25,13 +25,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/manage/backup"
+	"github.com/topgsmir/bk/internal/manage/backup"
 
 	"github.com/BurntSushi/toml"
-	"github.com/topgsmir/BackPack/config"
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/optimize"
-	"github.com/topgsmir/BackPack/internal/socks"
+	"github.com/topgsmir/bk/config"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/optimize"
+	"github.com/topgsmir/bk/internal/socks"
 )
 
 // Downloads go direct to GitHub, or through the tunnel relay when this machine
@@ -70,7 +70,7 @@ func relayHTTPClient(timeout time.Duration) *http.Client {
 			continue
 		}
 		if port := relayExposedPort(cfg.Server.Ports, cfg.Server.Token); port != "" {
-			return socks.HTTPClient("127.0.0.1:"+port, "backpack", cfg.Server.Token, timeout)
+			return socks.HTTPClient("127.0.0.1:"+port, "bk", cfg.Server.Token, timeout)
 		}
 	}
 	return nil
@@ -265,7 +265,7 @@ func newerVersion(remote, local string) bool {
 }
 
 // CheckUpdate reports whether a newer release is published on GitHub. It works
-// the same regardless of how backpack was installed (release or git clone) —
+// the same regardless of how bk was installed (release or git clone) —
 // the update itself always comes from the release assets.
 func CheckUpdate() (bool, string, error) {
 	tag, err := latestTag()
@@ -428,7 +428,7 @@ func verifyChecksum(path, want string) error {
 	return nil
 }
 
-// extractBinary pulls the `backpack` executable out of the release archive and
+// extractBinary pulls the `bk` executable out of the release archive and
 // atomically replaces the installed binary.
 func extractBinary(archive string) error {
 	// Written next to the target so the final rename is atomic: the file being
@@ -441,7 +441,7 @@ func extractBinary(archive string) error {
 	return os.Rename(tmp, app.BinPath)
 }
 
-// extractBinaryTo pulls the `backpack` binary out of a release archive and
+// extractBinaryTo pulls the `bk` binary out of a release archive and
 // writes it to dest.
 //
 // Split out from extractBinary so the same reader serves the install and the
@@ -470,7 +470,7 @@ func extractBinaryTo(archive, dest string) error {
 		if err != nil {
 			return err
 		}
-		if hdr.Typeflag != tar.TypeReg || filepath.Base(hdr.Name) != "backpack" {
+		if hdr.Typeflag != tar.TypeReg || filepath.Base(hdr.Name) != "bk" {
 			continue
 		}
 		out, err := os.OpenFile(dest, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0755)
@@ -483,7 +483,7 @@ func extractBinaryTo(archive, dest string) error {
 		}
 		return out.Close()
 	}
-	return fmt.Errorf("no `backpack` binary found inside the archive")
+	return fmt.Errorf("no `bk` binary found inside the archive")
 }
 
 // ApplyUpdate downloads the latest release and installs it safely:
@@ -572,7 +572,7 @@ func ApplyUpdate(logf func(string)) error {
 
 	// Re-apply the kernel tuning, but only where it was applied before.
 	//
-	// Nothing else rewrites /etc/sysctl.d/99-backpack.conf, so a value this
+	// Nothing else rewrites /etc/sysctl.d/99-bk.conf, so a value this
 	// program wrote and later regretted would otherwise outlive every update —
 	// which is exactly what happened with ip_local_port_range: servers tuned
 	// before the fix kept "1024 65535", and with it the chance of losing a

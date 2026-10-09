@@ -8,16 +8,16 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/topgsmir/BackPack/config"
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/tunnel/l3"
-	"github.com/topgsmir/BackPack/internal/utils/network"
+	"github.com/topgsmir/bk/config"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/tunnel/l3"
+	"github.com/topgsmir/bk/internal/utils/network"
 
 	"github.com/sirupsen/logrus"
 )
 
 const ( // Default values
-	defaultToken          = "backpack"
+	defaultToken          = "bk"
 	defaultChannelSize    = 2048
 	defaultRetryInterval  = 3 // only for client
 	defaultConnectionPool = 8
@@ -40,7 +40,7 @@ const ( // Default values
 	defaultMaxFrameSize     = 32768   // 32KB
 	defaultMaxReceiveBuffer = 4194304 // 4MB
 	defaultMaxStreamBuffer  = 65536   // 64KB
-	defaultSnifferLog       = "backpack.json"
+	defaultSnifferLog       = "bk.json"
 	defaultMuxCon           = 8
 )
 
@@ -363,7 +363,7 @@ func checkSpoof(cfg *config.Config) error {
 		return fmt.Errorf("transport = \"spoof\" is no longer a reverse tunnel: IP spoofing is a " +
 			"direct-tunnel carrier, and a reverse tunnel over it could never carry traffic " +
 			"(every one of its pooled sessions arrives at the same address, so each closed the " +
-			"one before it). Build it again as a direct tunnel — `sudo backpack` → Setup Iran / " +
+			"one before it). Build it again as a direct tunnel — `sudo bk` → Setup Iran / " +
 			"Setup Kharej → Direct, and choose Spoof as the carrier — which forwards the same " +
 			"ports over the same forged-source packets. See docs/ip-spoofing.md.")
 	}

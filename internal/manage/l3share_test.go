@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/topgsmir/BackPack/config"
+	"github.com/topgsmir/bk/config"
 )
 
 func iranL3(name, peer string, ports ...string) l3Tunnel {

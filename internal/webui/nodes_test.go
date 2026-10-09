@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/manage"
-	"github.com/topgsmir/BackPack/internal/node"
+	"github.com/topgsmir/bk/internal/manage"
+	"github.com/topgsmir/bk/internal/node"
 )
 
 // The fleet endpoints.
@@ -360,7 +360,7 @@ func TestTheFarSideNeedsNothingButTheOneCommand(t *testing.T) {
 	}
 	src := string(cli)
 	if !strings.Contains(src, `case "exec":`) {
-		t.Fatal("`backpack node exec` is gone, and it is the only thing the panel runs " +
+		t.Fatal("`bk node exec` is gone, and it is the only thing the panel runs " +
 			"on a managed server")
 	}
 	for _, gone := range []string{`case "setup":`, `case "run":`, `case "remove":`} {
@@ -376,10 +376,10 @@ func TestTheFarSideNeedsNothingButTheOneCommand(t *testing.T) {
 		t.Fatalf("reading install.sh: %v", err)
 	}
 	if strings.Contains(string(sh), "node setup") {
-		t.Error("install.sh still ends in `backpack node setup`, which no longer exists")
+		t.Error("install.sh still ends in `bk node setup`, which no longer exists")
 	}
 	// And it must still install without a terminal, because that is how the
-	// panel runs it on a server that has no Backpack yet.
+	// panel runs it on a server that has no bk yet.
 	if !strings.Contains(string(sh), "if [ -t 0 ]") {
 		t.Error("install.sh no longer checks for a terminal, so a remote install would " +
 			"open a menu nobody can answer")
@@ -467,7 +467,7 @@ func (r *installingRunner) Call(name, op string, body, out any) error {
 	if !r.up[name] {
 		return node.ErrOffline{
 			Name: name,
-			Why:  "the Backpack on that server is too old to be managed from this panel",
+			Why:  "the bk on that server is too old to be managed from this panel",
 			Err:  node.ErrNeedsInstall,
 		}
 	}
@@ -478,15 +478,15 @@ func (r *installingRunner) Call(name, op string, body, out any) error {
 	return nil
 }
 
-// A server already running an older Backpack is upgraded, not refused.
+// A server already running an older bk is upgraded, not refused.
 //
 // This is the bug report: the panel reached a server in the operator's fleet,
-// found a Backpack that did not understand `node exec`, and treated it as a
+// found a bk that did not understand `node exec`, and treated it as a
 // server that could not be reached — refusing the add and printing the far
-// machine's own help, which told them to run `backpack node setup`, a command
+// machine's own help, which told them to run `bk node setup`, a command
 // this release removed. Every server in an existing fleet is in that state the
 // day the panel is upgraded, so this is the ordinary path, not an edge.
-func TestAServerRunningAnOlderBackpackIsUpgradedNotRefused(t *testing.T) {
+func TestAServerRunningAnOlderbkIsUpgradedNotRefused(t *testing.T) {
 	isolateFleet(t)
 	s := newFleetServer()
 	t.Cleanup(s.nodes.Stop)
@@ -497,7 +497,7 @@ func TestAServerRunningAnOlderBackpackIsUpgradedNotRefused(t *testing.T) {
 
 	w := post(t, s, "action=add&name=germany&host=91.107.245.145&user=root&password=x")
 	if w.Code != http.StatusOK {
-		t.Fatalf("a server running an older Backpack was refused: %d %s", w.Code, w.Body.String())
+		t.Fatalf("a server running an older bk was refused: %d %s", w.Code, w.Body.String())
 	}
 	if r.installed != 1 {
 		t.Errorf("the panel installed %d times, want once — an out-of-date server "+

@@ -1,6 +1,6 @@
 package transport
 
-import "github.com/topgsmir/BackPack/internal/utils/acceptloop"
+import "github.com/topgsmir/bk/internal/utils/acceptloop"
 
 // acceptBackoff is the shared accept-loop backoff, under the name the
 // transports already call it. The reasoning, and why it exists at all, is in

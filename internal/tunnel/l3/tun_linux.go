@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/topgsmir/BackPack/internal/tunnel/mssclamp"
+	"github.com/topgsmir/bk/internal/tunnel/mssclamp"
 	"golang.org/x/sys/unix"
 	wgtun "golang.zx2c4.com/wireguard/tun"
 )

@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/node"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/node"
 )
 
 // What a managed server is supposed to be running, and what it is running.

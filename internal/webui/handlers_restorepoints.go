@@ -9,7 +9,7 @@ package webui
 import (
 	"net/http"
 
-	"github.com/topgsmir/BackPack/internal/manage"
+	"github.com/topgsmir/bk/internal/manage"
 )
 
 // handleRestorePoints lists the snapshots the updater keeps. Read-only: a

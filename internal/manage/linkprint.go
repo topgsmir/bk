@@ -6,16 +6,16 @@ import (
 	"net"
 	"strings"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/tui"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/tui"
 )
 
 // How the other side is built from a setup link, as the Iran wizard, its
 // summary and Manage → Setup Link all print it: the link itself, for a kharej
-// that already runs Backpack, and one command that installs Backpack and
+// that already runs bk, and one command that installs bk and
 // applies the link, for a kharej that does not.
 
-// InstallCommand is the one line that installs Backpack on a server and builds
+// InstallCommand is the one line that installs bk on a server and builds
 // the tunnel in link there. It is run as root on the kharej; install.sh hands
 // what follows it to the installed binary (see the end of install.sh).
 func InstallCommand(link string) string {
@@ -30,7 +30,7 @@ func printLinkBlock(link, menuPath string) {
 	tui.Info("Setup Link (" + menuPath + "):")
 	fmt.Println(tui.Color(tui.Bold+tui.White, link))
 	fmt.Println()
-	tui.Info("Install BackPack And Set Up This Tunnel (Kharej Without BackPack, As Root):")
+	tui.Info("Install bk And Set Up This Tunnel (Kharej Without bk, As Root):")
 	fmt.Println(tui.Color(tui.Bold+tui.White, InstallCommand(link)))
 }
 

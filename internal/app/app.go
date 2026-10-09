@@ -1,4 +1,4 @@
-// Package app holds shared constants and paths used across the backpack
+// Package app holds shared constants and paths used across the bk
 // management layer (menu, manage, telegram, schedule, optimize).
 package app
 
@@ -9,49 +9,49 @@ import (
 )
 
 const (
-	// Version of the backpack engine.
-	Version = "v1.8.5.1"
+	// Version of the bk engine.
+	Version = "v1.8.6"
 
-	// UpstreamVersion identifies the unchanged tunnel engine and its inherited documentation.
+	// UpstreamVersion identifies the inherited engine documentation baseline.
 	UpstreamVersion = "v1.8.5"
 
 	// RepoOwner/RepoName identify the GitHub repository used by the installer
 	// and the release-based updater.
 	RepoOwner = "topgsmir"
-	RepoName  = "BackPack"
+	RepoName  = "bk"
 
 	// SourceURL is where the source lives, printed with the version.
 	SourceURL = "https://github.com/" + RepoOwner + "/" + RepoName
 
 	// InstallDir is where the release bundle lives on the VPS.
-	InstallDir = "/root/BackPack"
+	InstallDir = "/root/bk"
 
 	// BackupDir is the default folder for configuration backups.
 	BackupDir = InstallDir + "/backups"
 
 	// ConfigDir is where per-tunnel TOML configs and runtime state live.
-	ConfigDir = "/etc/backpack"
+	ConfigDir = "/etc/bk"
 
 	// ServiceDir is the systemd unit directory.
 	ServiceDir = "/etc/systemd/system"
 
 	// ServicePrefix is prepended to every tunnel systemd unit.
-	ServicePrefix = "backpack-"
+	ServicePrefix = "bk-"
 
-	// BinPath is where the backpack binary is installed.
-	BinPath = "/usr/local/bin/backpack"
+	// BinPath is where the bk binary is installed.
+	BinPath = "/usr/local/bin/bk"
 
 	// TelegramConfig stores the telegram bot settings (JSON).
 	TelegramConfig = ConfigDir + "/telegram.json"
 
 	// AutoRefreshMarker is the cron comment tag for the global auto-refresh job.
-	AutoRefreshMarker = "backpack-auto-refresh"
+	AutoRefreshMarker = "bk-auto-refresh"
 
 	// WebUIConfig stores the web panel settings (JSON).
 	WebUIConfig = ConfigDir + "/webui.json"
 
 	// WebUIService is the systemd unit that runs the web panel.
-	WebUIService = "backpack-webui.service"
+	WebUIService = "bk-webui.service"
 
 	// WebUIPort is the default port the web panel listens on.
 	WebUIPort = 7777
@@ -59,11 +59,11 @@ const (
 	// MonitorService is the systemd unit that watches the tunnels and runs the
 	// Telegram bot and alerts. It is deliberately separate from the web panel:
 	// monitoring must not stop just because the panel is stopped.
-	MonitorService = "backpack-monitor.service"
+	MonitorService = "bk-monitor.service"
 
 	// ProxyService is the systemd unit for the optional built-in SOCKS5/HTTP
 	// proxy, so a node can be its own backend instead of running a separate one.
-	ProxyService = "backpack-proxy.service"
+	ProxyService = "bk-proxy.service"
 
 	// SocksInternalPort is the localhost port the built-in SOCKS5 proxy listens
 	// on. It is reachable from a peer only when exposed over a tunnel.
@@ -173,4 +173,4 @@ func AssetArch() string {
 }
 
 // AssetName is the release archive this build would update itself from.
-func AssetName() string { return "backpack_linux_" + AssetArch() + ".tar.gz" }
+func AssetName() string { return "bk_linux_" + AssetArch() + ".tar.gz" }

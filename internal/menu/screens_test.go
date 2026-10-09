@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/topgsmir/BackPack/internal/tui"
-	"github.com/topgsmir/BackPack/internal/webui"
+	"github.com/topgsmir/bk/internal/tui"
+	"github.com/topgsmir/bk/internal/webui"
 )
 
 // Driving the screens.
@@ -232,7 +232,7 @@ func TestAnUpdateReopensTheMenuOnTheNewBinary(t *testing.T) {
 	}
 
 	execSelf = func() error { return errors.New("permission denied") }
-	if out := drive(t, "\n", reopen); !strings.Contains(out, "Run sudo backpack Again") {
+	if out := drive(t, "\n", reopen); !strings.Contains(out, "Run sudo bk Again") {
 		t.Fatalf("a failed reopen does not say what to do:\n%s", out)
 	}
 

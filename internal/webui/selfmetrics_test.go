@@ -83,13 +83,13 @@ func TestThePanelMetricsAppearOnThePage(t *testing.T) {
 	page := b.String()
 
 	for _, want := range []string{
-		"backpack_panel_uptime_seconds",
-		`backpack_panel_requests_total{outcome="ok"}`,
-		`backpack_panel_requests_total{outcome="refused"}`,
-		`backpack_panel_requests_total{outcome="failed"}`,
-		"backpack_panel_request_ms_mean",
-		"backpack_panel_request_ms_max",
-		`backpack_panel_jobs_total{outcome="done"}`,
+		"bk_panel_uptime_seconds",
+		`bk_panel_requests_total{outcome="ok"}`,
+		`bk_panel_requests_total{outcome="refused"}`,
+		`bk_panel_requests_total{outcome="failed"}`,
+		"bk_panel_request_ms_mean",
+		"bk_panel_request_ms_max",
+		`bk_panel_jobs_total{outcome="done"}`,
 	} {
 		if !strings.Contains(page, want) {
 			t.Errorf("the page is missing %q", want)

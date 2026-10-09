@@ -1,4 +1,4 @@
-/* "Enjoying Backpack?" and "Support Backpack".
+/* "Enjoying bk?" and "Support bk".
  * Static screens; the addresses copy on click. */
 
 import { $$ } from '../lib/dom.js';
@@ -28,8 +28,8 @@ function links(root, close) {
   const open = url => window.open(url, '_blank', 'noopener');
   root.querySelectorAll('button').forEach(b => {
     const t = b.textContent.trim().toLowerCase();
-    if (t.includes('github')) b.addEventListener('click', () => open('https://github.com/topgsmir/BackPack'));
-    else if (t.includes('issues')) b.addEventListener('click', () => open('https://github.com/topgsmir/BackPack/issues'));
+    if (t.includes('github')) b.addEventListener('click', () => open('https://github.com/topgsmir/bk'));
+    else if (t.includes('issues')) b.addEventListener('click', () => open('https://github.com/topgsmir/bk/issues'));
     else if (t === 'later') b.addEventListener('click', close);
     else if (t === 'do not ask again') b.addEventListener('click', () => {
       try { localStorage.setItem('bp_star', 'never'); } catch (e) {}

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/topgsmir/BackPack/config"
-	"github.com/topgsmir/BackPack/internal/tui"
+	"github.com/topgsmir/bk/config"
+	"github.com/topgsmir/bk/internal/tui"
 )
 
 // The transport fallback chain, from the operator's side.

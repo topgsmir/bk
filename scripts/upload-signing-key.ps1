@@ -1,20 +1,20 @@
 # Run only when publication has been authorized and GitHub CLI is signed in.
 $ErrorActionPreference = 'Stop'
-$backpackRepoRoot = Split-Path -Parent $PSScriptRoot
-$backpackKeyPath = Join-Path $backpackRepoRoot '.publisher/release-signing-key.dpapi'
-if (-not (Test-Path -LiteralPath $backpackKeyPath)) {
+$bkRepoRoot = Split-Path -Parent $PSScriptRoot
+$bkKeyPath = Join-Path $bkRepoRoot '.publisher/release-signing-key.dpapi'
+if (-not (Test-Path -LiteralPath $bkKeyPath)) {
     throw 'Local encrypted signing key is missing. Generate a new key with go run ./tools/releasekey and update the pinned public key before publishing.'
 }
 gh auth status
 if ($LASTEXITCODE -ne 0) { throw 'Sign into GitHub first: gh auth login' }
-$backpackEncrypted = Get-Content -LiteralPath $backpackKeyPath -Raw
-$backpackSecure = ConvertTo-SecureString -String $backpackEncrypted.Trim()
-$backpackSecret = [Net.NetworkCredential]::new('', $backpackSecure).Password
+$bkEncrypted = Get-Content -LiteralPath $bkKeyPath -Raw
+$bkSecure = ConvertTo-SecureString -String $bkEncrypted.Trim()
+$bkSecret = [Net.NetworkCredential]::new('', $bkSecure).Password
 try {
-    $backpackSecret | gh secret set RELEASE_SIGNING_KEY --repo topgsmir/BackPack
+    $bkSecret | gh secret set RELEASE_SIGNING_KEY --repo topgsmir/bk
     if ($LASTEXITCODE -ne 0) { throw 'GitHub did not accept the signing key.' }
 } finally {
-    $backpackSecret = $null
-    $backpackSecure.Dispose()
+    $bkSecret = $null
+    $bkSecure.Dispose()
 }
 Write-Output 'Signing key saved as a GitHub Actions secret; no release has been published.'

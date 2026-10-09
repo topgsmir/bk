@@ -3,9 +3,9 @@ package manage
 import (
 	"fmt"
 
-	"github.com/topgsmir/BackPack/internal/app"
-	"github.com/topgsmir/BackPack/internal/metrics"
-	"github.com/topgsmir/BackPack/internal/quota"
+	"github.com/topgsmir/bk/internal/app"
+	"github.com/topgsmir/bk/internal/metrics"
+	"github.com/topgsmir/bk/internal/quota"
 )
 
 // A tunnel's traffic limit, as the panel sets and reads it. The engine is what

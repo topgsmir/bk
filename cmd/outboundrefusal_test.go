@@ -3,7 +3,7 @@ package cmd
 import (
 	"testing"
 
-	"github.com/topgsmir/BackPack/config"
+	"github.com/topgsmir/bk/config"
 )
 
 // Every transport whose data leaves by something other than the TCP dialer has
