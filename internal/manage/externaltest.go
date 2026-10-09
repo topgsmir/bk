@@ -117,7 +117,7 @@ func externalIranMenu() {
 	}
 	board := newCTBoard(os.Stdout, peer)
 	rows := s.run(ctx, board.set)
-	board.finish(rows, s.best)
+	finishExternalBoard(board, rows, s.best)
 	select {
 	case <-s.coord.fetched:
 	case <-ctx.Done():
@@ -255,7 +255,7 @@ func (s *externalTest) close() {
 	if s == nil {
 		return
 	}
-	ctStopAll(s.engines)
+	stopAdditionalEngines(s.engines)
 	s.engines = nil
 	if s.coord != nil {
 		s.coord.close()
@@ -385,7 +385,7 @@ func externalKharejMenu(raw string) {
 		if board == nil {
 			board = newCTBoard(os.Stdout, "Iran")
 		}
-		board.finish(rows, best)
+		finishExternalBoard(board, rows, best)
 	}
 	tui.PressEnter()
 }
@@ -424,7 +424,7 @@ func runExternalKharej(ctx context.Context, raw string, out io.Writer, live func
 	}
 	defer echoes.close()
 	var engines []*ctEngine
-	defer func() { ctStopAll(engines) }()
+	defer func() { stopAdditionalEngines(engines) }()
 	local := map[string]string{}
 	for _, spec := range p.Cases {
 		tr := spec.Kind
@@ -489,4 +489,47 @@ func runExternalKharej(ctx context.Context, raw string, out io.Writer, live func
 		ctSleep(ctx, 2*time.Second)
 	}
 	return nil, ConnTestBest{}, ctx.Err()
+}
+
+// Reuse the original live board, but print only measurements applicable to
+// these cores. Original bk presets, FEC and MSS recommendations do not apply.
+func finishExternalBoard(board *ctBoard, rows []ConnTestResult, best ConnTestBest) {
+	board.abandon()
+	var w strings.Builder
+	if board.tty && len(board.shown) > 0 {
+		fmt.Fprintf(&w, "\033[%dF\033[J", len(board.shown))
+	}
+	w.WriteString("ADDITIONAL TUNNEL CONNECTION TEST — " + board.title + "\n" + ctRule() + "\n\n")
+	w.WriteString(additionalTestTable(rows))
+	if best.Transport != "" {
+		fmt.Fprintf(&w, "\nBest measured method: %s (%.1f Mbps, %d ms RTT, %d ms jitter, %.1f%% loss).\n", best.Transport, best.Mbps, best.RTTms, best.JitterMs, best.LossPct)
+	}
+	_, _ = io.WriteString(board.out, w.String())
+}
+func additionalTestTable(rows []ConnTestResult) string {
+	table := ConnTestTable(rows)
+	table = strings.ReplaceAll(table, "Nothing carried traffic steadily between these two servers. The path is\nfiltered for every transport tried; another Iran or kharej server (another\nprovider, another IP) is the fix, not a setting.\n", "No additional method passed. Check the setup/dependency errors below and\nverify addresses, routing and network firewalls before trying another path.\n")
+	for _, r := range rows {
+		if r.Status != ctOK && r.Status != ctSkipped && r.Detail != "" {
+			table += fmt.Sprintf("%s %s: %s\n", ctName(r.Transport), r.Status, r.Detail)
+		}
+	}
+	return table
+}
+
+func stopAdditionalEngines(engines []*ctEngine) { stopAdditionalEnginesWithin(engines, 20*time.Second) }
+func stopAdditionalEnginesWithin(engines []*ctEngine, timeout time.Duration) {
+	for _, engine := range engines {
+		_ = engine.cmd.Process.Signal(syscall.SIGTERM)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	for _, engine := range engines {
+		select {
+		case <-engine.done:
+		case <-ctx.Done():
+			_ = syscall.Kill(-engine.cmd.Process.Pid, syscall.SIGKILL)
+			<-engine.done
+		}
+	}
 }

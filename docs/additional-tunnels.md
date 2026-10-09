@@ -26,7 +26,9 @@ and a separate Additional Tunnels test.
    userspace builder uses verified source/toolchain archives and does not change
    bk's Go modules. RGT's upstream binary supports amd64 only. Alghadir's pinned
    udp2raw binary currently supports amd64, 386 and 32-bit ARM; native ARM64 is
-   explicitly refused instead of installing an incompatible binary.
+   explicitly refused instead of installing an incompatible binary. L2TP loads
+   the required kernel drivers; Ubuntu's matching extra-module package is
+   installed when needed. Kernels without L2TP support are reported as errors.
 2. Select Setup Iran or Setup Kharej, choose the method and enter the assigned
    IPv4 addresses, port, paired ID/secret, tunnel subnet (where applicable), MTU
    and forwarding endpoints. Each additional tunnel has its own named unit.

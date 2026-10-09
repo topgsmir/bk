@@ -12,7 +12,9 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -48,6 +50,8 @@ func InstallDependencies(ctx context.Context, kind string, out io.Writer) error 
 	}
 	packages := []string{"iproute2", "iputils-ping"}
 	switch kind {
+	case "l2tp-ip", "l2tp-udp":
+		packages = append(packages, "kmod")
 	case "awg":
 		// AWG uses a pinned userspace build, independent of kernel packages.
 	case "paqet":
@@ -67,6 +71,9 @@ func InstallDependencies(ctx context.Context, kind string, out io.Writer) error 
 	}
 	if kind == "awg" {
 		return installAWG(ctx)
+	}
+	if kind == "l2tp-ip" || kind == "l2tp-udp" {
+		return installL2TPModules(ctx, kind)
 	}
 	a, e := CoreAsset(kind, runtime.GOARCH)
 	if e != nil {
@@ -176,4 +183,36 @@ func extractCore(b []byte, member string) ([]byte, error) {
 		}
 	}
 	return nil, fmt.Errorf("archive does not contain %s", member)
+}
+
+func installL2TPModules(ctx context.Context, kind string) error {
+	if e := runCommand(ctx, command("modprobe", "l2tp_netlink")); e != nil {
+		release, _ := os.ReadFile("/etc/os-release")
+		ubuntu := false
+		for _, line := range strings.Split(string(release), "\n") {
+			if line == "ID=ubuntu" || line == "ID=\"ubuntu\"" {
+				ubuntu = true
+			}
+		}
+		if !ubuntu {
+			return fmt.Errorf("L2TP kernel support is unavailable; install the running kernel's L2TP modules first: %w", e)
+		}
+		version, err := exec.CommandContext(ctx, "uname", "-r").Output()
+		kernel := strings.TrimSpace(string(version))
+		if err != nil || !regexp.MustCompile(`^[a-zA-Z0-9._+-]{1,100}$`).MatchString(kernel) {
+			return fmt.Errorf("cannot identify the running kernel for L2TP")
+		}
+		if e := runCommand(ctx, command("apt-get", "install", "-y", "linux-modules-extra-"+kernel)); e != nil {
+			return fmt.Errorf("L2TP requires the running kernel's extra modules: %w", e)
+		}
+	}
+	for _, module := range []string{"l2tp_netlink", "l2tp_eth"} {
+		if e := runCommand(ctx, command("modprobe", module)); e != nil {
+			return e
+		}
+	}
+	if kind == "l2tp-ip" {
+		return runCommand(ctx, command("modprobe", "l2tp_ip"))
+	}
+	return nil
 }

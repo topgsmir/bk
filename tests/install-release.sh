@@ -19,7 +19,8 @@ chmod +x /opt/bk-mocks/*
 export PATH="/opt/bk-mocks:$PATH"
 bash /opt/bk-test/install.sh </dev/null
 [[ $(command -v bk) == /usr/local/bin/bk ]]
-bk -v | grep -Fx v1.8.6.1
+expected_version="$(tr -d ' \n' < VERSION)"
+bk -v | grep -Fx "$expected_version"
 bk -v | grep -Fx https://github.com/topgsmir/bk
 bk help > /opt/bk-test/help-output
 grep -q bk /opt/bk-test/help-output

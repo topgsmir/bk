@@ -178,3 +178,10 @@ func TestUnsupportedArchitectureIsExplicit(t *testing.T) {
 		}
 	}
 }
+
+func TestRGTHeartbeatTimeoutExceedsSendInterval(t *testing.T) {
+	s := fixture("rgt-udp")
+	if !strings.Contains(s.RGTConfig(), "heartbeat_interval = 10") || !strings.Contains(s.Mirror().RGTConfig(), "heartbeat_timeout = 40") {
+		t.Fatal("heartbeat would race its own timeout")
+	}
+}

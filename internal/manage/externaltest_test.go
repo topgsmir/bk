@@ -58,3 +58,10 @@ func TestAdditionalTableNeverTreatsMissingDependencyAsSuccess(t *testing.T) {
 		t.Fatal(s)
 	}
 }
+
+func TestAdditionalSetupFailuresAreNotMistakenForNetworkFiltering(t *testing.T) {
+	table := additionalTestTable([]ConnTestResult{{Kind: "extra", Transport: "l2tp-ip", Status: ctDown, Detail: "kernel module unavailable"}})
+	if !strings.Contains(table, "kernel module unavailable") || strings.Contains(table, "filtered for every transport") {
+		t.Fatal(table)
+	}
+}

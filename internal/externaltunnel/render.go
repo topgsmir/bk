@@ -56,11 +56,13 @@ func (s Spec) RGTConfig() string {
 	tr := strings.TrimPrefix(s.Kind, "rgt-")
 	role, field, addr, heartbeat := "server", "bind_addr", net.JoinHostPort(s.LocalIP, strconv.Itoa(s.Port)), "heartbeat_interval"
 	serviceField, serviceAddr := "bind_addr", s.Listen
+	heartbeatSeconds := 10
 	if s.Side == "kharej" {
 		role, field, addr, heartbeat = "client", "remote_addr", net.JoinHostPort(s.PeerIP, strconv.Itoa(s.Port)), "heartbeat_timeout"
 		serviceField, serviceAddr = "local_addr", s.Target
+		heartbeatSeconds = 40
 	}
-	return fmt.Sprintf("[%s]\n%s = %q\ndefault_token = %q\n%s = 30\n[%s.transport]\ntype = %q\n[%s.transport.%s]\nnodelay = true\nkeepalive_secs = 20\nkeepalive_interval = 8\n[%s.services.bkforward]\ntype = %q\ntoken = %q\n%s = %q\nnodelay = true\n", role, field, addr, s.Secret, heartbeat, role, "tcp", role, "tcp", role, tr, s.Secret, serviceField, serviceAddr)
+	return fmt.Sprintf("[%s]\n%s = %q\ndefault_token = %q\n%s = %d\n[%s.transport]\ntype = %q\n[%s.transport.%s]\nnodelay = true\nkeepalive_secs = 20\nkeepalive_interval = 8\n[%s.services.bkforward]\ntype = %q\ntoken = %q\n%s = %q\nnodelay = true\n", role, field, addr, s.Secret, heartbeat, heartbeatSeconds, role, "tcp", role, "tcp", role, tr, s.Secret, serviceField, serviceAddr)
 }
 func (s Spec) PaqetConfig() string {
 	role, port := "client", s.SourcePort

@@ -3,6 +3,7 @@
 package manage
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -12,7 +13,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -35,6 +38,13 @@ func TestAdditionalTunnelsAcrossNamespaces(t *testing.T) {
 	connTestBinary = func() (string, error) { return bin, nil }
 	prevSoak := connTestSoak
 	connTestSoak = 5
+	if value := os.Getenv("BK_ADDON_SOAK"); value != "" {
+		n, e := strconv.Atoi(value)
+		if e != nil || n < 1 || n > 300 {
+			t.Fatal("BK_ADDON_SOAK must be 1..300")
+		}
+		connTestSoak = n
+	}
 	defer func() { connTestSoak = prevSoak }()
 	ns := "bk-addon-test-peer"
 	run := func(args ...string) {
@@ -255,4 +265,40 @@ func startAdditionalLiveSSH(t *testing.T, ns string) (*externaltunnel.Spec, func
 	spec := externaltunnel.New("ssh-live", "ssh", "iran")
 	spec.Port, spec.SSHKey, spec.KnownHosts = 22, key, known
 	return &spec, stop
+}
+
+func TestAdditionalStopKillsEveryUnresponsiveProcessGroup(t *testing.T) {
+	var engines []*ctEngine
+	for i := 0; i < 2; i++ {
+		cmd := exec.Command("sh", "-c", "trap '' TERM; echo ready; sleep 60")
+		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+		pipe, e := cmd.StdoutPipe()
+		if e != nil {
+			t.Fatal(e)
+		}
+		if e = cmd.Start(); e != nil {
+			t.Fatal(e)
+		}
+		t.Cleanup(func() { syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL) })
+		if _, e = bufio.NewReader(pipe).ReadString('\n'); e != nil {
+			t.Fatal(e)
+		}
+		engine := &ctEngine{cmd: cmd, done: make(chan struct{})}
+		go func() { cmd.Wait(); close(engine.done) }()
+		engines = append(engines, engine)
+	}
+	done := make(chan struct{})
+	go func() { stopAdditionalEnginesWithin(engines, 20*time.Millisecond); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("cleanup hung after killing the first process")
+	}
+	for _, engine := range engines {
+		select {
+		case <-engine.done:
+		default:
+			t.Fatal("process remained alive")
+		}
+	}
 }
