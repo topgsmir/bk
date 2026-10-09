@@ -1,5 +1,14 @@
 # topgsmir distribution
 
+## v1.9.0 — optional additional tunnels (2026-10-09)
+
+- Add a separate menu 11 for GRE IPv4, L2TPv3 IP/UDP, AmneziaWG, verified SSH pooling, RGT reverse TCP/UDP and direct VXLAN, and Paqet KCP/raw TCP.
+- Connect every Alghadir layer into a complete GRE -> IPsec ESP -> KCP/FEC -> udp2raw fake TCP -> obfs4 path, with fresh authenticated session keys and private network namespaces.
+- Add an independent option 0 connection test for these methods, reusing the original real echo, 60-second soak, recovery, RTT and byte-identical bulk probes, with additional payload-size tests.
+- Keep all original tunnel engines, setup wizards and dependency versions unchanged. Additional named services and configurations have independent lifecycle and scoped cleanup.
+- Verify pinned upstream core downloads; document sources, IPv4/architecture requirements, SSH authentication and separate management in docs/additional-tunnels.md.
+- Add mandatory real Linux namespace tests with actual upstream cores and OpenSSH, authentication failure tests, race checks and resource-cleanup checks.
+
 ## v1.8.6.1 — publication validation (2026-10-09)
 
 - Fix the Docker CI checkout trust boundary so the PCK Connection Test can build on GitHub-hosted runners.

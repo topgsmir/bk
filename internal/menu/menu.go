@@ -66,7 +66,7 @@ func Run() {
 		}
 		switch choice {
 		case "0":
-			manage.ConnectionTest()
+			manage.ConnectionTestMenu()
 		// Both entries ask which direction the tunnel should be built in, and
 		// a reverse one is then built by exactly the code that has always
 		// built it. See manage.SetupIran.
@@ -88,6 +88,8 @@ func Run() {
 			updateMenu()
 		case "9":
 			uninstallMenu()
+		case "11":
+			manage.AdditionalTunnels()
 		case "10":
 			tui.Info("Goodbye!")
 			return
@@ -129,6 +131,7 @@ func printMenu() {
 	}
 	menuItem(8, "Update", updateDesc)
 	menuItem(9, "Uninstall", "remove everything")
+	menuItem(11, "Additional Tunnels", "GRE, L2TPv3, AWG, SSH, RGT, Paqet, Alghadir")
 	menuItem(10, "Exit", "")
 	fmt.Println()
 }
