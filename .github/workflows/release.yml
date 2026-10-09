@@ -11,7 +11,7 @@ on:
       tag:
         description: Existing version tag to publish
         required: true
-        default: v1.8.6
+        default: v1.8.6.1
         type: string
 
 # Use the selected tag even when workflow_dispatch runs from the main branch.

@@ -2,6 +2,8 @@ package app
 
 import (
 	"os"
+	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -105,4 +107,34 @@ func shellValue(sh, name string) string {
 		return ""
 	}
 	return strings.Trim(m[1], `"`)
+}
+
+// Patch releases matter when the module requires a security-fixed toolchain.
+func TestInstallerRequiresTheFullGoVersion(t *testing.T) {
+	sh := read(t, "install.sh")
+	start := strings.Index(sh, "go_new_enough() {")
+	if start < 0 {
+		t.Fatal("missing Go version check")
+	}
+	end := strings.Index(sh[start:], "\nensure_go() {")
+	if end < 0 {
+		t.Fatal("missing Go version check")
+	}
+	function := sh[start : start+end]
+	fakeGo := filepath.Join(t.TempDir(), "go")
+	for _, tc := range []struct {
+		version string
+		ok      bool
+	}{
+		{"1.26.6", false}, {"1.26.8", false}, {"1.26.9", true},
+		{"1.26.10", true}, {"1.27.0", true}, {"1.27rc1", false},
+	} {
+		if err := os.WriteFile(fakeGo, []byte("#!/bin/sh\necho 'go version go"+tc.version+" linux/amd64'\n"), 0700); err != nil {
+			t.Fatal(err)
+		}
+		err := exec.Command("bash", "-c", "GO_VERSION=1.26.9\n"+function+"\ngo_new_enough \"$1\"", "test", fakeGo).Run()
+		if (err == nil) != tc.ok {
+			t.Errorf("Go %s accepted=%v want=%v", tc.version, err == nil, tc.ok)
+		}
+	}
 }

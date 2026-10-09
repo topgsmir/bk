@@ -46,12 +46,12 @@ jobs:
       - name: Check installation and removal scripts
         run: |
           bash -n install.sh uninstall.sh tests/uninstall.sh
-          docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work golang:1.26.6-bookworm bash tests/uninstall.sh
+          docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work golang:1.26.9-bookworm bash tests/uninstall.sh
 
       - name: PCK real sockets and Connection Test
         # Packet sockets require privileges; use an isolated container network.
         run: |
-          docker run --rm --cap-add=NET_RAW --cap-add=NET_ADMIN -e BK_REQUIRE_PCK=1 -v "$GITHUB_WORKSPACE:/work" -w /work golang:1.26.6-bookworm bash -c 'go test ./internal/utils/network -run TestPckLoopback -count=1 -v && go test ./internal/manage -run TestAConnectionTestOverLoopbackPassesEveryReverseTransport -count=1 -v -timeout 3m'
+          docker run --rm --cap-add=NET_RAW --cap-add=NET_ADMIN -e BK_REQUIRE_PCK=1 -v "$GITHUB_WORKSPACE:/work" -w /work golang:1.26.9-bookworm bash -c 'git config --global --add safe.directory /work && go test ./internal/utils/network -run TestPckLoopback -count=1 -v && go test ./internal/manage -run TestAConnectionTestOverLoopbackPassesEveryReverseTransport -count=1 -v -timeout 3m'
 
       - name: Vet
         run: go vet ./...
@@ -144,7 +144,7 @@ jobs:
         # what makes it worth failing on: a CVE in a dependency nothing calls is
         # noise, and one on a path the panel serves HTTP over is not.
         #
-        # It is the reason the toolchain moved from 1.26.0 to 1.26.6. That scan
+        # It is the reason the toolchain moved from 1.26.0 to 1.26.9. That scan
         # found 24 reachable vulnerabilities in the standard library — net/http,
         # crypto/tls, crypto/x509, html/template, net/url — every one of them in
         # code this product runs, and every one already fixed upstream. Nothing
@@ -308,7 +308,7 @@ jobs:
         run: make release
 
       - name: Install the built release and open bk
-        run: docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work golang:1.26.6-bookworm bash tests/install-release.sh
+        run: docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work golang:1.26.9-bookworm bash tests/install-release.sh
 
       - uses: actions/upload-artifact@v7
         with:

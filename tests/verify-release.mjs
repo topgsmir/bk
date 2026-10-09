@@ -6,7 +6,7 @@ const publicBytes = Buffer.from(source.match(/var ReleasePublicKey = "([^"]+)"/)
 assert.equal(publicBytes.length,32);
 const publicKey = crypto.createPublicKey({key:Buffer.concat([Buffer.from('302a300506032b6570032100','hex'),publicBytes]),format:'der',type:'spki'});
 const tag = fs.readFileSync('VERSION','utf8').trim();
-assert.equal(tag,'v1.8.6');
+assert.equal(tag,'v1.8.6.1');
 const sums = fs.readFileSync('release/SHA256SUMS');
 const signature = Buffer.from(fs.readFileSync('release/SHA256SUMS.sig','utf8').trim(),'base64');
 const message = Buffer.concat([Buffer.from(`bk release ${tag}\n`),sums]);

@@ -1,5 +1,11 @@
 # topgsmir distribution
 
+## v1.8.6.1 — publication validation (2026-10-09)
+
+- Fix the Docker CI checkout trust boundary so the PCK Connection Test can build on GitHub-hosted runners.
+- Upgrade Go to 1.26.9 and golang.org/x/net to 0.60.0 to address reachable issues found by the security gate; refresh official installer checksums.
+- Require the complete Go version including its security patch in source installs and retain the selected toolchain path; test old, exact, newer and prerelease versions.
+
 ## v1.8.6 — bk distribution (2026-10-09)
 
 - Publish bk maintained by topgsmir, based on BackPack by Amin Mohammadi (AminMGMT): https://github.com/AminMGMT/BackPack.

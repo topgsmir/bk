@@ -154,4 +154,4 @@ amd64 و `aarch64` یعنی arm64. بهترین راه این است که `insta
 
 ---
 
-*Last verified against bk v1.8.6.*
+*Last verified against bk v1.8.6.1.*

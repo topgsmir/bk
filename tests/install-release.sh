@@ -19,7 +19,7 @@ chmod +x /opt/bk-mocks/*
 export PATH="/opt/bk-mocks:$PATH"
 bash /opt/bk-test/install.sh </dev/null
 [[ $(command -v bk) == /usr/local/bin/bk ]]
-bk -v | grep -Fx v1.8.6
+bk -v | grep -Fx v1.8.6.1
 bk -v | grep -Fx https://github.com/topgsmir/bk
 bk help | grep -q bk
 [[ $(cat /etc/bk/install_path) == /root/bk ]]
