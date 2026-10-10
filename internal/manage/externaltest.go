@@ -75,6 +75,13 @@ func externalConnectionTestCatalog(title string, catalog []externaltunnel.Kind) 
 const externalJoinWait = 30 * time.Minute
 
 func externalIranMenuCatalog(catalog []externaltunnel.Kind) {
+	if package3Catalog(catalog) {
+		var ok bool
+		catalog, ok = choosePackage3TestCatalog(catalog, tui.ChooseOpt)
+		if !ok {
+			return
+		}
+	}
 	host := strings.TrimSpace(tui.PromptDefault("Iran IPv4 Assigned To Its NIC", linkHost()))
 	peer := strings.TrimSpace(tui.Prompt("Kharej IPv4 Assigned To Its NIC: "))
 	if net.ParseIP(host).To4() == nil || net.ParseIP(peer).To4() == nil {
@@ -84,32 +91,26 @@ func externalIranMenuCatalog(catalog []externaltunnel.Kind) {
 	}
 	ctx, cancel := connTestContext()
 	defer cancel()
-	if package3Catalog(catalog) {
-		if pick := tui.ChooseOpt("Package 3 Test", []tui.Option{{Title: "All Package 3 Methods", Desc: "full matrix; runs four cases at a time"}, {Title: "Select A Family", Desc: "Dagger, Solarpass, Backhaul or Eylan"}}); pick == 1 {
-			var ok bool
-			catalog, ok = choosePackage3Family(catalog)
-			if !ok {
-				return
-			}
-		} else if pick < 0 {
-			return
-		}
-	}
-	opts := []tui.Option{{Title: "All Selected Methods"}}
-	for _, k := range catalog {
-		opts = append(opts, tui.Option{Title: k.Title, Desc: k.Requirement})
-	}
-	selection := tui.ChooseOpt("Test Methods", opts)
-	if selection < 0 {
-		return
-	}
 	var kinds []string
-	if selection > 0 {
-		kinds = []string{catalog[selection-1].ID}
-	}
-	if selection == 0 {
+	if package3Catalog(catalog) {
 		for _, k := range catalog {
 			kinds = append(kinds, k.ID)
+		}
+	} else {
+		opts := []tui.Option{{Title: "All Selected Methods"}}
+		for _, k := range catalog {
+			opts = append(opts, tui.Option{Title: k.Title, Desc: k.Requirement})
+		}
+		selection := tui.ChooseOpt("Test Methods", opts)
+		if selection < 0 {
+			return
+		}
+		if selection > 0 {
+			kinds = []string{catalog[selection-1].ID}
+		} else {
+			for _, k := range catalog {
+				kinds = append(kinds, k.ID)
+			}
 		}
 	}
 	ipv6 := [2]string{}

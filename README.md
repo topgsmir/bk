@@ -11,7 +11,7 @@
 
 Installation and removal use this repository. [Install, uninstall and private access](docs/install.md) · [Publishing this distribution](docs/publishing.md).
 
-Optional **Tunnel Package 3**: [87 methods and native connection tests](docs/package3.md). Build in menu **12**; test in **0 → Test Tunnel Package 3**.
+Optional **Tunnel Package 3**: [108 methods and grouped native connection tests](docs/package3.md). Build in menu **12**; test in **0 → Test Tunnel Package 3**.
 
 
 
