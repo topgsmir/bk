@@ -35,7 +35,7 @@ func observeDaggerSpoofHeaders(t *testing.T, kinds []string, host, peer string, 
 	if err != nil {
 		t.Fatal(err)
 	}
-	protocol := binary.NativeEndian.Uint16([]byte{0x08, 0x00})
+	protocol := binary.NativeEndian.Uint16([]byte{0x00, 0x03}) // ETH_P_ALL captures outgoing as well as incoming frames.
 	fd, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, int(protocol))
 	if err != nil {
 		t.Fatal(err)
@@ -151,7 +151,9 @@ func observeDaggerSpoofHeaders(t *testing.T, kinds []string, host, peer string, 
 					t.Errorf("no real spoofed source/destination header observed for %s", key)
 				}
 			}
-			t.Logf("Verified actual outer spoof source/destination headers and IPv4 checksums in both directions for %d carrier/protocol witnesses", len(seen))
+			if len(seen) == len(wanted) && captureErr == nil {
+				t.Logf("Verified actual outer spoof source/destination headers and IPv4 checksums in both directions for %d carrier/protocol witnesses", len(seen))
+			}
 		})
 	}
 }
