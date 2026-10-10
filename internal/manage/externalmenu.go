@@ -173,6 +173,13 @@ func setupExternalCatalog(side string, catalog []externaltunnel.Kind) {
 			s.SourcePort = externalNumber("Inner Forwarding Port (>=1024, Same On Both Ends)", s.SourcePort)
 		}
 	}
+	if externaltunnel.DaggerSpoof(k) {
+		addresses, ok := promptDaggerSpoof()
+		if !ok {
+			return
+		}
+		setDaggerSpoof(&s, addresses)
+	}
 	finishExternalSetup(s)
 }
 func finishExternalSetup(s externaltunnel.Spec) {
@@ -371,7 +378,7 @@ func package3Families(catalog []externaltunnel.Kind) [][]externaltunnel.Kind {
 }
 func choosePackage3Family(catalog []externaltunnel.Kind) ([]externaltunnel.Kind, bool) {
 	groups := package3Families(catalog)
-	index := tui.ChooseOpt("Package 3 Family", []tui.Option{{Title: "Dagger", Desc: "44 transports and profiles"}, {Title: "Solarpass", Desc: "16 carriers including repaired Spoof"}, {Title: "Backhaul", Desc: "stream and TUN transports"}, {Title: "Eylan VPN methods", Desc: "WireGuard, OpenVPN, AnyConnect, L2TP/IPsec, sing-box"}})
+	index := tui.ChooseOpt("Package 3 Family", []tui.Option{{Title: "Dagger", Desc: "65 transports, profiles and IP Spoof variants"}, {Title: "Solarpass", Desc: "16 carriers including repaired Spoof"}, {Title: "Backhaul", Desc: "stream and TUN transports"}, {Title: "Eylan VPN methods", Desc: "WireGuard, OpenVPN, AnyConnect, L2TP/IPsec, sing-box"}})
 	if index < 0 {
 		return nil, false
 	}

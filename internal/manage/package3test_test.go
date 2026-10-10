@@ -2,6 +2,7 @@ package manage
 
 import (
 	"testing"
+	"time"
 )
 
 func TestPackage3WaveHandshakeRejectsStaleReports(t *testing.T) {
@@ -44,5 +45,20 @@ func TestPackage3WaveHandshakeRejectsStaleReports(t *testing.T) {
 	}
 	if c.peerIssues()["d3-tcp-tcp"] != "fixture failure" {
 		t.Fatal("lost earlier diagnostic")
+	}
+}
+
+func TestPackage3PlanDeadlineFitsPeerAcceptanceWindow(t *testing.T) {
+	s, err := startExternalTestReadyIPv6("127.0.0.1", "127.0.0.2", []string{"d3-tcp"}, nil, nil, nil, [2]string{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.close()
+	until := time.Unix(s.plan.Until, 0)
+	if until.After(time.Now().Add(2 * time.Hour)) {
+		t.Fatal("package 3 plan would be rejected as too far in the future")
+	}
+	if until.Before(time.Now().Add(externalJoinWait + 70*time.Minute)) {
+		t.Fatal("full package 3 matrix expires too early")
 	}
 }

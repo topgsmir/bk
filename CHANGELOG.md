@@ -1,5 +1,11 @@
 # topgsmir distribution
 
+## v1.11.1 — Dagger IP Spoof integration (2026-10-10)
+
+- Add 21 explicit IP Spoof variants for Quantum, Gaming and TUN raw TCP/UDP/ICMP/GRE/IPIP/BIP/RAW profiles, in both test and setup. Package 3 now has 108 methods and 206 TCP/UDP cases.
+- Preserve paired source/destination spoof settings in setup links; reject malformed addresses, accidental use on ordinary methods and DCPI/spoof combinations.
+- Measure real paired traffic for source-only, destination-only and combined spoof modes, independently observing actual outer IPv4 headers and checksums in both directions. Route availability remains a real network requirement.
+
 ## v1.11.0 — optional Tunnel Package 3 (2026-10-10)
 
 - Add independent Build Tunnel Package 3 (menu 12) and Test Tunnel Package 3 (menu 0), covering 87 methods and 164 TCP/UDP cases from Dagger, Solarpass, Backhaul and the stock VPN families represented in EylanPanel.

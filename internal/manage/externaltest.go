@@ -120,6 +120,17 @@ func externalIranMenuCatalog(catalog []externaltunnel.Kind) {
 			break
 		}
 	}
+	var spoof [4]string
+	for _, kind := range kinds {
+		if externaltunnel.DaggerSpoof(kind) {
+			var ok bool
+			spoof, ok = promptDaggerSpoof()
+			if !ok {
+				return
+			}
+			break
+		}
+	}
 	var direct, reverse *externaltunnel.Spec
 	for _, kind := range kinds {
 		if kind == "ssh" {
@@ -143,7 +154,7 @@ func externalIranMenuCatalog(catalog []externaltunnel.Kind) {
 	if ctx.Err() != nil {
 		return
 	}
-	s, e := startExternalTestReadyIPv6(host, peer, kinds, direct, reverse, preparation, ipv6)
+	s, e := startExternalTestReadySpoof(host, peer, kinds, direct, reverse, preparation, ipv6, spoof)
 	if e != nil {
 		tui.Error(e.Error())
 		tui.PressEnter()
@@ -225,6 +236,9 @@ func startExternalTestReady(host, peer string, kinds []string, sshSettings, reve
 	return startExternalTestReadyIPv6(host, peer, kinds, sshSettings, reverseSettings, preparation, [2]string{})
 }
 func startExternalTestReadyIPv6(host, peer string, kinds []string, sshSettings, reverseSettings *externaltunnel.Spec, preparation map[string]string, ipv6 [2]string) (*externalTest, error) {
+	return startExternalTestReadySpoof(host, peer, kinds, sshSettings, reverseSettings, preparation, ipv6, [4]string{})
+}
+func startExternalTestReadySpoof(host, peer string, kinds []string, sshSettings, reverseSettings *externaltunnel.Spec, preparation map[string]string, ipv6 [2]string, spoof [4]string) (*externalTest, error) {
 	dir, e := os.MkdirTemp("", "bk-additional-test-")
 	if e != nil {
 		return nil, e
@@ -248,7 +262,7 @@ func startExternalTestReadyIPv6(host, peer string, kinds []string, sshSettings, 
 	for _, kind := range kinds {
 		if externaltunnel.Dagger(kind) || externaltunnel.Solarpass(kind) || externaltunnel.Backhaul(kind) || externaltunnel.Eylan(kind) {
 			s.plan.Version, s.plan.BatchSize = 3, 4
-			s.plan.Until = time.Now().Add(externalJoinWait + 45*time.Minute + connTestSlack).Unix()
+			s.plan.Until = time.Now().Add(externalJoinWait + 80*time.Minute + connTestSlack).Unix()
 			break
 		}
 	}
@@ -284,6 +298,9 @@ func startExternalTestReadyIPv6(host, peer string, kinds []string, sshSettings, 
 			spec := externaltunnel.New(c.name, kind, "iran")
 			spec.LocalIP, spec.PeerIP = host, peer
 			spec.LocalIPv6, spec.PeerIPv6 = ipv6[0], ipv6[1]
+			if externaltunnel.DaggerSpoof(kind) {
+				setDaggerSpoof(&spec, spoof)
+			}
 			spec.Port = ctPickPort(used, true)
 			spec.SourcePort = ctPickPort(used, true)
 			if externaltunnel.Solarpass(kind) || externaltunnel.Backhaul(kind) || externaltunnel.Eylan(kind) {

@@ -37,32 +37,36 @@ var Kinds = []Kind{
 // Spec is local state. Only paired protocol settings go into a setup/test link;
 // SSH keys and this machine's physical interface never travel to the peer.
 type Spec struct {
-	LocalIPv6   string `json:"local_ipv6,omitempty"`
-	PeerIPv6    string `json:"peer_ipv6,omitempty"`
-	Backend     string `json:"backend,omitempty"`
-	Version     int    `json:"v"`
-	Name        string `json:"name"`
-	Kind        string `json:"kind"`
-	Side        string `json:"side"`
-	LocalIP     string `json:"local_ip"`
-	PeerIP      string `json:"peer_ip"`
-	IranIP      string `json:"iran_ip"`
-	KharejIP    string `json:"kharej_ip"`
-	Port        int    `json:"port"`
-	SourcePort  int    `json:"source_port,omitempty"`
-	ID          int    `json:"id"`
-	MTU         int    `json:"mtu"`
-	Secret      string `json:"secret"`
-	Listen      string `json:"listen"`
-	Target      string `json:"target"`
-	Protocol    string `json:"protocol"`
-	Connections int    `json:"connections"`
-	Mode        string `json:"mode,omitempty"`
-	SSHUser     string `json:"ssh_user,omitempty"`
-	SSHKey      string `json:"ssh_key,omitempty"`
-	KnownHosts  string `json:"known_hosts,omitempty"`
-	WAN         string `json:"wan,omitempty"`
-	RouterMAC   string `json:"router_mac,omitempty"`
+	IranSpoofSource        string `json:"iran_spoof_source,omitempty"`
+	KharejSpoofSource      string `json:"kharej_spoof_source,omitempty"`
+	IranSpoofDestination   string `json:"iran_spoof_destination,omitempty"`
+	KharejSpoofDestination string `json:"kharej_spoof_destination,omitempty"`
+	LocalIPv6              string `json:"local_ipv6,omitempty"`
+	PeerIPv6               string `json:"peer_ipv6,omitempty"`
+	Backend                string `json:"backend,omitempty"`
+	Version                int    `json:"v"`
+	Name                   string `json:"name"`
+	Kind                   string `json:"kind"`
+	Side                   string `json:"side"`
+	LocalIP                string `json:"local_ip"`
+	PeerIP                 string `json:"peer_ip"`
+	IranIP                 string `json:"iran_ip"`
+	KharejIP               string `json:"kharej_ip"`
+	Port                   int    `json:"port"`
+	SourcePort             int    `json:"source_port,omitempty"`
+	ID                     int    `json:"id"`
+	MTU                    int    `json:"mtu"`
+	Secret                 string `json:"secret"`
+	Listen                 string `json:"listen"`
+	Target                 string `json:"target"`
+	Protocol               string `json:"protocol"`
+	Connections            int    `json:"connections"`
+	Mode                   string `json:"mode,omitempty"`
+	SSHUser                string `json:"ssh_user,omitempty"`
+	SSHKey                 string `json:"ssh_key,omitempty"`
+	KnownHosts             string `json:"known_hosts,omitempty"`
+	WAN                    string `json:"wan,omitempty"`
+	RouterMAC              string `json:"router_mac,omitempty"`
 }
 
 var safeName = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]{0,39}$`)
@@ -143,6 +147,9 @@ func (s Spec) Validate() error {
 		if net.ParseIP(v).To4() == nil {
 			return fmt.Errorf("both local and peer IPv4 addresses are required")
 		}
+	}
+	if err := s.validateDaggerSpoof(); err != nil {
+		return err
 	}
 	for _, addr := range []string{s.LocalIPv6, s.PeerIPv6} {
 		if addr != "" && (net.ParseIP(addr) == nil || net.ParseIP(addr).To4() != nil) {
