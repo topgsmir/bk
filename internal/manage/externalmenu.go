@@ -21,25 +21,34 @@ func ConnectionTestMenu() {
 	switch tui.ChooseOpt("Connection Test", []tui.Option{
 		{Title: "Original bk transports", Desc: "the existing full reverse/direct test"},
 		{Title: "Additional tunnels", Desc: "GRE, L2TPv3, AWG, SSH, RGT, Paqet, Alghadir"},
+		{Title: "Test Tunnel Package 3", Desc: "Dagger and supplied package 3 methods"},
 	}) {
 	case 0:
 		ConnectionTest()
 	case 1:
 		ExternalConnectionTest()
+	case 2:
+		Package3ConnectionTest()
 	}
 }
-func AdditionalTunnels() {
+func AdditionalTunnels() { additionalTunnels("Additional Tunnels", externaltunnel.Kinds) }
+func Package3Tunnels()   { additionalTunnels("Build Tunnel Package 3", externaltunnel.Package3Kinds) }
+func additionalTunnels(title string, catalog []externaltunnel.Kind) {
 	for {
 		tui.Clear()
-		tui.Title("Additional Tunnels")
-		pick := tui.ChooseOpt("Action", []tui.Option{{Title: "Connection test", Desc: "temporary real tunnels, same echo/soak/bulk test"}, {Title: "Setup Iran", Desc: "create an additional tunnel"}, {Title: "Setup Kharej", Desc: "create the other end"}, {Title: "Apply setup link", Desc: "paired settings from the other server"}, {Title: "Manage", Desc: "start, stop, logs, delete"}, {Title: "Install dependencies", Desc: "pinned cores and required packages"}, {Title: "Prepare SSH authentication", Desc: "dedicated key; verify the host fingerprint"}})
+		tui.Title(title)
+		actions := []tui.Option{{Title: "Connection test", Desc: "temporary real tunnels, same echo/soak/bulk test"}, {Title: "Setup Iran", Desc: "create an additional tunnel"}, {Title: "Setup Kharej", Desc: "create the other end"}, {Title: "Apply setup link", Desc: "paired settings from the other server"}, {Title: "Manage", Desc: "start, stop, logs, delete"}, {Title: "Install dependencies", Desc: "pinned cores and required packages"}, {Title: "Prepare SSH authentication", Desc: "dedicated key; verify the host fingerprint"}}
+		if len(catalog) > 0 && externaltunnel.Eylan(catalog[len(catalog)-1].ID) {
+			actions = actions[:6]
+		}
+		pick := tui.ChooseOpt("Action", actions)
 		switch pick {
 		case 0:
-			ExternalConnectionTest()
+			externalConnectionTestCatalog(title, catalog)
 		case 1:
-			setupExternal("iran")
+			setupExternalCatalog("iran", catalog)
 		case 2:
-			setupExternal("kharej")
+			setupExternalCatalog("kharej", catalog)
 		case 3:
 			raw := tui.Prompt("bk://e. Link: ")
 			s, e := externaltunnel.ParseLink(raw)
@@ -50,9 +59,9 @@ func AdditionalTunnels() {
 			}
 			finishExternalSetup(s)
 		case 4:
-			manageExternal()
+			manageExternalCatalog(catalog)
 		case 5:
-			k := chooseExternalKind()
+			k := chooseExternalKindCatalog(catalog)
 			if k == "" {
 				continue
 			}
@@ -67,16 +76,23 @@ func AdditionalTunnels() {
 		}
 	}
 }
-func chooseExternalKind() string {
-	opts := make([]tui.Option, len(externaltunnel.Kinds))
-	for i, k := range externaltunnel.Kinds {
+func chooseExternalKindCatalog(catalog []externaltunnel.Kind) string {
+	if package3Catalog(catalog) {
+		var ok bool
+		catalog, ok = choosePackage3Family(catalog)
+		if !ok {
+			return ""
+		}
+	}
+	opts := make([]tui.Option, len(catalog))
+	for i, k := range catalog {
 		opts[i] = tui.Option{Title: k.Title, Desc: k.Requirement}
 	}
 	i := tui.ChooseOpt("Tunnel Type", opts)
 	if i < 0 {
 		return ""
 	}
-	return externaltunnel.Kinds[i].ID
+	return catalog[i].ID
 }
 func externalNumber(label string, n int) int {
 	v, e := strconv.Atoi(tui.PromptDefault(label, strconv.Itoa(n)))
@@ -85,15 +101,17 @@ func externalNumber(label string, n int) int {
 	}
 	return v
 }
-func setupExternal(side string) {
-	k := chooseExternalKind()
+func setupExternalCatalog(side string, catalog []externaltunnel.Kind) {
+	k := chooseExternalKindCatalog(catalog)
 	if k == "" {
 		return
 	}
 	s := externaltunnel.New(strings.TrimSpace(tui.Prompt("Tunnel Name: ")), k, side)
 	s.LocalIP = strings.TrimSpace(tui.PromptDefault("This Server's Local IPv4 (Assigned To Its NIC)", linkHost()))
 	s.PeerIP = strings.TrimSpace(tui.Prompt("Other Server's IPv4: "))
-	if !externaltunnel.SSH(k) {
+	if externaltunnel.L2TPIPsec(k) {
+		tui.Info("L2TP/IPsec Uses UDP 500, 4500 And 1701. Existing VPN Services Must Leave These Ports Free.")
+	} else if !externaltunnel.SSH(k) {
 		s.Port = externalNumber("Tunnel Port", s.Port)
 	}
 	if externaltunnel.SSH(k) {
@@ -110,9 +128,9 @@ func setupExternal(side string) {
 	}
 	s.Listen = tui.PromptDefault("Iran Listen IP:Port", s.Listen)
 	s.Target = tui.PromptDefault("Kharej Target IP:Port", s.Target)
-	if k == "rgt-udp" {
+	if externaltunnel.UDPOnly(k) {
 		s.Protocol = "udp"
-	} else if !externaltunnel.SSH(k) && k != "rgt-tcp" {
+	} else if externaltunnel.BothProtocols(k) {
 		if i := tui.ChooseOpt("Forwarded Traffic", []tui.Option{{Title: "TCP"}, {Title: "UDP (Also Keeps TCP Available For Layer-3)"}}); i == 1 {
 			s.Protocol = "udp"
 		} else if i < 0 {
@@ -137,6 +155,23 @@ func setupExternal(side string) {
 		s.MTU = externalNumber("Paqet MTU (<=1500)", s.MTU)
 		s.WAN = tui.PromptDefault("Physical Interface (Blank = Detect)", "")
 		s.RouterMAC = tui.PromptDefault("Next-Hop MAC (Blank = Detect)", "")
+	}
+	if externaltunnel.Solarpass(k) || externaltunnel.Backhaul(k) || externaltunnel.Eylan(k) {
+		s.SourcePort = externalNumber("Unused Frontend/Return/Sync/Decoder Port Block (Four Ports)", s.SourcePort)
+	}
+	if externaltunnel.Dagger(k) {
+		if k == "d3-dc6" {
+			s.LocalIPv6 = strings.TrimSpace(tui.Prompt("This Server IPv6 Assigned To Its NIC: "))
+			s.PeerIPv6 = strings.TrimSpace(tui.Prompt("Other Server IPv6: "))
+		}
+		_, profile, _, _ := externaltunnel.DaggerOptions(k)
+		if profile != "" {
+			s.WAN = tui.PromptDefault("Physical Interface (Blank = Route Detect)", "")
+			s.RouterMAC = tui.PromptDefault("Next-Hop MAC (Blank = ARP Detect)", "")
+		}
+		if strings.HasPrefix(k, "d3-tun-") {
+			s.SourcePort = externalNumber("Inner Forwarding Port (>=1024, Same On Both Ends)", s.SourcePort)
+		}
 	}
 	finishExternalSetup(s)
 }
@@ -207,7 +242,7 @@ func finishExternalSetup(s externaltunnel.Spec) {
 	}
 	time.Sleep(500 * time.Millisecond)
 	if e := run("is-active", "--quiet", externaltunnel.ServiceName(s.Name)); e != nil {
-		tui.Error("The process stopped. Use Additional Tunnels → Manage → Log.")
+		tui.Error("The process stopped. Use Additional Tunnels -> Manage -> Log.")
 	} else {
 		tui.Success("Service Started. Run Option 0 On Both Servers To Verify Real Traffic.")
 	}
@@ -217,7 +252,11 @@ func finishExternalSetup(s externaltunnel.Spec) {
 	}
 	tui.PressEnter()
 }
-func manageExternal() {
+func manageExternalCatalog(catalog []externaltunnel.Kind) {
+	allowed := map[string]bool{}
+	for _, k := range catalog {
+		allowed[k.ID] = true
+	}
 	for {
 		files, e := filepath.Glob(filepath.Join(externalDir, "*.json"))
 		if e != nil || len(files) == 0 {
@@ -228,10 +267,15 @@ func manageExternal() {
 		var specs []externaltunnel.Spec
 		var opts []tui.Option
 		for _, f := range files {
-			if s, e := externaltunnel.Load(f); e == nil {
+			if s, e := externaltunnel.Load(f); e == nil && allowed[s.Kind] {
 				specs = append(specs, s)
 				opts = append(opts, tui.Option{Title: s.Name, Desc: s.Kind + " " + s.Side + " " + plainState(externaltunnel.ServiceName(s.Name))})
 			}
+		}
+		if len(specs) == 0 {
+			tui.Warn("No Tunnels In This Package Yet.")
+			tui.PressEnter()
+			return
 		}
 		i := tui.ChooseOpt("Additional Tunnel", opts)
 		if i < 0 {
@@ -304,4 +348,32 @@ func prepareExternalSSH() {
 	ctx, cancel := connTestContext()
 	defer cancel()
 	report(ensureExternalSSH(ctx, s, os.Stdout), "SSH Authentication Prepared")
+}
+
+func package3Catalog(catalog []externaltunnel.Kind) bool {
+	return len(catalog) > 0 && (externaltunnel.Dagger(catalog[0].ID) || externaltunnel.Solarpass(catalog[0].ID) || externaltunnel.Backhaul(catalog[0].ID) || externaltunnel.Eylan(catalog[0].ID))
+}
+func package3Families(catalog []externaltunnel.Kind) [][]externaltunnel.Kind {
+	groups := make([][]externaltunnel.Kind, 4)
+	for _, kind := range catalog {
+		index := 3
+		switch {
+		case externaltunnel.Dagger(kind.ID):
+			index = 0
+		case externaltunnel.Solarpass(kind.ID):
+			index = 1
+		case externaltunnel.Backhaul(kind.ID):
+			index = 2
+		}
+		groups[index] = append(groups[index], kind)
+	}
+	return groups
+}
+func choosePackage3Family(catalog []externaltunnel.Kind) ([]externaltunnel.Kind, bool) {
+	groups := package3Families(catalog)
+	index := tui.ChooseOpt("Package 3 Family", []tui.Option{{Title: "Dagger", Desc: "44 transports and profiles"}, {Title: "Solarpass", Desc: "16 carriers including repaired Spoof"}, {Title: "Backhaul", Desc: "stream and TUN transports"}, {Title: "Eylan VPN methods", Desc: "WireGuard, OpenVPN, AnyConnect, L2TP/IPsec, sing-box"}})
+	if index < 0 {
+		return nil, false
+	}
+	return groups[index], true
 }

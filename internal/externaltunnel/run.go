@@ -3,6 +3,7 @@ package externaltunnel
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -28,6 +29,14 @@ func Check(s Spec) error {
 	}
 	if runtime.GOOS != "linux" {
 		return fmt.Errorf("additional tunnels require Linux")
+	}
+	if s.Kind == "d3-dc6" && (net.ParseIP(s.LocalIPv6) == nil || net.ParseIP(s.PeerIPv6) == nil) {
+		return fmt.Errorf("Dagger DC6 needs assigned IPv6 on both servers")
+	}
+	if Backhaul(s.Kind) {
+		if err := checkBackhaulLocalIP(s); err != nil {
+			return err
+		}
 	}
 	if e := CheckDependencies(s.Kind); e != nil {
 		return e
@@ -78,6 +87,18 @@ func Run(ctx context.Context, s Spec) error {
 		return err
 	}
 	defer os.RemoveAll(dir)
+	if Eylan(s.Kind) {
+		return runEylan(ctx, s, dir)
+	}
+	if Backhaul(s.Kind) {
+		return runBackhaul(ctx, s, dir)
+	}
+	if Solarpass(s.Kind) {
+		return runSolarpass(ctx, s, dir)
+	}
+	if Dagger(s.Kind) {
+		return runDagger(ctx, s, dir)
+	}
 	if s.Kind == "alghadir" {
 		return runAlghadir(ctx, s, dir)
 	}
@@ -323,12 +344,15 @@ func relay(ctx context.Context, a, b net.Conn) {
 		finished++
 	}
 }
-func serveTCP(ctx context.Context, listen string, dial func(context.Context) (net.Conn, error)) error {
+func serveTCP(ctx context.Context, listen string, dial func(context.Context) (net.Conn, error), secure ...*tls.Config) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	l, e := net.Listen("tcp", listen)
 	if e != nil {
 		return e
+	}
+	if len(secure) > 0 {
+		l = tls.NewListener(l, secure[0])
 	}
 	defer l.Close()
 	go func() { <-ctx.Done(); l.Close() }()
@@ -345,6 +369,15 @@ func serveTCP(ctx context.Context, listen string, dial func(context.Context) (ne
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			if secureConn, ok := a.(*tls.Conn); ok {
+				ready, stop := context.WithTimeout(ctx, 5*time.Second)
+				err := secureConn.HandshakeContext(ready)
+				stop()
+				if err != nil {
+					a.Close()
+					return
+				}
+			}
 			b, e := dial(ctx)
 			if e != nil {
 				a.Close()

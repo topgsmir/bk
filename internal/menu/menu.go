@@ -23,7 +23,7 @@ func Run() {
 	requireRoot()
 
 	// Bring the monitoring web panel up in the background and start resolving
-	// the public IP (shown inside the Web Panel section) — unless the operator
+	// the public IP (shown inside the Web Panel section) â€” unless the operator
 	// stopped it, which is a choice this must not undo on every run.
 	if _, _, err := webui.StartUnlessStopped(); err != nil {
 		tui.Warn("Panel Could Not Start: " + err.Error())
@@ -48,7 +48,7 @@ func Run() {
 
 	// Look for a newer release in the background. The menu itself only ever
 	// reads the cached answer, so a slow or blocked GitHub cannot delay a
-	// redraw — the notice simply appears once the check comes back.
+	// redraw â€” the notice simply appears once the check comes back.
 	go manage.RefreshUpdateCheckIfStale(6 * time.Hour)
 
 	for {
@@ -90,6 +90,8 @@ func Run() {
 			uninstallMenu()
 		case "11":
 			manage.AdditionalTunnels()
+		case "12":
+			manage.Package3Tunnels()
 		case "10":
 			tui.Info("Goodbye!")
 			return
@@ -108,7 +110,7 @@ func printUpdateBanner() {
 	if !ok {
 		return
 	}
-	fmt.Printf("  %s⬆ %s Is Available%s %s— Option 8%s\n",
+	fmt.Printf("  %sâ¬† %s Is Available%s %sâ€” Option 8%s\n",
 		tui.Bold+tui.Red, tag, tui.Reset, tui.Gray, tui.Reset)
 }
 
@@ -132,6 +134,7 @@ func printMenu() {
 	menuItem(8, "Update", updateDesc)
 	menuItem(9, "Uninstall", "remove everything")
 	menuItem(11, "Additional Tunnels", "GRE, L2TPv3, AWG, SSH, RGT, Paqet, Alghadir")
+	menuItem(12, "Build Tunnel Package 3", "Dagger and package 3 methods")
 	menuItem(10, "Exit", "")
 	fmt.Println()
 }
@@ -148,12 +151,12 @@ func menuItem(n int, title, desc string) {
 }
 
 // cachedServerIP returns the resolved public IPv4 if known, otherwise a
-// placeholder — it never blocks, so it's safe for redrawn screens.
+// placeholder â€” it never blocks, so it's safe for redrawn screens.
 func cachedServerIP() string {
 	if v, _ := ipStore.Load().(string); v != "" {
 		return v
 	}
-	return "detecting…"
+	return "detectingâ€¦"
 }
 
 // resolveServerIP fetches and caches the public IPv4 (blocking). Used where an

@@ -23,6 +23,9 @@ import (
 type Asset struct{ URL, SHA256, Member string }
 
 func CoreAsset(kind, arch string) (Asset, error) {
+	if SingBox(kind) {
+		return singBoxAsset(arch)
+	}
 	switch kind {
 	case "rgt-tcp", "rgt-udp":
 		if arch != "amd64" {
@@ -53,6 +56,33 @@ func InstallDependencies(ctx context.Context, kind string, out io.Writer) error 
 	}
 	if _, e := CoreAsset(kind, runtime.GOARCH); e != nil {
 		return e
+	}
+	if Eylan(kind) {
+		return installEylan(ctx, kind, out)
+	}
+	if Backhaul(kind) {
+		return installBackhaul(ctx, out)
+	}
+	if Solarpass(kind) {
+		return installSolarpass(ctx, out)
+	}
+	if Dagger(kind) {
+		archive, err := bundledDagger()
+		if err != nil {
+			return err
+		}
+		if _, e := exec.LookPath("ip"); e != nil {
+			if err = runCommand(ctx, command("apt-get", "update")); err != nil {
+				return err
+			}
+			if err = runCommand(ctx, command("apt-get", "install", "-y", "iproute2")); err != nil {
+				return err
+			}
+		}
+		if err = installCoreBytes(archive, Asset{SHA256: "543199de64aac6d39d397d77f1cdf006d900d4be05721a6ba9eca2ccaa1fb26d", Member: "dagger-rs"}, filepath.Join(CoreDir, "dagger-rs")); err != nil {
+			return err
+		}
+		return installDaggerNotices(archive)
 	}
 	packages := []string{"iproute2", "iputils-ping"}
 	switch kind {
@@ -116,11 +146,18 @@ func installAsset(ctx context.Context, a Asset, path string, out io.Writer) erro
 	if e != nil {
 		return e
 	}
+	return installCoreBytes(b, a, path)
+}
+func installCoreBytes(b []byte, a Asset, path string) error {
 	h := sha256.Sum256(b)
 	if hex.EncodeToString(h[:]) != a.SHA256 {
 		return fmt.Errorf("core checksum mismatch; nothing installed")
 	}
-	core, e := extractCore(b, a.Member)
+	limit := int64(32 << 20)
+	if a.Member == "sing-box" {
+		limit = 128 << 20
+	}
+	core, e := extractCore(b, a.Member, limit)
 	if e != nil {
 		return e
 	}
@@ -148,7 +185,11 @@ func installAsset(ctx context.Context, a Asset, path string, out io.Writer) erro
 	}
 	return os.Rename(tmp.Name(), path)
 }
-func extractCore(b []byte, member string) ([]byte, error) {
+func extractCore(b []byte, member string, size ...int64) ([]byte, error) {
+	limit := int64(32 << 20)
+	if len(size) > 0 {
+		limit = size[0]
+	}
 	matches := func(name string) bool {
 		return filepath.Base(name) == member || (member == "paqet" && strings.HasPrefix(filepath.Base(name), "paqet_linux_"))
 	}
@@ -159,11 +200,14 @@ func extractCore(b []byte, member string) ([]byte, error) {
 		}
 		for _, f := range z.File {
 			if !f.FileInfo().IsDir() && matches(f.Name) {
+				if f.UncompressedSize64 > uint64(limit) {
+					return nil, fmt.Errorf("archive member exceeds %d bytes", limit)
+				}
 				r, e := f.Open()
 				if e != nil {
 					return nil, e
 				}
-				b, e := io.ReadAll(io.LimitReader(r, 32<<20))
+				b, e := io.ReadAll(io.LimitReader(r, limit))
 				r.Close()
 				return b, e
 			}
@@ -184,7 +228,10 @@ func extractCore(b []byte, member string) ([]byte, error) {
 				return nil, e
 			}
 			if h.Typeflag == tar.TypeReg && matches(h.Name) {
-				return io.ReadAll(io.LimitReader(t, 32<<20))
+				if h.Size > limit {
+					return nil, fmt.Errorf("archive member exceeds %d bytes", limit)
+				}
+				return io.ReadAll(io.LimitReader(t, limit))
 			}
 		}
 	}

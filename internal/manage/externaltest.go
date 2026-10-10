@@ -26,6 +26,7 @@ const externalTestScheme = "bk://et."
 
 type externalPlan struct {
 	Version           int `json:"v"`
+	BatchSize         int `json:"batch_size,omitempty"`
 	Host, Peer, Token string
 	Coord, TCP, UDP   int
 	Until             int64
@@ -55,11 +56,17 @@ func parseExternalTestLink(raw string) (connTestAddr, error) {
 	return a, nil
 }
 func ExternalConnectionTest() {
+	externalConnectionTestCatalog("Additional Tunnel Connection Test", externaltunnel.Kinds)
+}
+func Package3ConnectionTest() {
+	externalConnectionTestCatalog("Test Tunnel Package 3", externaltunnel.Package3Kinds)
+}
+func externalConnectionTestCatalog(title string, catalog []externaltunnel.Kind) {
 	tui.Clear()
-	tui.Title("Additional Tunnel Connection Test")
+	tui.Title(title)
 	side := tui.ChooseOpt("This Server Is", []tui.Option{{Title: "Iran", Desc: "start temporary tunnels and copy the link"}, {Title: "Kharej", Desc: "paste the Iran test link"}})
 	if side == 0 {
-		externalIranMenu()
+		externalIranMenuCatalog(catalog)
 	} else if side == 1 {
 		externalKharejMenu(tui.Prompt("bk://et. Test Link: "))
 	}
@@ -67,7 +74,7 @@ func ExternalConnectionTest() {
 
 const externalJoinWait = 30 * time.Minute
 
-func externalIranMenu() {
+func externalIranMenuCatalog(catalog []externaltunnel.Kind) {
 	host := strings.TrimSpace(tui.PromptDefault("Iran IPv4 Assigned To Its NIC", linkHost()))
 	peer := strings.TrimSpace(tui.Prompt("Kharej IPv4 Assigned To Its NIC: "))
 	if net.ParseIP(host).To4() == nil || net.ParseIP(peer).To4() == nil {
@@ -77,8 +84,19 @@ func externalIranMenu() {
 	}
 	ctx, cancel := connTestContext()
 	defer cancel()
-	opts := []tui.Option{{Title: "All Additional Methods"}}
-	for _, k := range externaltunnel.Kinds {
+	if package3Catalog(catalog) {
+		if pick := tui.ChooseOpt("Package 3 Test", []tui.Option{{Title: "All Package 3 Methods", Desc: "full matrix; runs four cases at a time"}, {Title: "Select A Family", Desc: "Dagger, Solarpass, Backhaul or Eylan"}}); pick == 1 {
+			var ok bool
+			catalog, ok = choosePackage3Family(catalog)
+			if !ok {
+				return
+			}
+		} else if pick < 0 {
+			return
+		}
+	}
+	opts := []tui.Option{{Title: "All Selected Methods"}}
+	for _, k := range catalog {
 		opts = append(opts, tui.Option{Title: k.Title, Desc: k.Requirement})
 	}
 	selection := tui.ChooseOpt("Test Methods", opts)
@@ -87,9 +105,21 @@ func externalIranMenu() {
 	}
 	var kinds []string
 	if selection > 0 {
-		kinds = []string{externaltunnel.Kinds[selection-1].ID}
+		kinds = []string{catalog[selection-1].ID}
 	}
-	kinds = selectedExternalKinds(kinds)
+	if selection == 0 {
+		for _, k := range catalog {
+			kinds = append(kinds, k.ID)
+		}
+	}
+	ipv6 := [2]string{}
+	for _, kind := range kinds {
+		if kind == "d3-dc6" {
+			ipv6[0] = strings.TrimSpace(tui.Prompt("Iran Assigned IPv6 (Blank = Report Unavailable): "))
+			ipv6[1] = strings.TrimSpace(tui.Prompt("Kharej Assigned IPv6 (Blank = Report Unavailable): "))
+			break
+		}
+	}
 	var direct, reverse *externaltunnel.Spec
 	for _, kind := range kinds {
 		if kind == "ssh" {
@@ -113,14 +143,18 @@ func externalIranMenu() {
 	if ctx.Err() != nil {
 		return
 	}
-	s, e := startExternalTestReady(host, peer, kinds, direct, reverse, preparation)
+	s, e := startExternalTestReadyIPv6(host, peer, kinds, direct, reverse, preparation, ipv6)
 	if e != nil {
 		tui.Error(e.Error())
 		tui.PressEnter()
 		return
 	}
 	defer s.close()
-	tui.Info("Kharej: bk → 0 → Additional tunnels → Kharej. Use The Same Updated Version On Both Servers. Copy This Secret Test Link:")
+	path := "Additional tunnels"
+	if package3Catalog(catalog) {
+		path = "Test Tunnel Package 3"
+	}
+	tui.Info("Kharej: bk -> 0 -> " + path + " -> Kharej. Use The Same Updated Version On Both Servers. Copy This Secret Test Link:")
 	fmt.Println(externalTestLink(s.plan))
 	tui.Info("Waiting For Kharej To Prepare Dependencies And SSH (Up To 30 Minutes). Ctrl+C Stops.")
 	select {
@@ -188,6 +222,9 @@ func startExternalTestOptions(host, peer string, kinds []string, sshSettings *ex
 	return startExternalTestReady(host, peer, kinds, sshSettings, nil, nil)
 }
 func startExternalTestReady(host, peer string, kinds []string, sshSettings, reverseSettings *externaltunnel.Spec, preparation map[string]string) (*externalTest, error) {
+	return startExternalTestReadyIPv6(host, peer, kinds, sshSettings, reverseSettings, preparation, [2]string{})
+}
+func startExternalTestReadyIPv6(host, peer string, kinds []string, sshSettings, reverseSettings *externaltunnel.Spec, preparation map[string]string, ipv6 [2]string) (*externalTest, error) {
 	dir, e := os.MkdirTemp("", "bk-additional-test-")
 	if e != nil {
 		return nil, e
@@ -195,12 +232,26 @@ func startExternalTestReady(host, peer string, kinds []string, sshSettings, reve
 	s := &externalTest{dir: dir}
 	fail := func(e error) (*externalTest, error) { s.close(); return nil, e }
 	used := map[int]bool{}
+	for _, kind := range kinds {
+		if externaltunnel.L2TPIPsec(kind) {
+			for _, port := range []int{500, 4500, 1701} {
+				used[port] = true
+			}
+		}
+	}
 	for _, settings := range []*externaltunnel.Spec{sshSettings, reverseSettings} {
 		if settings != nil {
 			used[settings.Port] = true
 		}
 	}
 	s.plan = externalPlan{Version: 2, Host: host, Peer: peer, Token: ctNewSecret(), Coord: ctPickPort(used, true), TCP: ctPickPort(used, true), UDP: ctPickPort(used, true), Until: time.Now().Add(externalJoinWait + 5*time.Minute + connTestSlack).Unix()}
+	for _, kind := range kinds {
+		if externaltunnel.Dagger(kind) || externaltunnel.Solarpass(kind) || externaltunnel.Backhaul(kind) || externaltunnel.Eylan(kind) {
+			s.plan.Version, s.plan.BatchSize = 3, 4
+			s.plan.Until = time.Now().Add(externalJoinWait + 45*time.Minute + connTestSlack).Unix()
+			break
+		}
+	}
 	s.coord, e = startExternalCoordinator(s.plan.Coord, s.plan.Token)
 	if e != nil {
 		return fail(e)
@@ -210,15 +261,18 @@ func startExternalTestReady(host, peer string, kinds []string, sshSettings, reve
 			kinds = append(kinds, k.ID)
 		}
 	}
+	if s.plan.BatchSize > 0 {
+		s.coord.enableWaves()
+	}
 	id := randomToken(6)
 	index := 0
 	baseID := 500000 + int(time.Now().UnixNano()%1000000)
 	for _, kind := range kinds {
 		protocols := []string{"tcp"}
-		if externaltunnel.Layer3(kind) || kind == "paqet" {
+		if externaltunnel.BothProtocols(kind) {
 			protocols = append(protocols, "udp")
 		}
-		if kind == "rgt-udp" {
+		if externaltunnel.UDPOnly(kind) {
 			protocols = []string{"udp"}
 		}
 		for _, proto := range protocols {
@@ -229,8 +283,16 @@ func startExternalTestReady(host, peer string, kinds []string, sshSettings, reve
 			c := &connTestCase{kind: "extra", tr: tr, name: "xt-" + id + "-" + tr, udp: proto == "udp", entry: ctPickPort(used, true)}
 			spec := externaltunnel.New(c.name, kind, "iran")
 			spec.LocalIP, spec.PeerIP = host, peer
+			spec.LocalIPv6, spec.PeerIPv6 = ipv6[0], ipv6[1]
 			spec.Port = ctPickPort(used, true)
 			spec.SourcePort = ctPickPort(used, true)
+			if externaltunnel.Solarpass(kind) || externaltunnel.Backhaul(kind) || externaltunnel.Eylan(kind) {
+				spec.Port = ctPickSolarBlock(used, 2)
+				spec.SourcePort = ctPickSolarBlock(used, 4)
+			}
+			if externaltunnel.L2TPIPsec(kind) {
+				spec.Port = 1701
+			}
 			spec.ID = baseID + index
 			spec.Secret = ctCaseToken(s.plan.Token, "extra", tr) + ctCaseToken(s.plan.Token, "extra-key", tr)
 			spec.Protocol = proto
@@ -256,7 +318,7 @@ func startExternalTestReady(host, peer string, kinds []string, sshSettings, reve
 				c.skip = why
 			} else if e := externaltunnel.Check(spec); e != nil {
 				c.skip = e.Error()
-			} else {
+			} else if s.plan.BatchSize == 0 {
 				engine, e := startExternalEngine(dir, spec)
 				if e != nil {
 					c.skip = e.Error()
@@ -299,6 +361,12 @@ func (s *externalTest) close() {
 	}
 }
 func (s *externalTest) run(ctx context.Context, progress func(int, ConnTestResult)) []ConnTestResult {
+	if s.plan.BatchSize > 0 {
+		return s.runPackage3Waves(ctx, progress)
+	}
+	return s.runMeasurements(ctx, progress, true)
+}
+func (s *externalTest) runMeasurements(ctx context.Context, progress func(int, ConnTestResult), publish bool) []ConnTestResult {
 	rows := make([]ConnTestResult, len(s.cases))
 	var mu sync.Mutex
 	peerIssues := s.coord.peerIssues()
@@ -341,6 +409,12 @@ func (s *externalTest) run(ctx context.Context, progress func(int, ConnTestResul
 			if r.Status == ctOK {
 				if e := externalPayloadSweep(ctx, c); e != nil {
 					r.Status, r.Detail = ctUnstable, "payload-size test: "+e.Error()
+					report(r)
+				}
+			}
+			if r.Status == ctOK && c.udp && strings.HasPrefix(c.tr, "s3-") {
+				if err := externalSolarUDPConcurrency(ctx, c); err != nil {
+					r.Status, r.Detail = ctUnstable, "concurrent UDP test: "+err.Error()
 					report(r)
 				}
 			}
@@ -394,7 +468,9 @@ func (s *externalTest) run(ctx context.Context, progress func(int, ConnTestResul
 		}
 	}
 	s.best = ctComputeBest(rows, s.cases, 0, s.dir)
-	s.coord.publish(rows, s.best)
+	if publish {
+		s.coord.publish(rows, s.best)
+	}
 	return rows
 }
 func externalPayloadSweep(ctx context.Context, c *connTestCase) error {
@@ -425,7 +501,7 @@ func externalPayloadSweep(ctx context.Context, c *connTestCase) error {
 		if c.udp {
 			n, err := conn.Read(r)
 			if err != nil {
-				return err
+				return fmt.Errorf("%d-byte datagram: %w", size, err)
 			}
 			if n != size {
 				return fmt.Errorf("%d-byte datagram truncated to %d", size, n)
@@ -486,7 +562,7 @@ func runExternalKharejReady(ctx context.Context, raw string, out io.Writer, live
 		}
 		ctSleep(ctx, time.Second)
 	}
-	if !fetched || p.Version != 2 || len(p.Cases) > 32 || p.Host != a.Host || p.Coord != a.Coord || p.Token != a.Tok || time.Now().Unix() > p.Until || p.Until > time.Now().Add(time.Hour).Unix() {
+	if !fetched || (p.Version != 2 && p.Version != 3) || len(p.Cases) > 256 || p.Host != a.Host || p.Coord != a.Coord || p.Token != a.Tok || time.Now().Unix() > p.Until || p.Until > time.Now().Add(2*time.Hour).Unix() {
 		return nil, ConnTestBest{}, fmt.Errorf("additional test configuration missing, expired or incompatible; update bk on both servers")
 	}
 	if e := validateExternalPeerPlan(p); e != nil {
@@ -511,9 +587,12 @@ func runExternalKharejReady(ctx context.Context, raw string, out io.Writer, live
 	if prepare != nil {
 		preparation = prepare(ctx, p.Cases, out)
 	}
+	if p.Version == 3 {
+		return runPackage3Peer(ctx, a, p, dir, preparation, out, live)
+	}
 	for _, spec := range p.Cases {
 		tr := spec.Kind
-		if externaltunnel.Layer3(spec.Kind) || spec.Kind == "paqet" {
+		if externaltunnel.BothProtocols(spec.Kind) {
 			tr += "-" + spec.Protocol
 		}
 		key, known := spec.SSHKey, spec.KnownHosts
@@ -622,7 +701,7 @@ func finishExternalBoard(board *ctBoard, rows []ConnTestResult, best ConnTestBes
 	if board.tty && len(board.shown) > 0 {
 		fmt.Fprintf(&w, "\033[%dF\033[J", len(board.shown))
 	}
-	w.WriteString("ADDITIONAL TUNNEL CONNECTION TEST — " + board.title + "\n" + ctRule() + "\n\n")
+	w.WriteString("ADDITIONAL TUNNEL CONNECTION TEST - " + board.title + "\n" + ctRule() + "\n\n")
 	w.WriteString(additionalTestTable(rows))
 	if best.Transport != "" {
 		speed := "UDP throughput not measured"
@@ -670,13 +749,16 @@ func stopAdditionalEnginesWithin(engines []*ctEngine, timeout time.Duration) {
 // loopback echo endpoints. Reject unrelated services, broad routes and local
 // machine overrides before starting any process or listener as root.
 func validateExternalPeerPlan(p externalPlan) error {
+	if (p.Version == 3 && p.BatchSize != 4) || (p.Version == 2 && p.BatchSize != 0) {
+		return fmt.Errorf("invalid test batch size")
+	}
 	if p.TCP < 1024 || p.TCP > 65535 || p.UDP < 1024 || p.UDP > 65535 || p.TCP == p.UDP || len(p.Cases) == 0 {
 		return fmt.Errorf("invalid additional-test echo endpoints")
 	}
 	names := map[string]bool{}
 	for _, spec := range p.Cases {
 		tr := spec.Kind
-		if externaltunnel.Layer3(spec.Kind) || spec.Kind == "paqet" {
+		if externaltunnel.BothProtocols(spec.Kind) {
 			tr += "-" + spec.Protocol
 		}
 		if spec.Side != "iran" || spec.LocalIP != p.Host || spec.PeerIP != p.Peer || !strings.HasPrefix(spec.Name, "xt-") || !strings.HasSuffix(spec.Name, "-"+tr) || names[spec.Name] {
@@ -722,7 +804,7 @@ func joinExternalDetail(existing, extra string) string {
 }
 func externalTransport(s externaltunnel.Spec) string {
 	tr := s.Kind
-	if externaltunnel.Layer3(s.Kind) || s.Kind == "paqet" {
+	if externaltunnel.BothProtocols(s.Kind) {
 		tr += "-" + s.Protocol
 	}
 	return tr
@@ -761,4 +843,84 @@ func externalEngineDiagnostic(engine *ctEngine) string {
 		}
 	}
 	return ""
+}
+
+func ctPickSolarBlock(used map[int]bool, count int) int {
+	for {
+		port := ctPickPort(used, true)
+		if port+count > 65535 {
+			continue
+		}
+		free := true
+		for n := 1; n < count; n++ {
+			if used[port+n] {
+				free = false
+				break
+			}
+			tcp, err := net.Listen("tcp", net.JoinHostPort("0.0.0.0", strconv.Itoa(port+n)))
+			if err != nil {
+				free = false
+				break
+			}
+			udp, err := net.ListenPacket("udp", net.JoinHostPort("0.0.0.0", strconv.Itoa(port+n)))
+			tcp.Close()
+			if err != nil {
+				free = false
+				break
+			}
+			udp.Close()
+		}
+		if free {
+			for n := 1; n < count; n++ {
+				used[port+n] = true
+			}
+			return port
+		}
+	}
+}
+
+func externalSolarUDPConcurrency(ctx context.Context, c *connTestCase) error {
+	results := make(chan error, 3)
+	for client := 0; client < 3; client++ {
+		go func(client int) {
+			var dialer net.Dialer
+			conn, err := dialer.DialContext(ctx, "udp4", net.JoinHostPort("127.0.0.1", strconv.Itoa(c.entry)))
+			if err != nil {
+				results <- err
+				return
+			}
+			defer conn.Close()
+			for packet := 0; packet < 10; packet++ {
+				body := make([]byte, 512)
+				if _, err = rand.Read(body); err != nil {
+					results <- err
+					return
+				}
+				body[0], body[1] = byte(client), byte(packet)
+				conn.SetDeadline(time.Now().Add(3 * time.Second))
+				if _, err = conn.Write(body); err != nil {
+					results <- err
+					return
+				}
+				reply := make([]byte, 1500)
+				n, err := conn.Read(reply)
+				if err != nil {
+					results <- fmt.Errorf("client %d packet %d: %w", client, packet, err)
+					return
+				}
+				if !bytes.Equal(body, reply[:n]) {
+					results <- fmt.Errorf("client %d packet %d payload mismatch", client, packet)
+					return
+				}
+			}
+			results <- nil
+		}(client)
+	}
+	var failure error
+	for i := 0; i < 3; i++ {
+		if err := <-results; err != nil {
+			failure = err
+		}
+	}
+	return failure
 }
