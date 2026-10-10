@@ -11,7 +11,7 @@ import (
 )
 
 func TestDaggerCatalogAndPairedSettings(t *testing.T) {
-	if len(daggerKinds()) != 44 {
+	if len(daggerKinds()) != 65 {
 		t.Fatal(len(daggerKinds()))
 	}
 	seen := map[string]bool{}
@@ -23,6 +23,10 @@ func TestDaggerCatalogAndPairedSettings(t *testing.T) {
 		s := New("dagger-test", k.ID, "iran")
 		s.LocalIP, s.PeerIP = "192.0.2.1", "192.0.2.2"
 		s.LocalIPv6, s.PeerIPv6 = "fd42:3::1", "fd42:3::2"
+		if DaggerSpoof(s.Kind) {
+			s.IranSpoofSource, s.KharejSpoofSource = "198.18.42.1", "198.18.42.2"
+			s.IranSpoofDestination, s.KharejSpoofDestination = "198.19.42.2", "198.19.42.1"
+		}
 		if e := s.Validate(); e != nil {
 			t.Fatal(k.ID, e)
 		}
@@ -50,6 +54,10 @@ func TestEveryDaggerConfigurationAcceptedBySuppliedCore(t *testing.T) {
 				s := New("verify", kind.ID, side)
 				s.LocalIP, s.PeerIP = "192.0.2.1", "192.0.2.2"
 				s.LocalIPv6, s.PeerIPv6 = "fd42:3::1", "fd42:3::2"
+				if DaggerSpoof(s.Kind) {
+					s.IranSpoofSource, s.KharejSpoofSource = "198.18.42.1", "198.18.42.2"
+					s.IranSpoofDestination, s.KharejSpoofDestination = "198.19.42.2", "198.19.42.1"
+				}
 				s.Protocol = proto
 				dir := t.TempDir()
 				cfg, e := daggerConfig(s, dir)

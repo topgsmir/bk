@@ -31,6 +31,12 @@ func daggerKinds() []Kind {
 			add("d3-"+c+"-"+profile, "Dagger "+strings.ToUpper(c)+" / "+strings.ToUpper(profile))
 		}
 	}
+
+	for _, carrier := range []string{"quantum", "gaming", "tun"} {
+		for _, profile := range []string{"tcp", "udp", "icmp", "gre", "ipip", "bip", "raw"} {
+			add("d3-"+carrier+"-"+profile+"-spoof", "Dagger "+strings.ToUpper(carrier)+" / "+strings.ToUpper(profile)+" / IP Spoof")
+		}
+	}
 	return kinds
 }
 func Dagger(kind string) bool { return strings.HasPrefix(kind, "d3-") }

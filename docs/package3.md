@@ -6,16 +6,24 @@ servers. The original bk engines and original Connection Test remain unchanged.
 
 | Family | Methods | TCP/UDP test cases | Source |
 | --- | ---: | ---: | --- |
-| Dagger | 44 | 88 | supplied `new2/dagger`, dagger-rs 0.2.1 by ir_spoof |
+| Dagger | 65 | 130 | supplied `new2/dagger`, dagger-rs 0.2.1 by ir_spoof |
 | Solarpass | 16 | 30 | supplied `new2/solarpass-tun`, core 2.3.0 |
 | Backhaul | 16 | 24 | supplied `new2/backhaul`, core 2.0.3 |
 | Eylan VPN protocols | 11 | 22 | protocol families in `new2/EylanPanel`; stock engines |
-| Total | 87 | 164 | optional independent adapters |
+| Total | 108 | 206 | optional independent adapters |
 
 Dagger includes TCP, KCP, HTTP/S, WS/S, DC6, Quantum+, XHTTP/XHTTPS
 (stream/packet/auto, both directions), and Quantum/Gaming/TUN profiles
 (TCP, UDP, ICMP, GRE, IPIP, BIP, RAW, DCPI). All forward TCP and UDP. DC6
 requires assigned IPv6 on both servers; its test asks for these addresses.
+
+Dagger also has 21 dedicated IP Spoof variants: all seven ordinary raw
+profiles in Quantum, Gaming and TUN. Source-only, destination-only and combined
+outer addresses can be entered separately for each side, in both test and setup.
+These fields do not alter the real next hop, add routes, or weaken Noise
+authentication. Your actual network must deliver the chosen outer headers.
+DCPI and IP spoofing cannot be combined. Quantum+ is the separate UDP/KCP/FEC
+carrier; it does not accept the raw spoof options.
 
 Solarpass includes TCP/MUX, WS/S/MUX, QUIC/MUX, Hysteria, Spoof, Gamepass,
 Ultimatepass, Speedpass, Ultimategamepass, Speedpassmux and Arenapass.
@@ -110,8 +118,8 @@ traffic in the lab; test the actual Iran/kharej route before selecting a method.
 <div dir="rtl">
 
 پکیج تانل ۳ در گزینهٔ **۱۲** برای ساخت و در **۰ ← Test Tunnel Package 3**
-برای تست قرار دارد. این بسته شامل ۸۷ روش از Dagger، Solarpass، Backhaul
-و پروتکل‌های استاندارد Eylan است؛ مجموع آزمون‌های TCP و UDP آن ۱۶۴ حالت است.
+برای تست قرار دارد. این بسته شامل ۱۰۸ روش از Dagger، Solarpass، Backhaul
+و پروتکل‌های استاندارد Eylan است؛ مجموع آزمون‌های TCP و UDP آن ۲۰۶ حالت است.
 کد موتورهای اصلی bk تغییر نکرده و فایل‌های اولیهٔ `new2` محفوظ هستند.
 
 روی هر دو سرور یک نسخهٔ یکسان نصب کن. ابتدا سمت ایران را بساز و لینک
@@ -121,7 +129,7 @@ traffic in the lab; test the actual Iran/kharej route before selecting a method.
 
 تست ابتدا وابستگی‌ها را آماده می‌کند و سپس تونل واقعی را می‌سازد. هر حالت
 ۶۰ پاسخ، اندازه‌های مختلف بسته و برای TCP انتقال یک مگابایت داده را بررسی
-می‌کند. کل تست حدود ۴۵ تا ۶۰ دقیقه طول می‌کشد و با Ctrl+C متوقف می‌شود.
+می‌کند. کل تست حدود ۶۰ تا ۹۰ دقیقه طول می‌کشد و با Ctrl+C متوقف می‌شود.
 خطای نصب، نبودن درایور یا معماری پشتیبانی‌نشده، همراه دلیل با SETUP-FAIL
 نمایش داده می‌شود. سبز شدن در آزمایش محلی، تضمین باز بودن مسیر شرکت‌های
 اینترنتی نیست؛ مسیر ایران و خارج خودت را با همین منو اندازه بگیر.
@@ -139,4 +147,4 @@ MTU توافق‌شدهٔ AnyConnect رعایت می‌شود و گزینهٔ DT
 
 </div>
 
-*Last verified against bk v1.11.0.*
+*Last verified against bk v1.11.1.*

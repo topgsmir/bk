@@ -29,6 +29,15 @@ jobs:
             kinds: b3-tcp,b3-tcpmux,b3-xtcpmux,b3-ws,b3-wss,b3-wsmux,b3-wssmux,b3-xwsmux,b3-anytls,b3-tun-tcp,b3-tun-ipx-icmp,b3-tun-ipx-ipip,b3-tun-ipx-udp,b3-tun-ipx-tcp,b3-tun-ipx-gre,b3-tun-ipx-bip
           - family: eylan
             kinds: e3-l2tp-ipsec,e3-anyconnect-tls,e3-anyconnect-dtls,e3-wireguard,e3-openvpn-tcp,e3-openvpn-udp,e3-sing-vless,e3-sing-vmess,e3-sing-trojan,e3-sing-shadowsocks,e3-sing-hysteria2
+          - family: dagger-spoof-source
+            spoof_mode: source
+            kinds: d3-quantum-tcp-spoof,d3-quantum-udp-spoof,d3-quantum-icmp-spoof,d3-quantum-gre-spoof,d3-quantum-ipip-spoof,d3-quantum-bip-spoof,d3-quantum-raw-spoof,d3-gaming-tcp-spoof,d3-gaming-udp-spoof,d3-gaming-icmp-spoof,d3-gaming-gre-spoof,d3-gaming-ipip-spoof,d3-gaming-bip-spoof,d3-gaming-raw-spoof,d3-tun-tcp-spoof,d3-tun-udp-spoof,d3-tun-icmp-spoof,d3-tun-gre-spoof,d3-tun-ipip-spoof,d3-tun-bip-spoof,d3-tun-raw-spoof
+          - family: dagger-spoof-destination
+            spoof_mode: destination
+            kinds: d3-quantum-tcp-spoof,d3-quantum-udp-spoof,d3-quantum-icmp-spoof,d3-quantum-gre-spoof,d3-quantum-ipip-spoof,d3-quantum-bip-spoof,d3-quantum-raw-spoof,d3-gaming-tcp-spoof,d3-gaming-udp-spoof,d3-gaming-icmp-spoof,d3-gaming-gre-spoof,d3-gaming-ipip-spoof,d3-gaming-bip-spoof,d3-gaming-raw-spoof,d3-tun-tcp-spoof,d3-tun-udp-spoof,d3-tun-icmp-spoof,d3-tun-gre-spoof,d3-tun-ipip-spoof,d3-tun-bip-spoof,d3-tun-raw-spoof
+          - family: dagger-spoof-both
+            spoof_mode: both
+            kinds: d3-quantum-tcp-spoof,d3-quantum-udp-spoof,d3-quantum-icmp-spoof,d3-quantum-gre-spoof,d3-quantum-ipip-spoof,d3-quantum-bip-spoof,d3-quantum-raw-spoof,d3-gaming-tcp-spoof,d3-gaming-udp-spoof,d3-gaming-icmp-spoof,d3-gaming-gre-spoof,d3-gaming-ipip-spoof,d3-gaming-bip-spoof,d3-gaming-raw-spoof,d3-tun-tcp-spoof,d3-tun-udp-spoof,d3-tun-icmp-spoof,d3-tun-gre-spoof,d3-tun-ipip-spoof,d3-tun-bip-spoof,d3-tun-raw-spoof
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
@@ -53,9 +62,10 @@ jobs:
       - name: Real paired native traffic, bulk, payload sizes and cleanup
         env:
           BK_ADDON_KINDS: ${{ matrix.kinds }}
+          BK_DAGGER_SPOOF_MODE: ${{ matrix.spoof_mode }}
         run: |
           set -o pipefail
-          sudo env PATH="$PATH" BK_LIVE_ADDONS=1 BK_PACKAGE3_TEST=1 BK_ADDON_SOAK=60 BK_ADDON_KINDS="$BK_ADDON_KINDS" BK_ADDON_BINARY="$RUNNER_TEMP/bk-package3" unshare --net --mount --propagation private /bin/sh -c 'ip link set lo up; exec "$@"' bk-package3 "$RUNNER_TEMP/package3.test" -test.run='^TestAdditionalTunnelsAcrossNamespaces$' -test.v -test.timeout=35m | tee "$RUNNER_TEMP/package3-${{ matrix.family }}.log"
+          sudo env PATH="$PATH" BK_LIVE_ADDONS=1 BK_PACKAGE3_TEST=1 BK_ADDON_SOAK=60 BK_ADDON_KINDS="$BK_ADDON_KINDS" BK_DAGGER_SPOOF_MODE="$BK_DAGGER_SPOOF_MODE" BK_ADDON_BINARY="$RUNNER_TEMP/bk-package3" unshare --net --mount --propagation private /bin/sh -c 'ip link set lo up; exec "$@"' bk-package3 "$RUNNER_TEMP/package3.test" -test.run='^TestAdditionalTunnelsAcrossNamespaces$' -test.v -test.timeout=35m | tee "$RUNNER_TEMP/package3-${{ matrix.family }}.log"
       - name: Dagger native wrong-key rejection and recovery
         if: matrix.family == 'dagger-1'
         run: sudo env PATH="$PATH" BK_LIVE_DAGGER=1 go test ./internal/externaltunnel -run '^TestDaggerNativeRejectsWrongIdentity$' -count=1 -v -timeout 2m

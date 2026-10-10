@@ -113,11 +113,27 @@ func TestAdditionalTunnelsAcrossNamespaces(t *testing.T) {
 	if os.Getenv("BK_PACKAGE3_TEST") == "1" {
 		ipv6 = [2]string{"fd42:3::1", "fd42:3::2"}
 	}
-	s, e := startExternalTestReadyIPv6(host, peer, kinds, sshSpec, reverseSpec, nil, ipv6)
+	var spoof [4]string
+	for _, kind := range kinds {
+		if externaltunnel.DaggerSpoof(kind) {
+			switch os.Getenv("BK_DAGGER_SPOOF_MODE") {
+			case "source":
+				spoof = [4]string{"198.18.42.1", "198.18.42.2", "", ""}
+			case "destination":
+				spoof = [4]string{"", "", "198.19.42.2", "198.19.42.1"}
+			default:
+				spoof = [4]string{"198.18.42.1", "198.18.42.2", "198.19.42.2", "198.19.42.1"}
+			}
+			break
+		}
+	}
+	s, e := startExternalTestReadySpoof(host, peer, kinds, sshSpec, reverseSpec, nil, ipv6, spoof)
 	if e != nil {
 		t.Fatal(e)
 	}
 	defer s.close()
+	verifySpoof := observeDaggerSpoofHeaders(t, kinds, host, peer, spoof)
+	defer verifySpoof()
 	exe, _ := os.Executable()
 	child := exec.Command("ip", "netns", "exec", ns, exe, "-test.run=^TestAdditionalTunnelPeerHelper$", "-test.v")
 	child.Env = append(os.Environ(), "BK_ADDITIONAL_PEER="+externalTestLink(s.plan))

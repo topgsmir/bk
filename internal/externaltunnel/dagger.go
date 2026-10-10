@@ -142,6 +142,18 @@ func daggerConfig(s Spec, dir string) (map[string]any, error) {
 		if s.RouterMAC != "" {
 			raw["peer_mac"] = s.RouterMAC
 		}
+		if DaggerSpoof(s.Kind) {
+			source, destination := s.IranSpoofSource, s.IranSpoofDestination
+			if side == "kharej" {
+				source, destination = s.KharejSpoofSource, s.KharejSpoofDestination
+			}
+			if source != "" {
+				raw["spoof_src_ip"] = source
+			}
+			if destination != "" {
+				raw["spoof_dst_ip"] = destination
+			}
+		}
 		endpoint["raw"] = raw
 	}
 	if carrier == "quantum" || carrier == "quantum-gaming" || carrier == "quantum+" {
