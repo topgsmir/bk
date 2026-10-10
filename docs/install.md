@@ -18,6 +18,10 @@ Reopen the menu any time with:
 sudo bk
 ```
 
+Optional cores are not installed just by installing bk or browsing its menus.
+Selecting an additional/Package 3 test or building a tunnel automatically
+prepares only the selected dependencies on each server.
+
 Everything lands in a tidy layout — the release bundle in `/root/bk`,
 backups in `/root/bk/backups`, tunnel configs in `/etc/bk`. See
 [server layout](server-layout.md).
@@ -74,7 +78,8 @@ hand. `install -m 0755` already sets the executable bit, so no `chmod` is needed
 The same way: repeat the steps with the newer archive. `install` replaces the
 binary in place, and your tunnels in `/etc/bk` are untouched. Restart them
 afterwards with `sudo bk` → **Manage → Restart ALL**. Optional additional
-tunnels have their own restart actions under **11 → Manage**; see
+tunnels have their own restart actions under **11 → Manage** and
+**12 → Manage** for Package 3; see
 [additional tunnels](additional-tunnels.md).
 
 ---
@@ -156,4 +161,4 @@ amd64 و `aarch64` یعنی arm64. بهترین راه این است که `insta
 
 ---
 
-*Last verified against bk v1.11.1.*
+*Last verified against bk v1.11.2.*

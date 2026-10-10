@@ -1,5 +1,11 @@
 # topgsmir distribution
 
+## v1.11.2 — Smaller Package 3 tests (2026-10-11)
+
+- Replace the full-matrix test selection with family menus and groups of at most ten actual TCP/UDP test cases. Select one group or one method; retain at most four active cases at a time.
+- Separate Dagger IP Spoof and Solarpass Spoof from normal tests. Ordinary Dagger testing never asks for spoof addresses and cannot be cancelled by missing spoof settings.
+- Prepare only the chosen group's dependencies on each server. Keep build methods, original transport engines and original Connection Test unchanged.
+
 ## v1.11.1 — Dagger IP Spoof integration (2026-10-10)
 
 - Add 21 explicit IP Spoof variants for Quantum, Gaming and TUN raw TCP/UDP/ICMP/GRE/IPIP/BIP/RAW profiles, in both test and setup. Package 3 now has 108 methods and 206 TCP/UDP cases.

@@ -52,16 +52,21 @@ accounts are not installed or distributed.
    `.1` and kharej `.2` in one unused `/30`.
 2. Copy the secret `bk://e.` link to **12 → Apply setup link** on kharej.
    Start the kharej backend. Treat setup and test links like passwords.
-3. On Iran choose **0 → Test Tunnel Package 3** and select all methods or
-   a family. Copy the test link to that menu's **Kharej** option.
-   Dependencies are prepared on both servers before measurement.
+3. On Iran choose **0 → Test Tunnel Package 3 → Iran**, select a family,
+   then **Normal Tests** (Dagger/Solarpass) and one numbered group. Choose
+   **Test This Group** or one listed method. Each group produces at most ten
+   measured TCP/UDP rows, counting each forwarded protocol separately. There
+   is no full-matrix or whole-family shortcut. Copy the test link to that menu's
+   **Kharej** option. Only the selected dependencies are prepared on both servers.
+   Dagger IP Spoof and Solarpass Spoof have a separate **IP Spoof Tests** category;
+   normal groups never require spoof addresses. DC6 still needs assigned IPv6.
 4. The test starts actual paired cores, exchanges 60 echoes, checks several
    payload sizes and transfers a byte-identical 1 MiB TCP payload. Solarpass
    UDP also checks concurrent clients. DTLS requires a real DTLS handshake;
    TLS fallback cannot pass as DTLS.
 
 At most four forwarding cases run together; fixed-port L2TP/IPsec runs alone.
-Allow roughly 45–60 minutes for the full matrix after dependency preparation.
+Run another group with a new test link after the selected group finishes.
 Ctrl+C stops temporary instances. Test instances never become permanent units.
 A failed install, missing kernel, unavailable address or unsupported architecture
 produces SETUP-FAIL with its cause, rather than an unexplained SKIPPED row.
@@ -129,7 +134,10 @@ traffic in the lab; test the actual Iran/kharej route before selecting a method.
 
 تست ابتدا وابستگی‌ها را آماده می‌کند و سپس تونل واقعی را می‌سازد. هر حالت
 ۶۰ پاسخ، اندازه‌های مختلف بسته و برای TCP انتقال یک مگابایت داده را بررسی
-می‌کند. کل تست حدود ۶۰ تا ۹۰ دقیقه طول می‌کشد و با Ctrl+C متوقف می‌شود.
+می‌کند. ابتدا خانواده را انتخاب کن؛ تست عادی و اسپوف جدا هستند.
+هر دسته حداکثر ۱۰ نتیجهٔ TCP/UDP دارد و هم‌زمان حداکثر ۴ تست اجرا می‌شود.
+تست‌های عادی آدرس اسپوف نمی‌خواهند. پس از پایان، دستهٔ بعدی را خودت انتخاب
+کن؛ می‌توانی از هر دسته فقط یک روش را هم تست کنی. Ctrl+C تست را متوقف می‌کند.
 خطای نصب، نبودن درایور یا معماری پشتیبانی‌نشده، همراه دلیل با SETUP-FAIL
 نمایش داده می‌شود. سبز شدن در آزمایش محلی، تضمین باز بودن مسیر شرکت‌های
 اینترنتی نیست؛ مسیر ایران و خارج خودت را با همین منو اندازه بگیر.
@@ -147,4 +155,4 @@ MTU توافق‌شدهٔ AnyConnect رعایت می‌شود و گزینهٔ DT
 
 </div>
 
-*Last verified against bk v1.11.1.*
+*Last verified against bk v1.11.2.*

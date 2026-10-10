@@ -238,4 +238,4 @@ them both ends have to agree on. This says what exists.
 
 ---
 
-*Generated from `config/` on 2026-10-09. Last verified against bk v1.11.1.*
+*Generated from `config/` on 2026-10-11. Last verified against bk v1.11.2.*
