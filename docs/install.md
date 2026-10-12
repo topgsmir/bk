@@ -8,7 +8,8 @@ One command as root on the VPS:
 bash <(curl -fsSL https://raw.githubusercontent.com/topgsmir/bk/main/install.sh)
 ```
 
-It downloads the prebuilt release archive for your architecture (amd64/arm64)
+It downloads the prebuilt Linux release archive for your architecture
+(amd64, arm64, 386, s390x, or armv5/armv6/armv7)
 into `/root/bk`, **verifies it against the checksum published with the
 release**, installs the binary, and opens the menu when it finishes.
 
@@ -91,6 +92,10 @@ published SHA-256, installs it, and **rolls back automatically** if a tunnel doe
 not come back up. Anything that cannot be verified is refused rather than
 installed. [More](updates.md).
 
+For the v1.11.4 optional-tunnel pairing and relay-port fixes, update **both
+servers** and restart the named services under **11 → Manage** or
+**12 → Manage**. Setup Iran creates the link; Setup Kharej imports it.
+
 ## Uninstalling
 
 Run the removal script from your own repository as root:
@@ -161,4 +166,4 @@ amd64 و `aarch64` یعنی arm64. بهترین راه این است که `insta
 
 ---
 
-*Last verified against bk v1.11.2.*
+*Last verified against bk v1.11.4.*
