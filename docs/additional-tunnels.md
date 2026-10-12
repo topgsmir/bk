@@ -32,11 +32,20 @@ and a separate Additional Tunnels test.
    explicitly refused instead of installing an incompatible binary. L2TP loads
    the required kernel drivers; Ubuntu's matching extra-module package is
    installed when needed. Kernels without L2TP support are reported as errors.
-2. Select Setup Iran or Setup Kharej, choose the method and enter the assigned
+2. On Iran select **Setup Iran**, choose the method and enter the assigned
    IPv4 addresses, port, paired ID/secret, tunnel subnet (where applicable), MTU
    and forwarding endpoints. Each additional tunnel has its own named unit.
-3. Copy the resulting `bk://e.` link to **11 -> Apply setup link** on the other
-   server. The link contains the shared secret; keep it private. Machine-local
+   GRE, L2TPv3 IP/UDP, AWG, RGT direct and Alghadir use a separate **paired
+   internal forwarding port** (default 17012). Keep this port unused and different
+   from the kharej backend port; it is carried in the setup link. This avoids
+   conflicting with a backend such as Xray listening on all addresses at 2053.
+3. On kharej select **11 -> Setup Kharej** and paste the resulting Iran
+   `bk://e.` link (**Apply setup link** is an equivalent shortcut). Do not run
+   Setup Iran on both servers. Kharej imports the paired ID, subnet, secret,
+   method and forwarding settings; it does not open a second manual wizard or
+   print a return link. Install the same **v1.11.4 or newer** on both servers.
+   L2TPv3 IP uses IPv4 protocol 115, so it does not ask for a TCP/UDP tunnel port.
+   The link contains the shared secret; keep it private. Machine-local
    SSH keys and physical-interface/MAC overrides are never copied in the link.
 4. Start the backend service on kharej, then use **0 -> Additional tunnels** on
    both servers to verify the real path. A running systemd unit alone is not

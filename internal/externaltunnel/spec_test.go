@@ -83,6 +83,30 @@ func TestL2TPEncapsulationAndScopedRemoval(t *testing.T) {
 		}
 	}
 }
+func TestKernelRelayRejectsBackendPortCollision(t *testing.T) {
+	for _, kind := range []string{"gre", "l2tp-ip", "l2tp-udp", "awg", "rgt-direct", "alghadir"} {
+		s := fixture(kind)
+		if s.SourcePort != 17012 {
+			t.Fatal("new configs need a separate paired relay port")
+		}
+		s.Target = "127.0.0.1:2053"
+		if err := s.Validate(); err != nil {
+			t.Fatal(err)
+		}
+		s.SourcePort = 2053
+		if s.Validate() == nil {
+			t.Fatal("accepted a backend/relay port collision")
+		}
+		s.SourcePort = 0 // Configs from earlier builds use the paired 17012 fallback.
+		if err := s.Validate(); err != nil {
+			t.Fatal(err)
+		}
+		s.Target = "127.0.0.1:17012"
+		if s.Validate() == nil {
+			t.Fatal("accepted a legacy fallback/backend collision")
+		}
+	}
+}
 func TestConfigurationsMatchOfficialCoreSchemas(t *testing.T) {
 	s := fixture("rgt-tcp")
 	if !strings.Contains(s.RGTConfig(), "[server.services.bkforward]") {

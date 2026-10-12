@@ -1,5 +1,18 @@
 # topgsmir distribution
 
+## v1.11.4 — Paired Additional Tunnels setup (2026-10-13)
+
+- Extend the Iran-create/kharej-import setup flow to all 11 Additional Tunnels methods, including L2TPv3 IP/UDP, GRE, AWG, SSH, RGT, Paqet and Alghadir.
+- Reject kharej-origin setup links in both optional managers and stop printing return links on kharej. Keep the shared ID, subnet, secret and forwarding settings; retain local SSH credential preparation on the initiating side.
+- Explain the server role before Iran setup and stop asking for a TCP/UDP tunnel port for L2TPv3 IP, which uses IPv4 protocol 115.
+- Give kernel-based additional tunnels a separate paired internal forwarding port (default 17012). This avoids kharej bind failures when an existing Xray backend listens on all addresses at the target port; reject a relay/backend port collision. Older configurations with no source port use the same paired fallback on both updated servers.
+
+## v1.11.3 — Paired Package 3 setup (2026-10-11)
+
+- Make Setup Kharej import the Iran setup link instead of generating an independent secret and asking for the same manual settings again.
+- Accept only an Iran-origin link from the selected tunnel package. Preserve paired keys, forwarding settings and packet identities; print setup links only on Iran for Package 3.
+- Distinguish local service startup from authenticated tunnel and target-service reachability.
+
 ## v1.11.2 — Smaller Package 3 tests (2026-10-11)
 
 - Replace the full-matrix test selection with family menus and groups of at most ten actual TCP/UDP test cases. Select one group or one method; retain at most four active cases at a time.

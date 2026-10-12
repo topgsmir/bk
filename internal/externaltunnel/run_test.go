@@ -14,10 +14,91 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 )
+
+func TestKernelRelayDoesNotCollideWithWildcardBackend(t *testing.T) {
+	for _, kind := range []string{"gre", "l2tp-ip", "l2tp-udp", "awg", "rgt-direct", "alghadir"} {
+		t.Run(kind, func(t *testing.T) {
+			backend, err := net.Listen("tcp4", "0.0.0.0:0")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer backend.Close()
+			go func() {
+				for {
+					c, err := backend.Accept()
+					if err != nil {
+						return
+					}
+					go func() { defer c.Close(); io.Copy(c, c) }()
+				}
+			}()
+			pickPort := func(ip string) int {
+				l, err := net.Listen("tcp4", net.JoinHostPort(ip, "0"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				port := l.Addr().(*net.TCPAddr).Port
+				l.Close()
+				return port
+			}
+			iran := fixture(kind)
+			iran.IranIP, iran.KharejIP = "127.0.0.1/30", "127.0.0.2/30"
+			iran.SourcePort = pickPort("127.0.0.2")
+			iran.Listen = net.JoinHostPort("127.0.0.1", strconv.Itoa(pickPort("127.0.0.1")))
+			iran.Target = net.JoinHostPort("127.0.0.1", strconv.Itoa(backend.Addr().(*net.TCPAddr).Port))
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			done := make(chan error, 2)
+			go func() { done <- runForward(ctx, iran.Mirror()) }()
+			go func() { done <- runForward(ctx, iran) }()
+			var conn net.Conn
+			for deadline := time.Now().Add(3 * time.Second); time.Now().Before(deadline); {
+				select {
+				case err := <-done:
+					t.Fatalf("forwarder stopped before traffic: %v", err)
+				default:
+				}
+				conn, err = net.DialTimeout("tcp4", iran.Listen, 100*time.Millisecond)
+				if err == nil {
+					break
+				}
+				time.Sleep(20 * time.Millisecond)
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer conn.Close()
+			conn.SetDeadline(time.Now().Add(3 * time.Second))
+			payload := bytes.Repeat([]byte("paired-layer3-relay"), 4096)
+			if _, err = conn.Write(payload); err != nil {
+				t.Fatal(err)
+			}
+			got := make([]byte, len(payload))
+			if _, err = io.ReadFull(conn, got); err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(got, payload) {
+				t.Fatal("forwarded bytes changed")
+			}
+			cancel()
+			for i := 0; i < 2; i++ {
+				select {
+				case err := <-done:
+					if err != nil {
+						t.Fatal(err)
+					}
+				case <-time.After(3 * time.Second):
+					t.Fatal("forwarder did not stop")
+				}
+			}
+		})
+	}
+}
 
 func TestKernelSetupFailureRollsBackOnlyItsOwnTunnel(t *testing.T) {
 	dir := t.TempDir()

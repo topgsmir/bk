@@ -50,8 +50,13 @@ accounts are not installed or distributed.
    unused ports and forwarding endpoints. Each instance needs a unique name,
    tunnel ID and unused private subnet. AnyConnect and L2TP/IPsec need Iran
    `.1` and kharej `.2` in one unused `/30`.
-2. Copy the secret `bk://e.` link to **12 → Apply setup link** on kharej.
-   Start the kharej backend. Treat setup and test links like passwords.
+2. Copy the secret `bk://e.` link to **12 → Setup Kharej** on kharej
+   (**Apply setup link** is an equivalent shortcut). Kharej asks only for the
+   Iran link, retains its secret and forwarding settings, and starts the paired
+   backend. It does not create a second manual configuration or return link.
+   Treat setup and test links like passwords. The configured target service
+   must actually listen on kharej; a running local unit is not proof that the
+   authenticated tunnel or the target service is reachable.
 3. On Iran choose **0 → Test Tunnel Package 3 → Iran**, select a family,
    then **Normal Tests** (Dagger/Solarpass) and one numbered group. Choose
    **Test This Group** or one listed method. Each group produces at most ten

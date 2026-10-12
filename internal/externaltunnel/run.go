@@ -262,12 +262,18 @@ func childRedacted(ctx context.Context, bin string, secrets []string, args ...st
 }
 func runForward(ctx context.Context, s Spec) error {
 	target := s.Target
+	_, port, _ := net.SplitHostPort(target)
+	if KernelRelay(s.Kind) {
+		relayPort := s.SourcePort
+		if relayPort == 0 {
+			relayPort = 17012
+		}
+		port = strconv.Itoa(relayPort)
+	}
 	if s.Side == "iran" {
-		_, port, _ := net.SplitHostPort(target)
 		target = net.JoinHostPort(s.PeerTunnelIP(), port)
 	} else {
 		// Kharej accepts only on its tunnel address and forwards to the real local backend.
-		_, port, _ := net.SplitHostPort(target)
 		s.Listen = net.JoinHostPort(strings.Split(s.TunnelIP(), "/")[0], port)
 		if s.Backend != "" {
 			target = s.Backend

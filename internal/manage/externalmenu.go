@@ -37,7 +37,7 @@ func additionalTunnels(title string, catalog []externaltunnel.Kind) {
 	for {
 		tui.Clear()
 		tui.Title(title)
-		actions := []tui.Option{{Title: "Connection test", Desc: "temporary real tunnels, same echo/soak/bulk test"}, {Title: "Setup Iran", Desc: "create an additional tunnel"}, {Title: "Setup Kharej", Desc: "create the other end"}, {Title: "Apply setup link", Desc: "paired settings from the other server"}, {Title: "Manage", Desc: "start, stop, logs, delete"}, {Title: "Install dependencies", Desc: "pinned cores and required packages"}, {Title: "Prepare SSH authentication", Desc: "dedicated key; verify the host fingerprint"}}
+		actions := []tui.Option{{Title: "Connection test", Desc: "temporary real tunnels, same echo/soak/bulk test"}, {Title: "Setup Iran", Desc: "create paired settings and the link for kharej"}, {Title: "Setup Kharej", Desc: "paste the Iran setup link; no manual pairing"}, {Title: "Apply setup link", Desc: "apply the Iran setup link on kharej"}, {Title: "Manage", Desc: "start, stop, logs, delete"}, {Title: "Install dependencies", Desc: "pinned cores and required packages"}, {Title: "Prepare SSH authentication", Desc: "dedicated key; verify the host fingerprint"}}
 		if len(catalog) > 0 && externaltunnel.Eylan(catalog[len(catalog)-1].ID) {
 			actions = actions[:6]
 		}
@@ -50,14 +50,7 @@ func additionalTunnels(title string, catalog []externaltunnel.Kind) {
 		case 2:
 			setupExternalCatalog("kharej", catalog)
 		case 3:
-			raw := tui.Prompt("bk://e. Link: ")
-			s, e := externaltunnel.ParseLink(raw)
-			if e != nil {
-				tui.Error(e.Error())
-				tui.PressEnter()
-				continue
-			}
-			finishExternalSetup(s)
+			applyExternalSetupLink(catalog)
 		case 4:
 			manageExternalCatalog(catalog)
 		case 5:
@@ -75,6 +68,49 @@ func additionalTunnels(title string, catalog []externaltunnel.Kind) {
 			return
 		}
 	}
+}
+
+// Additional tunnels and Package 3 are created on Iran and imported on kharej.
+// Importing must retain
+// the shared secret, port mapping and raw-packet identities, rather than start
+// a second wizard with a new secret.
+func parseExternalSetupLink(raw string, catalog []externaltunnel.Kind) (externaltunnel.Spec, error) {
+	s, err := externaltunnel.ParseLink(raw)
+	if err != nil {
+		return s, err
+	}
+	if s.Side != "kharej" {
+		return s, fmt.Errorf("Paste the setup link created on Iran, not a link created on kharej")
+	}
+	for _, kind := range catalog {
+		if kind.ID == s.Kind {
+			return s, nil
+		}
+	}
+	return s, fmt.Errorf("This setup link belongs to a different tunnel package")
+}
+
+func applyExternalSetupLink(catalog []externaltunnel.Kind) {
+	tui.Info("Paste The Complete Setup Link Created On The Iran Server. Blank Cancels.")
+	raw := strings.TrimSpace(tui.Prompt("bk://e. Link: "))
+	if raw == "" {
+		return
+	}
+	s, err := parseExternalSetupLink(raw, catalog)
+	if err != nil {
+		tui.Error(err.Error())
+		tui.PressEnter()
+		return
+	}
+	tui.Info(fmt.Sprintf("Apply %s On %s: %s -> %s", s.Name, s.Side, s.LocalIP, s.PeerIP))
+	finishExternalSetup(s)
+}
+
+func externalSetupLink(s externaltunnel.Spec) (string, error) {
+	if s.Side != "iran" {
+		return "", fmt.Errorf("Kharej uses the Iran setup link; no return setup link is needed")
+	}
+	return s.Link()
 }
 func chooseExternalKindCatalog(catalog []externaltunnel.Kind) string {
 	if package3Catalog(catalog) {
@@ -102,6 +138,11 @@ func externalNumber(label string, n int) int {
 	return v
 }
 func setupExternalCatalog(side string, catalog []externaltunnel.Kind) {
+	if side == "kharej" {
+		applyExternalSetupLink(catalog)
+		return
+	}
+	tui.Info("Setup Iran Creates The Frontend And A Link. On The Kharej Server Choose Setup Kharej Instead.")
 	k := chooseExternalKindCatalog(catalog)
 	if k == "" {
 		return
@@ -111,6 +152,8 @@ func setupExternalCatalog(side string, catalog []externaltunnel.Kind) {
 	s.PeerIP = strings.TrimSpace(tui.Prompt("Other Server's IPv4: "))
 	if externaltunnel.L2TPIPsec(k) {
 		tui.Info("L2TP/IPsec Uses UDP 500, 4500 And 1701. Existing VPN Services Must Leave These Ports Free.")
+	} else if k == "l2tp-ip" {
+		tui.Info("L2TPv3 IP Uses IPv4 Protocol 115, Not A TCP/UDP Tunnel Port.")
 	} else if !externaltunnel.SSH(k) {
 		s.Port = externalNumber("Tunnel Port", s.Port)
 	}
@@ -122,6 +165,9 @@ func setupExternalCatalog(side string, catalog []externaltunnel.Kind) {
 		s.KharejIP = tui.PromptDefault("Kharej Tunnel IPv4/CIDR", s.KharejIP)
 		s.ID = externalNumber("Paired Tunnel ID (Unique)", s.ID)
 		s.MTU = externalNumber("MTU", s.MTU)
+	}
+	if externaltunnel.KernelRelay(k) {
+		s.SourcePort = externalNumber("Unused Paired Internal Forwarding Port (Different From Kharej Target Port)", s.SourcePort)
 	}
 	if !externaltunnel.SSH(k) {
 		s.Secret = tui.PromptDefault("Paired Secret (64 Hex Characters, Same On Both Servers)", s.Secret)
@@ -251,11 +297,13 @@ func finishExternalSetup(s externaltunnel.Spec) {
 	if e := run("is-active", "--quiet", externaltunnel.ServiceName(s.Name)); e != nil {
 		tui.Error("The process stopped. Use Additional Tunnels -> Manage -> Log.")
 	} else {
-		tui.Success("Service Started. Run Option 0 On Both Servers To Verify Real Traffic.")
+		tui.Success("Local Service Started. This Alone Does Not Confirm A Connected Tunnel.")
 	}
-	if link, e := s.Link(); e == nil {
-		tui.Info("Setup Link For The Other Server (Contains The Paired Secret):")
+	if link, e := externalSetupLink(s); e == nil {
+		tui.Info("On Kharej Choose Setup Kharej And Paste This Link (Contains The Paired Secret):")
 		fmt.Println(link)
+	} else if s.Side == "kharej" {
+		tui.Info("Paired Settings Applied. No Return Setup Link Is Needed. Verify Traffic To The Kharej Target.")
 	}
 	tui.PressEnter()
 }
@@ -301,7 +349,7 @@ func manageExternalCatalog(catalog []externaltunnel.Kind) {
 		case 3:
 			FollowLog(service)
 		case 4:
-			link, e := s.Link()
+			link, e := externalSetupLink(s)
 			if e == nil {
 				fmt.Println(link)
 			} else {

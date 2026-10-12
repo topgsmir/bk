@@ -84,6 +84,9 @@ func New(name, kind, side string) Spec {
 		connections = 1
 	}
 	port, source := 17010, 0
+	if KernelRelay(kind) {
+		source = 17012
+	}
 	if strings.HasPrefix(kind, "d3-tun-") {
 		source = 17012
 	}
@@ -117,6 +120,16 @@ func Layer3(kind string) bool {
 	if strings.HasPrefix(kind, "d3-tun-") || strings.HasPrefix(kind, "b3-tun-") || (Eylan(kind) && !SingBox(kind)) {
 		return true
 	}
+	switch kind {
+	case "gre", "l2tp-ip", "l2tp-udp", "awg", "rgt-direct", "alghadir":
+		return true
+	}
+	return false
+}
+
+// KernelRelay methods forward through a private tunnel address before reaching
+// the kharej backend. That listener needs a port separate from a wildcard backend.
+func KernelRelay(kind string) bool {
 	switch kind {
 	case "gre", "l2tp-ip", "l2tp-udp", "awg", "rgt-direct", "alghadir":
 		return true
@@ -188,6 +201,16 @@ func (s Spec) Validate() error {
 	}
 	if !validAddr(s.Listen) || !validAddr(s.Target) || (s.Backend != "" && !validAddr(s.Backend)) {
 		return fmt.Errorf("listen and target must be numeric IP:port addresses")
+	}
+	if KernelRelay(s.Kind) {
+		_, targetPort, _ := net.SplitHostPort(s.Target)
+		relayPort := s.SourcePort
+		if relayPort == 0 {
+			relayPort = 17012
+		} // Older paired configs share this fallback.
+		if relayPort < 1024 || strconv.Itoa(relayPort) == targetPort {
+			return fmt.Errorf("choose a paired internal forwarding port >=1024 different from the kharej target port")
+		}
 	}
 
 	if AnyConnect(s.Kind) || L2TPIPsec(s.Kind) {
