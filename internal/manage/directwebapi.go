@@ -456,11 +456,8 @@ func (n NewDirectTunnel) spec() (l3Spec, error) {
 		plan := defaultL3FEC()
 		spec.FECData, spec.FECParity = plan.Data, plan.Parity
 	}
-	if n.MTU > 0 {
-		spec.MTU = n.MTU
-	}
-	spec.MSSClamp, spec.AutoMTU = n.MSSClamp, n.AutoMTU
 	if carrier == "spoof" {
+		spec.Spoof = newSpoofConfig("udp", "", "")
 		if n.Spoof != nil {
 			if err := n.Spoof.apply(&spec.Spoof); err != nil {
 				return l3Spec{}, err
@@ -483,6 +480,14 @@ func (n NewDirectTunnel) spec() (l3Spec, error) {
 				"the spoof carrier needs the Iran server's real IP on this side, " +
 					"because the peer forges the source of every packet it sends")
 		}
+	}
+	applyNewL3CarrierDefaults(&spec)
+	if n.MTU > 0 {
+		spec.MTU = n.MTU
+	}
+	spec.MSSClamp = n.MSSClamp
+	if n.AutoMTU != nil {
+		spec.AutoMTU = n.AutoMTU
 	}
 	return spec, nil
 }
@@ -700,7 +705,7 @@ func applyDirectEdit(l config.L3Config, e DirectEdit) (config.L3Config, error) {
 			return l, err
 		}
 	}
-	if e.Stealth != nil {
+	if e.Stealth != nil && *e.Stealth != spoofStealthOn(l.SpoofConfig) {
 		if *e.Stealth {
 			applySpoofStealth(&l.SpoofConfig)
 		} else {

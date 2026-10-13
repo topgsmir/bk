@@ -16,6 +16,8 @@ import { openScreen } from '../ui/screen.js';
 import { oops, toast } from '../ui/toast.js';
 import { go } from '../router.js';
 import { setupLinkHTML, bindSetupLink } from '../ui/setuplink.js';
+import { directMarkup, readDirect } from '../ui/directedit.js';
+import { fill } from '../ui/form.js';
 
 /* The Iran end of a reverse tunnel: the one whose edits the kharej follows. */
 const tunnelIsIranEnd = (t, settings) => (settings.role || t?.role) === 'server';
@@ -55,53 +57,12 @@ function handOver(root, info, close) {
    form and reading it back are both one pass with no field list to drift.
    Five controls in the preview have no field behind them on the server; they
    carry data-unwired and are left alone rather than posted as invented keys. */
-/* A <select> keeps its first option when the value it is handed matches none
-   of them, which is how "turbo" quietly displayed as "Balanced". The server
-   speaks in values ("turbo", "wss"); the preview's options were written with
-   labels. Match either, and say so when neither fits. */
-function setControl(node, v) {
-  if (node.type === 'checkbox') { node.checked = !!v; return; }
-  const val = Array.isArray(v) ? v.join(', ') : String(v ?? '');
-  if (node.tagName !== 'SELECT') { node.value = val; return; }
-  const want = val.trim().toLowerCase();
-  const hit = [...node.options].find(o =>
-    o.value.trim().toLowerCase() === want || o.textContent.trim().toLowerCase() === want);
-  if (hit) { node.value = hit.value; return; }
-  /* Nothing matched: show the server's value rather than a wrong one. */
-  const opt = new Option(val, val, true, true);
-  node.add(opt);
-}
-
-const dig = (obj, path) => path.split('.').reduce((o, k) => (o ?? {})[k], obj);
-
 function plant(obj, path, value) {
   const keys = path.split('.');
   const last = keys.pop();
   let at = obj;
   for (const k of keys) at = at[k] ??= {};
   at[last] = value;
-}
-
-/* The two halves of the API disagree on one name.
- *
- * Reading a tunnel answers with serverHost; writing one takes serverAddr. The
- * field has to be named for the write — a key the edit handler does not know
- * fails the whole save, and that is what it used to do — so the read is
- * bridged here instead. One alias in one place, rather than a form that cannot
- * be filled or cannot be saved. */
-const READ_ALIAS = { serverAddr: 'serverHost' };
-
-function fill(root, values) {
-  root.querySelectorAll('[name]').forEach(node => {
-    let v = dig(values, node.name);
-    if (v === undefined || v === null) v = dig(values, READ_ALIAS[node.name] || '');
-    if (v === undefined || v === null) return;
-    setControl(node, v);
-  });
-  root.querySelectorAll('[data-unwired]').forEach(n => {
-    n.disabled = true;
-    n.title = 'Not settable over the API — use the CLI';
-  });
 }
 
 /* bindValue renders the tunnel port the way it is typed: "443" when the tunnel
@@ -374,42 +335,6 @@ function syncControls(root) {
  * Edit on a direct tunnel showed the wrong dialog and could not save it. The
  * reverse panes are replaced with the settings a direct tunnel really has, and
  * the save goes where the server reads it. */
-const sw = (name, title, text) => `<div class="tg"><div class="tx"><b>${title}</b><span>${text}</span></div>` +
-  `<div class="sww" data-name="${name}"><i></i></div></div>`;
-const field = (name, label, hint = '') => `<div class="f"><label>${label}</label>` +
-  `<input name="${name}" type="text">${hint ? `<div class="hint">${hint}</div>` : ''}</div>`;
-
-function directMarkup(set) {
-  const ports = !!set.holdsPorts;
-  return `<div class="pane" data-tab="Direct">` +
-    (ports ? field('ports', 'Forwarded ports', 'Comma separated. Blank leaves a plain TUN tunnel.') +
-      sw('acceptUdp', 'Accept UDP', 'Carry UDP over the forwarded ports.') : '') +
-    `<div class="f"><label>Performance preset</label><div class="sel" data-name="preset">Turbo` +
-    `<span class="sp"></span><svg class="x" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div></div>` +
-    `<div class="two">${field('mtu', 'MTU')}` +
-    (set.carrier === 'udp' ? field('paths', 'Sockets', '1 is one socket; 2–8 spread it.') : '<div></div>') + `</div>` +
-    sw('autoMtu', 'Auto MTU', 'Measure the path and correct the MTU once up.') +
-    sw('fec', 'Error correction (FEC)', 'Spare packets repair loss. Both ends must match.') +
-    (set.carrier === 'spoof' ? sw('stealth', 'Stealth', 'Padding and header cosmetics. Both ends must match.') : '') +
-    (ports ? `<div class="two">${field('maxConnections', 'Max connections', '0 is no limit.')}` +
-      `${field('bandwidthMbps', 'Bandwidth (Mbit/s)', '0 is no limit.')}</div>` : '') +
-    `</div>`;
-}
-
-const DIRECT_NUMBERS = new Set(['mtu', 'paths', 'maxConnections', 'bandwidthMbps']);
-
-function readDirect(root) {
-  const out = {};
-  root.querySelectorAll('.panes input[name]').forEach(n => {
-    const v = n.type === 'checkbox' ? n.checked
-            : DIRECT_NUMBERS.has(n.name) ? Number(n.value.trim())
-            : n.value;
-    if (typeof v === 'number' && Number.isNaN(v)) return;
-    out[n.name] = v;
-  });
-  return out;
-}
-
 export async function editView(ctx) {
   const name = ctx.params.name;
   /* A deep link arrives before the first poll, so the tunnel may not be in the
@@ -508,9 +433,9 @@ export async function editView(ctx) {
         });
       }
       save?.addEventListener('click', async () => {
-        const payload = direct ? { name, direct: readDirect(root) } : { name, ...read(root) };
         save.disabled = true;
         try {
+          const payload = direct ? { name, direct: readDirect(root, settings) } : { name, ...read(root) };
           const r = await api.tunnelEdit(payload);
           if (r.status === 'partial') {
             /* This end changed and the other did not. Half the values on this

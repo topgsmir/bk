@@ -345,6 +345,7 @@ func askSpoofCarrier(sc *config.SpoofConfig, onIran bool) {
 // not asked to change.
 func askSpoofShared(sc *config.SpoofConfig) {
 	fmt.Println()
+	fresh := sc.SpoofProfile == ""
 	if sc.SpoofProfile == "" || tui.Confirm("Change Packet Profile (Now "+sc.SpoofProfile+")", false) {
 		sc.SpoofProfile = askSpoofProfile("Packet Profile")
 	}
@@ -357,10 +358,23 @@ func askSpoofShared(sc *config.SpoofConfig) {
 	} else {
 		sc.SpoofUplink, sc.SpoofDownlink = "", ""
 	}
+	if fresh && isSpoofUDP(*sc) {
+		defaults := newSpoofConfig(sc.SpoofProfile, sc.SpoofUplink, sc.SpoofDownlink)
+		sc.SpoofShufflePort, sc.SpoofPortMin, sc.SpoofPortMax = defaults.SpoofShufflePort, defaults.SpoofPortMin, defaults.SpoofPortMax
+		sc.SpoofSockBuf = defaults.SpoofSockBuf
+	}
 	if tui.Confirm("Stealth (Padding And Header Cosmetics)", spoofStealthOn(*sc)) {
 		applySpoofStealth(sc)
 	} else if spoofStealthOn(*sc) {
 		clearSpoofStealth(sc)
+	}
+	sc.SpoofShufflePort = tui.Confirm("Rotate Source Port (Independent Of Stealth)", sc.SpoofShufflePort)
+	if sc.SpoofShufflePort {
+		if sc.SpoofPortMin == 0 || sc.SpoofPortMax == 0 {
+			sc.SpoofPortMin, sc.SpoofPortMax = 49152, 65535
+		}
+	} else {
+		sc.SpoofPortMin, sc.SpoofPortMax = 0, 0
 	}
 }
 
@@ -371,15 +385,20 @@ func askSpoofLocal(sc *config.SpoofConfig, onIran bool) {
 	if onIran {
 		other = "Kharej"
 	}
-	for net.ParseIP(sc.SpoofPeerIP).To4() == nil {
-		sc.SpoofPeerIP = strings.TrimSpace(tui.Prompt(other + " Real IPv4: "))
+	for {
+		sc.SpoofPeerIP = strings.TrimSpace(tui.PromptDefault(other+" Real IPv4", sc.SpoofPeerIP))
 		if net.ParseIP(sc.SpoofPeerIP).To4() == nil {
 			tui.Error("Enter an IPv4 address, like 203.0.113.10.")
 			tui.StopIfInputGone()
+			continue
 		}
+		break
 	}
 	for {
-		raw := strings.TrimSpace(tui.PromptDefault("Forged Source IPv4 (Comma Separated, Blank = None)", strings.Join(spoofSources(*sc), ", ")))
+		raw := strings.TrimSpace(tui.PromptDefault("Forged Source IPv4 (Comma Separated, '-' = None)", strings.Join(spoofSources(*sc), ", ")))
+		if raw == "-" {
+			raw = ""
+		}
 		pool, err := parseIPv4List(raw, "forged source")
 		if err != nil {
 			tui.Error(err.Error())
@@ -393,6 +412,19 @@ func askSpoofLocal(sc *config.SpoofConfig, onIran bool) {
 		if len(pool) > 1 {
 			sc.SpoofSrcPool = pool
 		}
+		break
+	}
+	for {
+		raw := strings.TrimSpace(tui.PromptDefault("Expected Peer Forged IPv4 ('-' = Any Authenticated Source)", sc.SpoofPeerSrcIP))
+		if raw == "-" {
+			raw = ""
+		}
+		if raw != "" && net.ParseIP(raw).To4() == nil {
+			tui.Error("Enter one IPv4 address or leave it blank for a rotating source pool.")
+			tui.StopIfInputGone()
+			continue
+		}
+		sc.SpoofPeerSrcIP = raw
 		break
 	}
 	// Only asked where there is a choice.
@@ -433,14 +465,11 @@ func spoofSources(sc config.SpoofConfig) []string {
 // and carries nothing — the failure this whole carrier is worst at explaining.
 // Setting them together means "the same answer on both ends" is one answer.
 //
-// The values are the reference implementation's: a padding ceiling of 64 bytes,
-// and the ephemeral range for the source port.
+// Source-port rotation is independent: turning Stealth off must not undo it.
 func applySpoofStealth(sc *config.SpoofConfig) {
 	sc.SpoofPadding, sc.SpoofPaddingMax = true, 64
 	sc.SpoofTTLJitter = true
 	sc.SpoofRandomDSCP = true
-	sc.SpoofShufflePort = true
-	sc.SpoofPortMin, sc.SpoofPortMax = 49152, 65535
 	// Only the tcp profile carries a TLS record header; on the others the flag
 	// is read and ignored, so setting it would be a setting that does nothing.
 	if up, down := network.ResolveSpoofDirections(sc.SpoofProfile, sc.SpoofUplink, sc.SpoofDownlink); up == "tcp" || down == "tcp" {
@@ -476,6 +505,12 @@ func spoofSummary(sc config.SpoofConfig, onIran bool) {
 	fmt.Println()
 	tui.Info("Spoof: " + profile + " · Forged Source: " + src + " · Stealth: " + stealth)
 	tui.Info(other + " Real IP: " + sc.SpoofPeerIP)
+	tui.Info("Expected Peer Forged IP: " + orDefault(sc.SpoofPeerSrcIP, "any authenticated source"))
+	rotation := "off"
+	if sc.SpoofShufflePort {
+		rotation = fmt.Sprintf("on (%d–%d)", sc.SpoofPortMin, sc.SpoofPortMax)
+	}
+	tui.Info("Source-Port Rotation: " + rotation)
 }
 
 // askSpoofProfile prompts for one packet profile and returns its config value.
@@ -777,15 +812,11 @@ func askSimpleAuth(s *TunnelSpec, transport string) {
 	s.SimpleAuth = tui.Confirm("Simple Token Auth (Only Behind A TLS-Terminating Proxy)", s.SimpleAuth)
 }
 
-// clearSpoofStealth is applySpoofStealth's opposite: it puts the carrier back to
-// plain packets, including the bounds the knobs carried, so a config that has
-// been switched off does not keep a port range and a padding ceiling that
-// nothing reads.
+// clearSpoofStealth removes padding and header cosmetics, retaining the
+// independently configured source-port rotation.
 func clearSpoofStealth(sc *config.SpoofConfig) {
 	sc.SpoofPadding, sc.SpoofPaddingMax = false, 0
 	sc.SpoofTTLJitter = false
 	sc.SpoofRandomDSCP = false
-	sc.SpoofShufflePort = false
-	sc.SpoofPortMin, sc.SpoofPortMax = 0, 0
 	sc.SpoofFakeTLS = false
 }

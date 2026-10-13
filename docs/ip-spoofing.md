@@ -18,6 +18,31 @@ The reference page for the `spoof` transport: what it is, and what every single
 setting does. For a step-by-step first setup, use
 **[the IP Spoofing tutorial](../tutorial/ip-spoofing.md)** instead.
 
+### bk v1.11.5 setup and settings
+
+For a new Direct Spoof tunnel with UDP in both directions, the wizard uses
+MTU **1280**, **Auto MTU off**, an **8 MiB** packet-socket buffer and source-port
+rotation over **49152–65535**. Rotation is a separate question from Stealth:
+padding and header cosmetics can stay off while rotation stays on. These are
+setup defaults; existing files are not silently rewritten and advanced MTU
+choices remain available. A working route must still be verified with traffic.
+
+Create Iran first, then import its setup link on Kharej. The link carries the
+MTU/Auto MTU choice, rotation (including explicit off), range and packet buffer.
+It carries Iran's real address and turns Iran's single forged source into
+Kharej's expected peer source. Kharej asks for its own forged source separately.
+Leave the expected peer source blank if that peer rotates a source pool. Both
+servers must run v1.11.5 or later to import these new link fields.
+
+In the panel, open the existing tunnel's **Edit** screen. IP spoofing shows this
+server's forged source or pool, the other server's real IPv4 and its expected
+forged IPv4, plus the interface, rotation, source-port range and packet buffer.
+Saving retains unshown carrier tuning. In the CLI use **Manage → Edit → IP
+Spoofing**; the summary lists these addresses and the current rotation. **All
+Questions Again** allows changing the addresses. If you change a forged source,
+update the other server's expected peer source too. Forging the source does not
+hide the packet's real destination address.
+
 ```
 Setup → Experimental → IP Spoofing
 ```
@@ -189,18 +214,22 @@ part and none of the "both ends must be in the same mode" that the relay needed.
 
 **The short answer is Stealth.** The wizard asks one question — *Turn Stealth
 on* — and the panel has one switch, and both set the whole group below at once:
-padding, TTL and DSCP variation, a moving source port, and the fake TLS record
+padding, TTL and DSCP variation, and the fake TLS record
 header where the profile carries one.
 
-That is one answer rather than seven on purpose. Two of these settings change
-what goes on the wire and so **must match at the other end**, and five do not.
+Source-port rotation is independent in bk v1.11.5 and defaults to on for new
+UDP setups. Switching Stealth off leaves the chosen rotation and range intact.
+
+Two of the Stealth settings change
+what goes on the wire and so **must match at the other end**.
 Set individually, sooner or later a wire-changing one is set on a single end,
 and the result is a tunnel that connects and carries nothing — the failure this
 carrier is worst at explaining. As a group, "the same answer on both ends" is
 one answer.
 
 The individual keys are below, for a setup being tuned against a particular
-path. **All are off by default and none is needed for a working tunnel.** Each
+path. Engine configs that omit these keys keep them off; the bk UDP setup
+wizard enables source-port rotation. Each
 costs something — bandwidth, CPU, or a shape a different filter notices instead.
 **Change one at a time and test.**
 
@@ -311,17 +340,23 @@ jitter، DSCP، shuffle پورت، رابط شبکه، بافر سوکت و MTU.
 آدرسی را بگذار که **تستر** گفته می‌رسد.
 
 **Stealth:** ویزارد یک سؤال می‌پرسد — *Turn Stealth on* — و همان یک جواب کل
-گروهِ ضدِ DPI را روشن می‌کند: padding، تغییر TTL و DSCP، جابه‌جایی پورت مبدأ، و
+گروهِ ضدِ DPI را روشن می‌کند: padding، تغییر TTL و DSCP، و
 هدر جعلی TLS آنجا که پروفایل TCP باشد. یک سؤال است نه هفت‌تا، چون دوتای این‌ها
 سیم را عوض می‌کنند و **باید در دو طرف یکی باشند**؛ اگر تک‌تک تنظیم شوند، دیر یا
 زود یکی‌شان فقط روی یک سمت روشن می‌ماند و تونل وصل می‌شود ولی چیزی رد نمی‌کند.
+
+در bk نسخهٔ 1.11.5، چرخش پورت مبدأ گزینه‌ای مستقل است و در ساخت جدیدِ اسپوف
+UDP پیش‌فرض روشن است. خاموش کردن Stealth آن را خاموش نمی‌کند. MTU ساخت جدید
+۱۲۸۰ است و Auto MTU خاموش؛ لینک ایران این انتخاب‌ها را به خارج منتقل می‌کند.
+در Edit پنل، آی‌پی اسپوف خود سرور، آی‌پی واقعی طرف مقابل و آی‌پی اسپوف مورد
+انتظارِ طرف مقابل نمایش داده می‌شوند و قابل ویرایش هستند.
 
 **حالت relay حذف شد.** آن یک شکل از ترنسپورت spoofِ reverse بود و با خودش رفت.
 چیزی از دست نرفت: تونل direct یک شبکه‌ی خصوصی بین دو ماشین است، پس وایرگارد
 **روی آن route می‌شود** نه اینکه از داخلش pipe شود.
 
-**بخش Fingerprint & evasion** همه‌اش پیش‌فرض خاموش است و هیچ‌کدام برای کارکردن
-تونل لازم نیست. مهم‌ترین‌هایشان: `spoof_sockbuf` (اگر سرعت خیلی کمتر از لینک
+**بخش Fingerprint & evasion** در فایل خامِ بدون این کلیدها خاموش است؛ ویزارد
+جدیدِ UDP چرخش پورت مبدأ را روشن می‌کند. مهم‌ترین‌هایشان: `spoof_sockbuf` (اگر سرعت خیلی کمتر از لینک
 است بالا ببر) و `spoof_mtu` (اگر انتقال‌های بزرگ خراب می‌شود پایین بیاور).
 
 **تستر (`Manage → IP Spoofing Tester`)** دو طرفه است: اول Receiver را روی یک

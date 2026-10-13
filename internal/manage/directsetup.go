@@ -209,6 +209,7 @@ func setupL3(side directSide) {
 
 	cfg.MTU, cfg.Iface = defaultL3MTU, freeL3Iface()
 	chooseL3Preset(false).apply(&cfg)
+	applyNewL3CarrierDefaults(&cfg)
 	if tui.Confirm("Fine-Tune The Advanced Settings", false) {
 		askL3Advanced(&cfg, side, side == sideIran)
 	}
@@ -350,12 +351,16 @@ func setupL3FromLink(chosen string) {
 		// server really is, behind its forged sources.
 		var own config.SpoofConfig
 		own.SpoofPeerIP = form.SpoofPeerIP
+		if form.Spoof != nil {
+			own.SpoofPeerSrcIP = form.Spoof.PeerSrcIP
+		}
 		askSpoofLocal(&own, false)
 		form.SpoofPeerIP = own.SpoofPeerIP
 		if form.Spoof == nil {
 			form.Spoof = &SpoofTune{}
 		}
 		form.Spoof.SrcIPs = strings.Join(spoofSources(own), ", ")
+		form.Spoof.PeerSrcIP = own.SpoofPeerSrcIP
 		form.Spoof.Interface = own.SpoofInterface
 		OfferRelaxRPFilter(own.SpoofInterface, own.SpoofPeerIP)
 	}
@@ -497,10 +502,8 @@ func askL3Advanced(cfg *l3Spec, side directSide, addresses bool) {
 
 	fmt.Println()
 	cfg.MTU = tui.PromptInt("Starting MTU", cfg.MTU)
-	if !tui.Confirm("Auto MTU (Measure And Correct)", true) {
-		off := false
-		cfg.AutoMTU = &off
-	}
+	auto := tui.Confirm("Auto MTU (Measure And Correct)", cfg.AutoMTU == nil || *cfg.AutoMTU)
+	cfg.AutoMTU = &auto
 
 	cfg.Iface = tui.PromptDefault("Interface Name", cfg.Iface)
 

@@ -105,6 +105,12 @@ type ShareLink struct {
 	SrcIPs    string `json:"ss,omitempty"`
 	Stealth   bool   `json:"sl,omitempty"`
 	ICMPReply bool   `json:"si,omitempty"`
+	// Optional setup recommendations. A pointer preserves an explicit "off"
+	// while older links, which omitted rotation, get the new UDP defaults.
+	ShufflePort  *bool `json:"sr,omitempty"`
+	PortMin      int   `json:"sn,omitempty"`
+	PortMax      int   `json:"sx,omitempty"`
+	SpoofSockBuf int   `json:"sb,omitempty"`
 
 	// Reverse only, and paired. SimpleAuth changes how a wss client proves
 	// itself, and a server expecting the other kind refuses it; the smux
@@ -385,6 +391,12 @@ func MirrorForPeer(l ShareLink) PeerForm {
 		}
 	} else {
 		f.Carrier = l.Tr
+		// On older producers, an omitted auto_mtu means enabled. Do not
+		// reinterpret that as the new Spoof UDP setup default (disabled).
+		if l.Tr == "spoof" && f.AutoMTU == nil {
+			auto := true
+			f.AutoMTU = &auto
+		}
 		if l.SNI != "" {
 			f.SNIDomain = l.SNI
 			paired = append(paired, "sniDomain")
@@ -440,6 +452,15 @@ func MirrorForPeer(l ShareLink) PeerForm {
 			Uplink:    l.Uplink,
 			Downlink:  l.Downlink,
 			ICMPReply: l.ICMPReply,
+		}
+		defaults := newSpoofConfig(l.Profile, l.Uplink, l.Downlink)
+		sp.ShufflePort, sp.PortMin, sp.PortMax = defaults.SpoofShufflePort, defaults.SpoofPortMin, defaults.SpoofPortMax
+		sp.SockBuf = defaults.SpoofSockBuf
+		if l.ShufflePort != nil {
+			sp.ShufflePort, sp.PortMin, sp.PortMax = *l.ShufflePort, l.PortMin, l.PortMax
+		}
+		if l.SpoofSockBuf > 0 {
+			sp.SockBuf = l.SpoofSockBuf
 		}
 		paired = append(paired, "spoof.profile")
 		if l.Uplink != "" || l.Downlink != "" {
@@ -578,6 +599,12 @@ func shareLinkOf(name, host string, cfg config.Config) (string, error) {
 		l.SrcIPs = strings.Join(nonEmpty(append([]string{sc.SpoofSrcIP}, sc.SpoofSrcPool...)), ", ")
 		l.Stealth = spoofStealthOn(sc)
 		l.ICMPReply = sc.SpoofICMPReply
+		if l.Tr == "spoof" {
+			rotate := sc.SpoofShufflePort
+			l.ShufflePort = &rotate
+			l.PortMin, l.PortMax = sc.SpoofPortMin, sc.SpoofPortMax
+			l.SpoofSockBuf = sc.SpoofSockBuf
+		}
 
 	case cfg.Server.BindAddr != "":
 		l.Kind, l.From = "reverse", "iran" // the reverse server is the Iran side

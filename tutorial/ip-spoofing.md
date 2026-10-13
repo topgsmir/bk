@@ -103,7 +103,12 @@ If the machine has **more than one** network interface you are also asked which
 one the raw packets leave by. Empty lets the kernel route, which is right unless
 you know it picks wrong.
 
-### Step 4 — Stealth
+### Step 4 — Stealth and source-port rotation
+
+In bk v1.11.5, source-port rotation is asked separately and defaults to on for
+new UDP profiles, even with Stealth off. Its default range is 49152–65535.
+The new UDP setup also uses MTU 1280 and Auto MTU off; use the Iran setup link
+on an updated Kharej server to carry these choices across.
 
 ```
 Turn Stealth on [y/N]
@@ -113,7 +118,7 @@ Turn Stealth on [y/N]
 packets look like, or you will not know which of the two you are debugging.
 
 Stealth is one answer standing for the whole anti-fingerprinting group: random
-padding on every packet, a varying TTL and DSCP byte, a moving source port, and
+padding on every packet, a varying TTL and DSCP byte, and
 — on a `tcp` profile — a TLS record header in front, so a middlebox reads the
 flow as HTTPS. It is one question rather than seven because two of those change
 what goes on the wire and **must match at the other end**; as a group, that is

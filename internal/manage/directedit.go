@@ -426,7 +426,7 @@ func spoofCarrierSummary(sc config.SpoofConfig) string {
 	source := "unforged"
 	switch {
 	case len(sc.SpoofSrcPool) > 1:
-		source = fmt.Sprintf("%d forged sources", len(sc.SpoofSrcPool))
+		source = fmt.Sprintf("%d forged sources: %s", len(sc.SpoofSrcPool), strings.Join(sc.SpoofSrcPool, ", "))
 	case sc.SpoofSrcIP != "":
 		source = sc.SpoofSrcIP
 	}
@@ -434,7 +434,12 @@ func spoofCarrierSummary(sc config.SpoofConfig) string {
 	if spoofStealthOn(sc) {
 		stealth = "Stealth on"
 	}
-	return profile + ", " + source + ", " + stealth
+	rotation := "source-port rotation off"
+	if sc.SpoofShufflePort {
+		rotation = fmt.Sprintf("source-port rotation %d–%d", sc.SpoofPortMin, sc.SpoofPortMax)
+	}
+	return profile + ", " + source + ", peer real " + orDefault(sc.SpoofPeerIP, "unset") +
+		", expected peer source " + orDefault(sc.SpoofPeerSrcIP, "any authenticated source") + ", " + rotation + ", " + stealth
 }
 
 // editL3Spoof changes the forged-source carrier of a running tunnel.
@@ -450,6 +455,7 @@ func spoofCarrierSummary(sc config.SpoofConfig) string {
 // order is what keeps a pair in step. It ends in the same summary the setup
 // does, which is where a mismatch is caught.
 func editL3Spoof(t Tunnel, l config.L3Config) bool {
+	spoofSummary(l.SpoofConfig, !strings.EqualFold(strings.TrimSpace(l.Mode), "listen"))
 	onIran := !strings.EqualFold(strings.TrimSpace(l.Mode), "listen")
 	there := "kharej"
 	if !onIran {

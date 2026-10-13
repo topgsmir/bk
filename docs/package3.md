@@ -161,4 +161,4 @@ MTU توافق‌شدهٔ AnyConnect رعایت می‌شود و گزینهٔ DT
 
 </div>
 
-*Last verified against bk v1.11.4.*
+*Last verified against bk v1.11.5.*

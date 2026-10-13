@@ -13,7 +13,7 @@ import (
 // These pin the parts of that where being close is the same as being wrong.
 
 // On and off again must land exactly where it started, or a tunnel switched off
-// keeps a port range and a padding ceiling nothing reads — and the Edit screen
+// keeps a padding ceiling nothing reads — and the Edit screen
 // goes on describing a tunnel that is not running.
 func TestStealthOffUndoesStealthOnExactly(t *testing.T) {
 	before := config.SpoofConfig{SpoofProfile: "udp", SpoofSrcIP: "203.0.113.10"}
@@ -41,8 +41,8 @@ func TestStealthTurnsOnEveryKnobItPromises(t *testing.T) {
 	if !sc.SpoofTTLJitter || !sc.SpoofRandomDSCP {
 		t.Error("the header cosmetics are not on")
 	}
-	if !sc.SpoofShufflePort || sc.SpoofPortMin <= 0 || sc.SpoofPortMax <= sc.SpoofPortMin {
-		t.Errorf("the source port shuffle has no usable range: %d-%d", sc.SpoofPortMin, sc.SpoofPortMax)
+	if sc.SpoofShufflePort || sc.SpoofPortMin != 0 || sc.SpoofPortMax != 0 {
+		t.Error("Stealth changed the independent source-port rotation setting")
 	}
 }
 

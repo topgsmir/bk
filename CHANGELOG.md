@@ -1,5 +1,12 @@
 # topgsmir distribution
 
+## v1.11.5 — Reproducible Spoof UDP setup and visible addresses (2026-10-13)
+
+- Use MTU 1280, Auto MTU off, an 8 MiB packet-socket buffer and source-port rotation in the 49152–65535 range for new Direct Spoof UDP setups. Keep explicit advanced/imported choices and other carriers' defaults.
+- Carry source-port rotation, its range and the packet buffer in the Iran setup link, including an explicit rotation-off choice. Update both servers before importing newly generated links.
+- Show and edit this server's forged source or pool, the peer's real IPv4, the expected peer forged IPv4, interface and source-port rotation in the panel's Direct Edit screen. Show the full address list and peer addresses in CLI settings too.
+- Separate source-port rotation from Stealth. Saving an address change with Stealth off retains rotation and carrier settings outside the visible form; toggling Stealth preserves the chosen source-port range.
+
 ## v1.11.4 — Paired Additional Tunnels setup (2026-10-13)
 
 - Extend the Iran-create/kharej-import setup flow to all 11 Additional Tunnels methods, including L2TPv3 IP/UDP, GRE, AWG, SSH, RGT, Paqet and Alghadir.

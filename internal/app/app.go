@@ -10,7 +10,7 @@ import (
 
 const (
 	// Version of the bk engine.
-	Version = "v1.11.4"
+	Version = "v1.11.5"
 
 	// UpstreamVersion identifies the inherited engine documentation baseline.
 	UpstreamVersion = "v1.8.5"
