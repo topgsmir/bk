@@ -704,6 +704,9 @@ func applyDirectEdit(l config.L3Config, e DirectEdit) (config.L3Config, error) {
 		if err := e.Spoof.apply(&l.SpoofConfig); err != nil {
 			return l, err
 		}
+		if strings.EqualFold(strings.TrimSpace(l.Mode), "listen") && net.ParseIP(l.SpoofPeerIP).To4() == nil {
+			return l, fmt.Errorf("the spoof listener needs the other server's real IPv4 to send replies")
+		}
 	}
 	if e.Stealth != nil && *e.Stealth != spoofStealthOn(l.SpoofConfig) {
 		if *e.Stealth {

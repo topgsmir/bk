@@ -141,3 +141,17 @@ func TestSpoofEditKeepsRotationAndHiddenSettingsWhenStealthIsOff(t *testing.T) {
 		t.Fatal("Stealth toggle disabled independent rotation")
 	}
 }
+
+func TestSpoofListenerEditRejectsMissingRealPeerBeforeSaving(t *testing.T) {
+	l := config.L3Config{Carrier: "spoof", Mode: "listen", SpoofConfig: newSpoofConfig("udp", "", "")}
+	l.SpoofPeerIP = "203.0.113.10"
+	tune := spoofOf(l.SpoofConfig)
+	tune.PeerIP = ""
+	if _, err := applyDirectEdit(l, DirectEdit{Spoof: &tune}); err == nil {
+		t.Fatal("listener edit accepted a missing reply destination")
+	}
+	tune.PeerIP = "203.0.113.11"
+	if got, err := applyDirectEdit(l, DirectEdit{Spoof: &tune}); err != nil || got.SpoofPeerIP != tune.PeerIP {
+		t.Fatalf("valid real peer edit refused: %v", err)
+	}
+}
