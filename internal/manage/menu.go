@@ -21,27 +21,35 @@ func stateLabel(service string) string {
 // ManageTunnels lists tunnels and lets the user act on a chosen one.
 func ManageTunnels() {
 	for {
-		tunnels := List()
+		tunnels, warnings := listManagedTunnels(List(), externalDir)
+		tui.Clear()
+		for _, warning := range warnings {
+			tui.Warn(warning)
+		}
 		if len(tunnels) == 0 {
 			tui.Warn("No Tunnels Yet.")
 			tui.PressEnter()
 			return
 		}
 
-		tui.Clear()
 		opts := make([]tui.Option, len(tunnels))
 		for i, t := range tunnels {
 			opts[i] = tui.Option{
-				Title: t.Name,
-				Desc:  fmt.Sprintf("%s %s — %s", t.Role, t.Transport, plainState(t.Service)),
+				Title: t.tunnel.Name,
+				Desc:  fmt.Sprintf("Package %d | %s %s — %s", t.packageNumber, t.tunnel.Role, t.tunnel.Transport, plainState(t.tunnel.Service)),
 			}
 		}
 
-		idx := tui.ChooseOpt("Select A Tunnel", opts)
+		idx := tui.ChooseOpt("All Tunnels — Packages 1, 2 And 3", opts)
 		if idx < 0 {
 			return
 		}
-		manageOne(tunnels[idx])
+		selected := tunnels[idx]
+		if selected.external != nil {
+			manageOneExternal(*selected.external)
+		} else {
+			manageOne(selected.tunnel)
+		}
 	}
 }
 

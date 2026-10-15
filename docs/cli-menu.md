@@ -27,6 +27,10 @@ long form. For *how to set a tunnel up*, use the
 | 8 | **Update** | Verified update with automatic rollback. [↓](#8-update) |
 | 9 | **Uninstall** | Removes everything bk installed. |
 | 10 | **Exit** | |
+| 11 | **Package 2** | Setup GRE, L2TPv3, AmneziaWG, SSH, RGT, Paqet and Alghadir. Its Manage entry opens the combined tunnel list. |
+| 12 | **Package 3** | Setup Dagger, Solarpass, Backhaul and Eylan methods. Its Manage entry opens the combined tunnel list. |
+
+Option **0** offers the original bk test, **Test Pack 2** and **Test Pack 3**.
 
 A red banner above the menu appears when a newer release exists. It reads a
 cached answer, so a slow or blocked GitHub never delays the menu.
@@ -165,7 +169,13 @@ Side?** — **Setup Link** (paste the line; only the name is asked) or
 
 ### Manage → Manage Tunnels
 
-Pick a tunnel, then:
+The list includes Package 1, Package 2 and Package 3, even when their services
+are stopped. Each row shows the package, role, method and local running/stopped
+state. Identical names in different packages remain separate entries. Manage
+inside Package 2 or Package 3 opens this same list. Local running state alone
+does not confirm end-to-end connectivity.
+
+Pick a tunnel to open its package's actions. Package 1 offers:
 
 | Action | What it does |
 |---|---|
@@ -173,6 +183,9 @@ Pick a tunnel, then:
 | **Start / Stop / Restart** | The systemd service for that tunnel. |
 | **Live Log** | Streams the journal. Ctrl+C returns. |
 | **Delete** | Removes the tunnel permanently, after a confirm. |
+
+Packages 2 and 3 offer **Start**, **Stop**, **Restart**, **Log**, **Setup Link**
+and **Delete** for the selected optional tunnel.
 
 ### Manage → Manage Tunnels → Edit
 

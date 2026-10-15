@@ -1,8 +1,9 @@
 # Additional tunnels (optional)
 
-The original bk engines and setup wizards are unchanged. Main menu **11** opens
-an independent manager. Main menu **0** now offers the original Connection Test
-and a separate Additional Tunnels test.
+The original bk engines and setup wizards are unchanged. Main menu **11 → Package 2**
+opens its setup menu. Main menu **0 → Test Pack 2** runs its connection tests.
+**Manage → Manage Tunnels**, including the Manage entry inside either optional
+package, lists tunnels from all three packages with package and service state.
 
 ## Supported methods
 
@@ -47,7 +48,7 @@ and a separate Additional Tunnels test.
    L2TPv3 IP uses IPv4 protocol 115, so it does not ask for a TCP/UDP tunnel port.
    The link contains the shared secret; keep it private. Machine-local
    SSH keys and physical-interface/MAC overrides are never copied in the link.
-4. Start the backend service on kharej, then use **0 -> Additional tunnels** on
+4. Start the backend service on kharej, then use **0 -> Test Pack 2** on
    both servers to verify the real path. A running systemd unit alone is not
    evidence of successful traffic. Network/cloud firewalls must permit the
    method's required protocol/port.
@@ -175,7 +176,7 @@ bk remains based on BackPack by Amin Mohammadi (AminMGMT).
 
 موتورهای اصلی bk و تنظیماتشان حفظ شده‌اند. امکانات تازه از **گزینهٔ ۱۱**
 مدیریت می‌شوند: GRE، دو حالت L2TPv3، AWG، SSH مستقیم و ریورس، سه حالت RGT، Paqet و Alghadir.
-برای تست از **گزینهٔ ۰ ← Additional tunnels** استفاده کن؛ می‌توانی همهٔ روش‌ها
+برای تست از **گزینهٔ ۰ ← Test Pack 2** استفاده کن؛ می‌توانی همهٔ روش‌ها
 یا یک روش را انتخاب کنی. آزمون روی تونل واقعی، ۶۰ ثانیه انتقال داده، تأخیر،
 قطع و وصل، صحت داده و اندازه‌های مختلف بسته را بررسی می‌کند. نبودن وابستگی
 یا خطای راه‌اندازی نتیجهٔ موفق محسوب نمی‌شود.
@@ -210,4 +211,4 @@ Alghadir تازه، همهٔ لایه‌های GRE، IPsec، KCP، udp2raw و ob
 
 </div>
 
-*Last verified against bk v1.11.5.*
+*Last verified against bk v1.11.6.*

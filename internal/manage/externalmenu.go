@@ -20,8 +20,8 @@ var externalDir = app.ConfigDir + "/external"
 func ConnectionTestMenu() {
 	switch tui.ChooseOpt("Connection Test", []tui.Option{
 		{Title: "Original bk transports", Desc: "the existing full reverse/direct test"},
-		{Title: "Additional tunnels", Desc: "GRE, L2TPv3, AWG, SSH, RGT, Paqet, Alghadir"},
-		{Title: "Test Tunnel Package 3", Desc: "Dagger and supplied package 3 methods"},
+		{Title: "Test Pack 2", Desc: "GRE, L2TPv3, AWG, SSH, RGT, Paqet, Alghadir"},
+		{Title: "Test Pack 3", Desc: "Dagger, Solarpass, Backhaul, Eylan"},
 	}) {
 	case 0:
 		ConnectionTest()
@@ -31,20 +31,20 @@ func ConnectionTestMenu() {
 		Package3ConnectionTest()
 	}
 }
-func AdditionalTunnels() { additionalTunnels("Additional Tunnels", externaltunnel.Kinds) }
-func Package3Tunnels()   { additionalTunnels("Build Tunnel Package 3", externaltunnel.Package3Kinds) }
+func AdditionalTunnels() { additionalTunnels("Package 2", externaltunnel.Kinds) }
+func Package3Tunnels()   { additionalTunnels("Package 3", externaltunnel.Package3Kinds) }
 func additionalTunnels(title string, catalog []externaltunnel.Kind) {
 	for {
 		tui.Clear()
 		tui.Title(title)
-		actions := []tui.Option{{Title: "Connection test", Desc: "temporary real tunnels, same echo/soak/bulk test"}, {Title: "Setup Iran", Desc: "create paired settings and the link for kharej"}, {Title: "Setup Kharej", Desc: "paste the Iran setup link; no manual pairing"}, {Title: "Apply setup link", Desc: "apply the Iran setup link on kharej"}, {Title: "Manage", Desc: "start, stop, logs, delete"}, {Title: "Install dependencies", Desc: "pinned cores and required packages"}, {Title: "Prepare SSH authentication", Desc: "dedicated key; verify the host fingerprint"}}
+		actions := []tui.Option{{Title: "Connection test", Desc: "temporary real tunnels, same echo/soak/bulk test"}, {Title: "Setup Iran", Desc: "create paired settings and the link for kharej"}, {Title: "Setup Kharej", Desc: "paste the Iran setup link; no manual pairing"}, {Title: "Apply setup link", Desc: "apply the Iran setup link on kharej"}, {Title: "Manage", Desc: "list tunnels from all 3 packages"}, {Title: "Install dependencies", Desc: "pinned cores and required packages"}, {Title: "Prepare SSH authentication", Desc: "dedicated key; verify the host fingerprint"}}
 		if len(catalog) > 0 && externaltunnel.Eylan(catalog[len(catalog)-1].ID) {
 			actions = actions[:6]
 		}
 		pick := tui.ChooseOpt("Action", actions)
 		switch pick {
 		case 0:
-			externalConnectionTestCatalog(title, catalog)
+			externalConnectionTestCatalog(externalTestTitle(catalog), catalog)
 		case 1:
 			setupExternalCatalog("iran", catalog)
 		case 2:
@@ -52,7 +52,7 @@ func additionalTunnels(title string, catalog []externaltunnel.Kind) {
 		case 3:
 			applyExternalSetupLink(catalog)
 		case 4:
-			manageExternalCatalog(catalog)
+			ManageTunnels()
 		case 5:
 			k := chooseExternalKindCatalog(catalog)
 			if k == "" {
@@ -295,7 +295,7 @@ func finishExternalSetup(s externaltunnel.Spec) {
 	}
 	time.Sleep(500 * time.Millisecond)
 	if e := run("is-active", "--quiet", externaltunnel.ServiceName(s.Name)); e != nil {
-		tui.Error("The process stopped. Use Additional Tunnels -> Manage -> Log.")
+		tui.Error("The process stopped. Use Manage -> Manage Tunnels -> Log.")
 	} else {
 		tui.Success("Local Service Started. This Alone Does Not Confirm A Connected Tunnel.")
 	}
@@ -307,37 +307,12 @@ func finishExternalSetup(s externaltunnel.Spec) {
 	}
 	tui.PressEnter()
 }
-func manageExternalCatalog(catalog []externaltunnel.Kind) {
-	allowed := map[string]bool{}
-	for _, k := range catalog {
-		allowed[k.ID] = true
-	}
+func manageOneExternal(s externaltunnel.Spec) {
 	for {
-		files, e := filepath.Glob(filepath.Join(externalDir, "*.json"))
-		if e != nil || len(files) == 0 {
-			tui.Warn("No Additional Tunnels Yet.")
-			tui.PressEnter()
-			return
-		}
-		var specs []externaltunnel.Spec
-		var opts []tui.Option
-		for _, f := range files {
-			if s, e := externaltunnel.Load(f); e == nil && allowed[s.Kind] {
-				specs = append(specs, s)
-				opts = append(opts, tui.Option{Title: s.Name, Desc: s.Kind + " " + s.Side + " " + plainState(externaltunnel.ServiceName(s.Name))})
-			}
-		}
-		if len(specs) == 0 {
-			tui.Warn("No Tunnels In This Package Yet.")
-			tui.PressEnter()
-			return
-		}
-		i := tui.ChooseOpt("Additional Tunnel", opts)
-		if i < 0 {
-			return
-		}
-		s := specs[i]
 		service := externaltunnel.ServiceName(s.Name)
+		tui.Clear()
+		tui.Title("Tunnel: " + s.Name)
+		tui.Info(fmt.Sprintf("%s %s — %s", s.Side, s.Kind, plainState(service)))
 		a := tui.ChooseOpt("Action", []tui.Option{{Title: "Start"}, {Title: "Stop"}, {Title: "Restart"}, {Title: "Log"}, {Title: "Setup Link"}, {Title: "Delete"}})
 		switch a {
 		case 0:
@@ -376,6 +351,7 @@ func manageExternalCatalog(catalog []externaltunnel.Kind) {
 			_ = exec.Command("systemctl", "daemon-reload").Run()
 			tui.Success("Deleted Only This Additional Tunnel.")
 			tui.PressEnter()
+			return
 		default:
 			return
 		}

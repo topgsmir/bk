@@ -1,5 +1,12 @@
 # topgsmir distribution
 
+## v1.11.6 — Unified tunnel management and package names (2026-10-15)
+
+- Rename main-menu entries 11 and 12 to Package 2 and Package 3. Use Test Pack 2 and Test Pack 3 consistently in menu 0, test screens and kharej join instructions.
+- List configured tunnels from all three packages under Manage -> Manage Tunnels, including stopped services. Show each tunnel's package, role, method and local service state.
+- Open the same combined list from Manage inside Package 2 or Package 3. Route actions to the selected package's existing manager; keep same-name original and optional tunnels separate.
+- Report unreadable or mismatched optional configuration files instead of silently reporting an empty package. Preserve existing setup formats, services and transport engines.
+
 ## v1.11.5 — Reproducible Spoof UDP setup and visible addresses (2026-10-13)
 
 - Use MTU 1280, Auto MTU off, an 8 MiB packet-socket buffer and source-port rotation in the 49152–65535 range for new Direct Spoof UDP setups. Keep explicit advanced/imported choices and other carriers' defaults.

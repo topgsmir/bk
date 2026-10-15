@@ -14,7 +14,7 @@ func manageMenu() {
 	for {
 		tui.Clear()
 		idx := tui.ChooseOpt("Manage", []tui.Option{
-			{Title: "Manage Tunnels", Desc: "edit, start/stop, log, delete"},
+			{Title: "Manage Tunnels", Desc: "all 3 packages: edit, start/stop, log, delete"},
 			{Title: "Set Up From A Link", Desc: "paste the other server's link"},
 			{Title: "Status", Desc: "live tunnel table"},
 			{Title: "Health Check", Desc: "problems and fixes"},

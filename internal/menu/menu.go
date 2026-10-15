@@ -133,8 +133,8 @@ func printMenu() {
 	}
 	menuItem(8, "Update", updateDesc)
 	menuItem(9, "Uninstall", "remove everything")
-	menuItem(11, "Additional Tunnels", "GRE, L2TPv3, AWG, SSH, RGT, Paqet, Alghadir")
-	menuItem(12, "Build Tunnel Package 3", "Dagger and package 3 methods")
+	menuItem(11, "Package 2", "GRE, L2TPv3, AWG, SSH, RGT, Paqet, Alghadir")
+	menuItem(12, "Package 3", "Dagger, Solarpass, Backhaul, Eylan")
 	menuItem(10, "Exit", "")
 	fmt.Println()
 }

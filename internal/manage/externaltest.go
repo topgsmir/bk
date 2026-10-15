@@ -56,10 +56,16 @@ func parseExternalTestLink(raw string) (connTestAddr, error) {
 	return a, nil
 }
 func ExternalConnectionTest() {
-	externalConnectionTestCatalog("Additional Tunnel Connection Test", externaltunnel.Kinds)
+	externalConnectionTestCatalog(externalTestTitle(externaltunnel.Kinds), externaltunnel.Kinds)
 }
 func Package3ConnectionTest() {
-	externalConnectionTestCatalog("Test Tunnel Package 3", externaltunnel.Package3Kinds)
+	externalConnectionTestCatalog(externalTestTitle(externaltunnel.Package3Kinds), externaltunnel.Package3Kinds)
+}
+func externalTestTitle(catalog []externaltunnel.Kind) string {
+	if package3Catalog(catalog) {
+		return "Test Pack 3"
+	}
+	return "Test Pack 2"
 }
 func externalConnectionTestCatalog(title string, catalog []externaltunnel.Kind) {
 	tui.Clear()
@@ -162,10 +168,7 @@ func externalIranMenuCatalog(catalog []externaltunnel.Kind) {
 		return
 	}
 	defer s.close()
-	path := "Additional tunnels"
-	if package3Catalog(catalog) {
-		path = "Test Tunnel Package 3"
-	}
+	path := externalTestTitle(catalog)
 	tui.Info("Kharej: bk -> 0 -> " + path + " -> Kharej. Use The Same Updated Version On Both Servers. Copy This Secret Test Link:")
 	fmt.Println(externalTestLink(s.plan))
 	tui.Info("Waiting For Kharej To Prepare Dependencies And SSH (Up To 30 Minutes). Ctrl+C Stops.")

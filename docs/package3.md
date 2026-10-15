@@ -1,8 +1,10 @@
 # Tunnel Package 3
 
-Build: **bk → 12 → Build Tunnel Package 3**.
-Test: **bk → 0 → Test Tunnel Package 3**. Install the same bk version on both
+Build: **bk → 12 → Package 3**.
+Test: **bk → 0 → Test Pack 3**. Install the same bk version on both
 servers. The original bk engines and original Connection Test remain unchanged.
+Manage: **bk → 3 → Manage Tunnels**, or **Package 3 → Manage**, lists configured
+tunnels from all three packages, with the package and local service state.
 
 | Family | Methods | TCP/UDP test cases | Source |
 | --- | ---: | ---: | --- |
@@ -57,7 +59,7 @@ accounts are not installed or distributed.
    Treat setup and test links like passwords. The configured target service
    must actually listen on kharej; a running local unit is not proof that the
    authenticated tunnel or the target service is reachable.
-3. On Iran choose **0 → Test Tunnel Package 3 → Iran**, select a family,
+3. On Iran choose **0 → Test Pack 3 → Iran**, select a family,
    then **Normal Tests** (Dagger/Solarpass) and one numbered group. Choose
    **Test This Group** or one listed method. Each group produces at most ten
    measured TCP/UDP rows, counting each forwarded protocol separately. There
@@ -127,7 +129,7 @@ traffic in the lab; test the actual Iran/kharej route before selecting a method.
 
 <div dir="rtl">
 
-پکیج تانل ۳ در گزینهٔ **۱۲** برای ساخت و در **۰ ← Test Tunnel Package 3**
+پکیج تانل ۳ در گزینهٔ **۱۲** برای ساخت و در **۰ ← Test Pack 3**
 برای تست قرار دارد. این بسته شامل ۱۰۸ روش از Dagger، Solarpass، Backhaul
 و پروتکل‌های استاندارد Eylan است؛ مجموع آزمون‌های TCP و UDP آن ۲۰۶ حالت است.
 کد موتورهای اصلی bk تغییر نکرده و فایل‌های اولیهٔ `new2` محفوظ هستند.
@@ -161,4 +163,4 @@ MTU توافق‌شدهٔ AnyConnect رعایت می‌شود و گزینهٔ DT
 
 </div>
 
-*Last verified against bk v1.11.5.*
+*Last verified against bk v1.11.6.*
