@@ -70,4 +70,4 @@ checkouts outside /root/bk are left alone.
 
 </div>
 
-*Last verified against bk v1.11.5.*
+*Last verified against bk v1.11.6.*

@@ -78,9 +78,10 @@ hand. `install -m 0755` already sets the executable bit, so no `chmod` is needed
 
 The same way: repeat the steps with the newer archive. `install` replaces the
 binary in place, and your tunnels in `/etc/bk` are untouched. Restart them
-afterwards with `sudo bk` → **Manage → Restart ALL**. Optional additional
-tunnels have their own restart actions under **11 → Manage** and
-**12 → Manage** for Package 3; see
+afterwards with `sudo bk` → **Manage → Restart ALL** for Package 1. To restart
+an optional tunnel, open **Manage → Manage Tunnels**, select its Package 2 or
+Package 3 entry, and choose **Restart**. The same combined list is available
+under **11 → Manage** and **12 → Manage**; see
 [additional tunnels](additional-tunnels.md).
 
 ---
@@ -166,4 +167,4 @@ amd64 و `aarch64` یعنی arm64. بهترین راه این است که `insta
 
 ---
 
-*Last verified against bk v1.11.5.*
+*Last verified against bk v1.11.6.*
