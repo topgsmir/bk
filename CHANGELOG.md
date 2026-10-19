@@ -1,5 +1,12 @@
 # topgsmir distribution
 
+## v1.11.7 — Eylan dependency preparation and test diagnostics (2026-10-19)
+
+- Repair AnyConnect startup on Ubuntu 22.04 by installing libpcl1 where the distribution provides it. Keep Ubuntu 24.04 compatible, where ocserv does not require that package.
+- Execute the extracted ocserv server during dependency checks so missing runtime libraries trigger preparation instead of appearing as a failed network path.
+- Check receiving sing-box test ports on kharej and report occupied TCP/UDP ports as setup failures.
+- Preserve native engine errors instead of hiding them behind a trailing process exit status. These changes do not guarantee connectivity for methods blocked or unstable on a particular path.
+
 ## v1.11.6 — Unified tunnel management and package names (2026-10-15)
 
 - Rename main-menu entries 11 and 12 to Package 2 and Package 3. Use Test Pack 2 and Test Pack 3 consistently in menu 0, test screens and kharej join instructions.
