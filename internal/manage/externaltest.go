@@ -203,6 +203,9 @@ type externalTest struct {
 }
 
 func startExternalEngine(dir string, s externaltunnel.Spec) (*ctEngine, error) {
+	if err := checkExternalTestListener(s); err != nil {
+		return nil, err
+	}
 	bin, e := connTestBinary()
 	if e != nil {
 		return nil, e
@@ -226,6 +229,31 @@ func startExternalEngine(dir string, s externaltunnel.Spec) (*ctEngine, error) {
 	engine := &ctEngine{name: s.Name, cmd: cmd, log: logPath, done: make(chan struct{})}
 	go func() { _ = cmd.Wait(); f.Close(); close(engine.done) }()
 	return engine, nil
+}
+
+// Carrier ports are chosen on Iran, while sing-box listens on Kharej. A busy
+// Kharej port must be reported as SETUP FAILED, before a dead engine can be
+// mistaken for a network path that carried zero echoes.
+func checkExternalTestListener(s externaltunnel.Spec) error {
+	if !externaltunnel.SingBox(s.Kind) || s.Side != "kharej" {
+		return nil
+	}
+	address := net.JoinHostPort(s.LocalIP, strconv.Itoa(s.Port))
+	if s.Kind != "e3-sing-hysteria2" {
+		listener, err := net.Listen("tcp4", address)
+		if err != nil {
+			return fmt.Errorf("test carrier TCP listener %s unavailable: %w", address, err)
+		}
+		defer listener.Close()
+	}
+	if s.Kind == "e3-sing-hysteria2" || s.Kind == "e3-sing-shadowsocks" {
+		listener, err := net.ListenPacket("udp4", address)
+		if err != nil {
+			return fmt.Errorf("test carrier UDP listener %s unavailable: %w", address, err)
+		}
+		defer listener.Close()
+	}
+	return nil
 }
 
 // Passing a kind list is used by the privileged integration test; nil covers
@@ -451,11 +479,11 @@ func (s *externalTest) runMeasurements(ctx context.Context, progress func(int, C
 			}
 			for _, engine := range s.engines {
 				if engine.name == c.name {
-					if exited, why := engine.exited(); exited {
+					if exited, _ := engine.exited(); exited {
 						if r.Status == ctOK {
 							r.Status = ctUnstable
 						}
-						r.Detail = "local setup/engine: " + why
+						r.Detail = "local setup/engine: " + externalEngineDiagnostic(engine)
 						report(r)
 					}
 				}
@@ -834,12 +862,10 @@ func externalTransport(s externaltunnel.Spec) string {
 // Keep the actual failure, including an authenticated SSH server refusing a
 // forwarding request. Ignore informational startup output on successful rows.
 func externalEngineDiagnostic(engine *ctEngine) string {
-	if exited, why := engine.exited(); exited {
-		return why
-	}
+	_, stopped := engine.exited()
 	file, e := os.Open(engine.log)
 	if e != nil {
-		return ""
+		return stopped
 	}
 	defer file.Close()
 	info, e := file.Stat()
@@ -856,14 +882,14 @@ func externalEngineDiagnostic(engine *ctEngine) string {
 	for i := len(lines) - 1; i >= 0; i-- {
 		line := strings.TrimSpace(lines[i])
 		lower := strings.ToLower(line)
-		if strings.Contains(lower, "failed") || strings.Contains(lower, "error") || strings.Contains(lower, "refused") {
+		if strings.Contains(lower, "failed") || strings.Contains(lower, "error") || strings.Contains(lower, "refused") || strings.Contains(lower, "fatal") {
 			if len(line) > 1024 {
 				line = line[:1024]
 			}
 			return line
 		}
 	}
-	return ""
+	return stopped
 }
 
 func ctPickSolarBlock(used map[int]bool, count int) int {

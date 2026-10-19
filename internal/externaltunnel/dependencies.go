@@ -89,6 +89,16 @@ func CheckDependencies(kind string) error {
 			return fmt.Errorf("missing %s", program)
 		}
 	}
+	// Extracted executables may exist and still fail before main because a
+	// shared library is missing. A broken ocserv used to pass preparation and
+	// appear as a filtered tunnel with zero echoes on Ubuntu 22.04.
+	if AnyConnect(kind) {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := runCommand(ctx, command(filepath.Join(CoreDir, "ocserv"), "--version")); err != nil {
+			return fmt.Errorf("AnyConnect server cannot start: %w", err)
+		}
+	}
 	if kind == "l2tp-ip" || kind == "l2tp-udp" {
 		modules := []string{"l2tp_netlink", "l2tp_eth"}
 		if kind == "l2tp-ip" {

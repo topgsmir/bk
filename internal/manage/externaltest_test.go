@@ -6,10 +6,62 @@ import (
 	"github.com/topgsmir/bk/internal/externaltunnel"
 	"io"
 	"net"
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 )
+
+func TestAdditionalStoppedEngineRetainsItsNativeFailureBeforeExitStatus(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "engine.log")
+	message := "FATAL start inbound/vless: listen tcp 127.0.0.1:24300: bind: address already in use"
+	if err := os.WriteFile(path, []byte(message+"\nexit status 1\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan struct{})
+	close(done)
+	engine := &ctEngine{log: path, done: done}
+	if got := externalEngineDiagnostic(engine); got != message {
+		t.Fatalf("native error was hidden by generic process status: %q", got)
+	}
+}
+
+func TestAdditionalSingBoxPeerReportsOccupiedCarrierPortBeforeLaunching(t *testing.T) {
+	tcp, err := net.Listen("tcp4", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tcp.Close()
+	s := externaltunnel.Spec{Kind: "e3-sing-vless", Side: "kharej", LocalIP: "127.0.0.1", Port: tcp.Addr().(*net.TCPAddr).Port}
+	if _, err := startExternalEngine(t.TempDir(), s); err == nil || !strings.Contains(err.Error(), "test carrier TCP listener") {
+		t.Fatalf("busy peer port was not reported as a setup error: %v", err)
+	}
+	s.Side = "iran"
+	if err := checkExternalTestListener(s); err != nil {
+		t.Fatalf("outbound-only side must not require the peer port to be free: %v", err)
+	}
+	udp, err := net.ListenPacket("udp4", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer udp.Close()
+	_, port, _ := net.SplitHostPort(udp.LocalAddr().String())
+	s.Port, _ = strconv.Atoi(port)
+	s.Side, s.Kind = "kharej", "e3-sing-hysteria2"
+	if _, err := startExternalEngine(t.TempDir(), s); err == nil || !strings.Contains(err.Error(), "test carrier UDP listener") {
+		t.Fatalf("busy Hysteria2 port was not reported as a setup error: %v", err)
+	}
+	s.Kind = "e3-sing-shadowsocks"
+	if err := checkExternalTestListener(s); err == nil || !strings.Contains(err.Error(), "test carrier UDP listener") {
+		t.Fatalf("Shadowsocks must check UDP even when TCP is free: %v", err)
+	}
+	udp.Close()
+	if err := checkExternalTestListener(s); err != nil {
+		t.Fatalf("released carrier port should permit startup: %v", err)
+	}
+}
 
 func TestAdditionalTestLinksAndPayloadIntegrity(t *testing.T) {
 	p := externalPlan{Host: "192.0.2.1", Peer: "192.0.2.2", Token: ctNewSecret(), Coord: 12345}
