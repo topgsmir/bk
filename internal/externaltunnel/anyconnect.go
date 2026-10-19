@@ -22,9 +22,15 @@ func AnyConnect(kind string) bool { return strings.HasPrefix(kind, "e3-anyconnec
 func installAnyConnect(ctx context.Context, out io.Writer) error {
 	// Extract the stock server executables without deploying or starting a
 	// distribution-wide ocserv daemon or touching /etc/ocserv.
-	libraries := []string{"iproute2", "openconnect", "dpkg", "libev4", "libhttp-parser2.9", "libmaxminddb0", "libnl-3-200", "libnl-route-3-200", "liboath0", "libpcl1", "libprotobuf-c1", "libradcli4", "libseccomp2", "libtalloc2"}
+	libraries := []string{"iproute2", "openconnect", "dpkg", "libev4", "libhttp-parser2.9", "libmaxminddb0", "libnl-3-200", "libnl-route-3-200", "liboath0", "libprotobuf-c1", "libradcli4", "libseccomp2", "libtalloc2"}
 	if err := runCommand(ctx, command("apt-get", "update")); err != nil {
 		return err
+	}
+	// Jammy's ocserv links libpcl; Noble's does not and no longer ships it.
+	// Check refreshed package metadata rather than imposing one release's
+	// optional runtime dependency on every supported distribution.
+	if exec.CommandContext(ctx, "apt-cache", "show", "libpcl1").Run() == nil {
+		libraries = append(libraries, "libpcl1")
 	}
 	if err := runCommand(ctx, command("apt-get", append([]string{"install", "-y", "--no-install-recommends"}, libraries...)...)); err != nil {
 		return err
