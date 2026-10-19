@@ -94,6 +94,12 @@ pinned archive and installed-core hashes. Other Eylan methods use included
 WireGuard userspace code or distribution packages. Server executables for
 AnyConnect and L2TP are extracted without deploying a global VPN daemon.
 
+From v1.11.7, AnyConnect preparation also verifies that the extracted ocserv
+can execute, so missing shared libraries trigger repair. Ubuntu 22.04 needs
+libpcl1; it is installed only where the distribution provides it. Receiving
+sing-box test ports are checked on kharej before launching the engine, so an
+occupied TCP/UDP carrier port is reported as a setup failure.
+
 Each instance owns its named unit, TUN, configuration and temporary firewall
 rules. Stop removes owned state; shared firewall tables and XFRM state are
 never flushed. Conflicting interfaces, subnets, VPN ports or IPsec owners are
@@ -157,10 +163,14 @@ DC6 به IPv6 واقعی در هر دو سمت نیاز دارد و Backhaul ب�
 MTU توافق‌شدهٔ AnyConnect رعایت می‌شود و گزینهٔ DTLS تنها با اتصال DTLS
 واقعی پاس می‌شود. پنل وب Eylan، کد دور زدن مجوز و کلیدهای آن نصب نمی‌شوند.
 
+از v1.11.7 اجرای موتور AnyConnect پیش از تست بررسی و کتابخانهٔ لازم در
+Ubuntu 22.04 نصب می‌شود. درگاه اشغال‌شدهٔ sing-box در سمت خارج نیز با
+خطای آماده‌سازی گزارش می‌شود.
+
 مدیریت، توقف، لاگ و حذف سرویس‌های پکیج در **۱۲ ← Manage** است. فایل‌های
 تنظیمات در `/etc/bk/external` هستند و فعلاً بکاپ موتور اصلی آن‌ها را شامل
 نمی‌شود؛ جداگانه بکاپ بگیر. لینک‌های تست و ساخت را مانند رمز نگه دار.
 
 </div>
 
-*Last verified against bk v1.11.6.*
+*Last verified against bk v1.11.7.*

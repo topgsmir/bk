@@ -211,4 +211,4 @@ Alghadir تازه، همهٔ لایه‌های GRE، IPsec، KCP، udp2raw و ob
 
 </div>
 
-*Last verified against bk v1.11.6.*
+*Last verified against bk v1.11.7.*
