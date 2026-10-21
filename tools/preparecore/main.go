@@ -32,6 +32,10 @@ func prepare() error {
 	if err = readJSON(filepath.Join(root, "integration", "normalization.json"), &keep); err != nil {
 		return err
 	}
+	var modes map[string]string
+	if err = readJSON(filepath.Join(root, "integration", "upstream-modes.json"), &modes); err != nil {
+		return err
+	}
 	build := filepath.Join(root, ".build")
 	if err = os.MkdirAll(build, 0700); err != nil {
 		return err
@@ -78,12 +82,21 @@ func prepare() error {
 			}
 			raw = []byte(text)
 		}
-		return os.WriteFile(target, raw, 0644)
+		var mode fs.FileMode
+		switch modes[name] {
+		case "100644":
+			mode = 0644
+		case "100755":
+			mode = 0755
+		default:
+			return fmt.Errorf("unsupported upstream mode for %s: %s", name, modes[name])
+		}
+		return os.WriteFile(target, raw, mode)
 	})
 	if err != nil {
 		return err
 	}
-	if count != len(hashes) {
+	if count != len(hashes) || count != len(modes) {
 		return fmt.Errorf("upstream manifest has %d files, found %d", len(hashes), count)
 	}
 	if err = run(next, "gofmt", "-w", "."); err != nil {

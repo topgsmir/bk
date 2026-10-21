@@ -1,6 +1,6 @@
 module github.com/topgsmir/bk/addons
 
-go 1.26.9
+go 1.26.10
 
 require (
 	github.com/sirupsen/logrus v1.10.2

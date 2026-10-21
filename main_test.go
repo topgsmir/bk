@@ -40,9 +40,21 @@ func TestStartingAComponentDoesNotReadItsWholeExecutableIntoAMemoryBuffer(t *tes
 }
 
 func TestDistributionUninstallUsesTheSharedDryRun(t *testing.T) {
+	// This checks launcher delegation, independently of the test host's
+	// crontab and systemd state. Removal behavior has disposable-container fixtures.
+	commands := t.TempDir()
+	for name, script := range map[string]string{
+		"crontab":   "#!/bin/sh\necho 'no crontab for fixture' >&2\nexit 1\n",
+		"systemctl": "#!/bin/sh\nexit 0\n",
+	} {
+		if err := os.WriteFile(filepath.Join(commands, name), []byte(script), 0700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Setenv("PATH", commands+string(os.PathListSeparator)+os.Getenv("PATH"))
 	var output, errors bytes.Buffer
 	if err := run([]string{"distribution-uninstall", "--dry-run"}, strings.NewReader(""), &output, &errors); err != nil {
-		t.Fatalf("%v: %s", err, errors.String())
+		t.Fatalf("%v\nstdout: %s\nstderr: %s", err, output.String(), errors.String())
 	}
 	for _, path := range []string{"/etc/bk", "/usr/local/bin/bk", "/root/.cache/bk/components"} {
 		if !strings.Contains(output.String(), path) {

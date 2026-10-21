@@ -3,6 +3,12 @@
 Validated locally with Go 1.26.9 in isolated Linux containers, plus the bundled
 Node.js runtime for panel tests.
 
+CI follow-up on 2026-10-22 raised the minimum build toolchain to Go 1.26.10
+after govulncheck identified GO-2026-6809 in Go 1.26.9. The original local
+results below describe the integration run; the updated PR CI validates the
+patched compiler. Official source-installer checksums are recorded in
+`integration/toolchain.json`. The pristine upstream snapshot stays unchanged.
+
 | Check | Outcome |
 | --- | --- |
 | Supplied bk and BackPack snapshots against their GitHub Git trees | Exact file-content matches |

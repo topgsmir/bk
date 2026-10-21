@@ -2,6 +2,8 @@
 
 ## v1.12.0 — Independent core and addons (2026-10-21)
 
+- Require Go 1.26.10 across all build modules and source installation to address GO-2026-6809. Keep the upstream source snapshot intact and refresh the official Linux toolchain checksums.
+
 - Pin BackPack v1.9.0 at 9d58f8449ac04705b2b47f4869dc9f6db0e034af, bringing managed Naive/XHTTP/REALITY carriers, IPv4/IPv6 tests, usage reset and upstream recovery fixes.
 - Separate Package 2 and Package 3 into the independent addons module. Move their paired-test coordinator, forwarding support and service manager out of the core.
 - Keep one entry menu with separate core and addon executables. Existing config paths, service commands, publisher key and signed single-binary archive format remain usable.

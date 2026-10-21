@@ -42,4 +42,4 @@ jobs:
       - name: Check source installer syntax
         run: bash -n install.sh uninstall.sh
       - name: Check removal of both component services in a disposable container
-        run: docker run --rm -v "$GITHUB_WORKSPACE:/work:ro" -w /work golang:1.26.9-bookworm bash tests/uninstall.sh
+        run: docker run --rm -v "$GITHUB_WORKSPACE:/work:ro" -w /work golang:1.26.10-bookworm bash tests/uninstall.sh

@@ -25,8 +25,8 @@ bk -v | grep -Fx https://github.com/topgsmir/bk
 bk help > /opt/bk-test/help-output
 grep -q bk /opt/bk-test/help-output
 [[ $(cat /etc/bk/install_path) == /root/bk ]]
-# The real no-argument entry point writes the panel and monitor service units.
-printf '10\n' | bk > /opt/bk-test/menu-output
+# The common entry menu selects core, whose menu installs its panel/monitor.
+printf '1\n10\n0\n' | bk > /opt/bk-test/menu-output
 for unit in bk-monitor bk-webui; do
   grep -q 'ExecStart=/usr/local/bin/bk' "/etc/systemd/system/$unit.service"
 done

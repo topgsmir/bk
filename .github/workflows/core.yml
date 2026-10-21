@@ -60,12 +60,12 @@ jobs:
       - name: Check installation and removal scripts
         run: |
           bash -n install.sh uninstall.sh tests/uninstall.sh
-          docker run --rm -v "$GITHUB_WORKSPACE/.build/core:/work" -w /work golang:1.26.9-bookworm bash tests/uninstall.sh
+          docker run --rm -v "$GITHUB_WORKSPACE/.build/core:/work" -w /work golang:1.26.10-bookworm bash tests/uninstall.sh
 
       - name: PCK real sockets and Connection Test
         # Packet sockets require privileges; use an isolated container network.
         run: |
-          docker run --rm --cap-add=NET_RAW --cap-add=NET_ADMIN -e BK_REQUIRE_PCK=1 -v "$GITHUB_WORKSPACE/.build/core:/work" -w /work golang:1.26.9-bookworm bash -c 'git config --global --add safe.directory /work && go test ./internal/utils/network -run TestPckLoopback -count=1 -v && go test ./internal/manage -run TestAConnectionTestOverLoopbackPassesEveryReverseTransport -count=1 -v -timeout 3m'
+          docker run --rm --cap-add=NET_RAW --cap-add=NET_ADMIN -e BK_REQUIRE_PCK=1 -v "$GITHUB_WORKSPACE/.build/core:/work" -w /work golang:1.26.10-bookworm bash -c 'git config --global --add safe.directory /work && go test ./internal/utils/network -run TestPckLoopback -count=1 -v && go test ./internal/manage -run TestAConnectionTestOverLoopbackPassesEveryReverseTransport -count=1 -v -timeout 3m'
 
       - name: Vet
         run: go vet ./...
@@ -394,17 +394,19 @@ jobs:
             exit 1
           fi
 
-      - name: Build both architectures
+      - name: Build the distribution bundles for every architecture
+        working-directory: ${{ github.workspace }}
         run: make release
 
       - name: Install the built release and open bk
-        run: docker run --rm -v "$GITHUB_WORKSPACE/.build/core:/work" -w /work golang:1.26.9-bookworm bash tests/install-release.sh
+        working-directory: ${{ github.workspace }}
+        run: docker run --rm -v "$GITHUB_WORKSPACE:/work:ro" -w /work golang:1.26.10-bookworm bash tests/install-release.sh
 
       - uses: actions/upload-artifact@v7
         with:
           name: release-assets
           path: |
-            release/bk_linux_amd64.tar.gz
-            release/bk_linux_arm64.tar.gz
+            release/bk_linux_*.tar.gz
             release/SHA256SUMS
+            release/SBOM.txt
           retention-days: 14

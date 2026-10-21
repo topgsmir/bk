@@ -63,6 +63,7 @@ def sync(args):
         source.mkdir(parents=True)
         extract(archive, source)
         expected = {item['path']: item['sha'] for item in tree['tree'] if item['type'] == 'blob'}
+        modes = {item['path']: item['mode'] for item in tree['tree'] if item['type'] == 'blob'}
         actual = {}
         hashes = {}
         for path in source.rglob('*'):
@@ -74,8 +75,13 @@ def sync(args):
             hashes[name] = hashlib.sha256(data).hexdigest()
         if actual != expected:
             raise RuntimeError('The downloaded archive does not match the reviewed GitHub commit')
+        for name, mode in modes.items():
+            if mode not in ('100644', '100755'):
+                raise RuntimeError('Unsupported upstream file mode: ' + name)
+            (source / name).chmod(0o755 if mode == '100755' else 0o644)
         shutil.copytree(ROOT / 'integration', stage / 'integration')
         (stage / 'integration/upstream-files.json').write_bytes(json_bytes(hashes))
+        (stage / 'integration/upstream-modes.json').write_bytes(json_bytes(modes))
         shutil.copytree(ROOT / 'tools/preparecore', stage / 'tools/preparecore')
         shutil.copyfile(ROOT / 'go.mod', stage / 'go.mod')
         result = subprocess.run(['go', 'run', './tools/preparecore'], cwd=stage)
@@ -86,6 +92,7 @@ def sync(args):
             return
         old_lock = (ROOT / 'upstream.lock.json').read_bytes()
         old_manifest = (ROOT / 'integration/upstream-files.json').read_bytes()
+        old_modes = (ROOT / 'integration/upstream-modes.json').read_bytes()
         metadata = json.loads(old_lock)
         metadata.update(commit=commit, version=(source / 'VERSION').read_text(encoding='utf-8').strip(), archive_sha256=hashlib.sha256(archive.read_bytes()).hexdigest())
         target = ROOT / 'upstream/BackPack'
@@ -96,6 +103,7 @@ def sync(args):
         try:
             source.rename(target)
             (ROOT / 'integration/upstream-files.json').write_bytes(json_bytes(hashes))
+            (ROOT / 'integration/upstream-modes.json').write_bytes(json_bytes(modes))
             (ROOT / 'upstream.lock.json').write_bytes(json_bytes(metadata))
         except Exception:
             if target.exists():
@@ -103,6 +111,7 @@ def sync(args):
             backup.rename(target)
             (ROOT / 'upstream.lock.json').write_bytes(old_lock)
             (ROOT / 'integration/upstream-files.json').write_bytes(old_manifest)
+            (ROOT / 'integration/upstream-modes.json').write_bytes(old_modes)
             raise
         print('Pinned upstream to', commit)
         print('Previous source retained in', backup.relative_to(ROOT))

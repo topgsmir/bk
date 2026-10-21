@@ -23,7 +23,7 @@ commands retain their meanings and config/service paths.
 
 ## Build and check
 
-Use Go 1.26.9 or newer, Git, and Make on Linux. Python 3 runs sync checks;
+Use Go 1.26.10 or newer, Git, and Make on Linux. Python 3 runs sync checks;
 Node.js runs the core panel tests.
 
 ```sh
