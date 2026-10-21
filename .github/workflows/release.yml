@@ -81,6 +81,9 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+          cache-dependency-path: |
+            addons/go.sum
+            upstream/BackPack/go.sum
 
       - uses: actions/setup-node@v7
         with:
