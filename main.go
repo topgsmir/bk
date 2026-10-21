@@ -1,144 +1,287 @@
+// bk is a launcher. Core and addons are separate executables and Go modules.
 package main
 
 import (
-	"context"
-	"flag"
+	"crypto/sha256"
+	"embed"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
+	"io/fs"
 	"os"
+	"os/exec"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
-	"time"
-
-	"github.com/topgsmir/bk/cmd"
-	"github.com/topgsmir/bk/internal/app"
-	"github.com/topgsmir/bk/internal/cli"
-	"github.com/topgsmir/bk/internal/localproxy"
-	"github.com/topgsmir/bk/internal/manage"
-	"github.com/topgsmir/bk/internal/menu"
-	"github.com/topgsmir/bk/internal/monitor"
-	"github.com/topgsmir/bk/internal/telegram"
-	"github.com/topgsmir/bk/internal/utils"
-	"github.com/topgsmir/bk/internal/webui"
 )
 
-var logger = utils.NewLogger("info")
+//go:embed payload
+var payload embed.FS
 
-// main has two modes:
-//
-//   - Engine mode:  `bk -c /etc/bk/<name>.toml`
-//     Runs a single tunnel (server or client). This is what the systemd
-//     units execute. Behaviour is identical to the original engine.
-//
-//   - Menu mode:    `bk`  (no arguments)
-//     Opens the interactive management CLI on the VPS.
+//go:embed uninstall.sh
+var uninstallScript string
+
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "external" {
-		runExternal(os.Args[2:])
-		return
-	}
-
-	// Handled before the flags, because it is a subcommand with flags of its
-	// own: `bk node setup --panel ... --key ...`. The flag package would
-	// stop at "node" and report the rest as unknown.
-	if len(os.Args) > 1 && os.Args[1] == "node" {
-		runNode(os.Args[2:])
-		return
-	}
-
-	// The non-interactive commands, for the same reason and in the same place:
-	// they are subcommands with arguments of their own, and the flag package
-	// would stop at the first one and report the rest as unknown.
-	//
-	// Everything they do is in internal/cli, which returns what to print and
-	// what to exit with rather than doing either — so the whole surface is
-	// testable without a process. This is the only part that needs one.
-	if len(os.Args) > 1 && cli.IsCommand(os.Args[1]) {
-		cli.EngineCheck = cmd.CheckConfigFile
-		if st, err := os.Stdout.Stat(); err == nil && st.Mode()&os.ModeCharDevice != 0 {
-			cli.Color = os.Getenv("NO_COLOR") == ""
-			cli.Progress = func(s string) { fmt.Print(s) }
+	if err := run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr); err != nil {
+		var exit *exec.ExitError
+		if errors.As(err, &exit) {
+			os.Exit(exit.ExitCode())
 		}
-		r := cli.Run(os.Args[1:])
-		if r.Out != "" {
-			fmt.Print(r.Out)
-		}
-		if r.Err != "" {
-			fmt.Fprint(os.Stderr, r.Err)
-		}
-		os.Exit(r.Code)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
-
-	configPath := flag.String("c", "", "path to a tunnel configuration file (TOML) — runs in engine mode")
-	showVersion := flag.Bool("v", false, "print the version and exit")
-	restartAll := flag.Bool("restart-all", false, "restart every configured tunnel and exit (used by the auto-refresh job)")
-	tgReport := flag.Bool("telegram-report", false, "send a Telegram status report and exit (used by the scheduled job)")
-	webPanel := flag.Bool("webui", false, "run the web panel (used by the bk-webui service)")
-	monitorMode := flag.Bool("monitor", false, "run the watchdog, Telegram bot and alerts (used by the bk-monitor service)")
-	proxyMode := flag.Bool("proxy", false, "run the built-in SOCKS5/HTTP proxy (used by the bk-proxy service)")
-	flag.Parse()
-
-	switch {
-	case *showVersion:
-		fmt.Println(app.Version)
-		fmt.Println(app.SourceURL)
-		return
-	case *restartAll:
-		ok, failed := manage.RestartAll()
-		fmt.Printf("restarted %d tunnels, %d failed\n", ok, failed)
-		return
-	case *tgReport:
-		if err := telegram.SendStatusNow(); err != nil {
-			logger.Errorf("telegram report failed: %v", err)
-			os.Exit(1)
+}
+func run(args []string, in io.Reader, out, errOut io.Writer) error {
+	if len(args) > 0 {
+		if args[0] == "distribution-uninstall" || args[0] == "uninstall" {
+			command := exec.Command("bash", append([]string{"-s", "--"}, args[1:]...)...)
+			command.Stdin = strings.NewReader(uninstallScript)
+			command.Stdout, command.Stderr = out, errOut
+			return command.Run()
 		}
-		return
-	case *webPanel:
-		if err := webui.Serve(); err != nil {
-			logger.Fatalf("web panel failed: %v", err)
+		if args[0] == "components" || args[0] == "-v" || args[0] == "--version" {
+			raw, err := fs.ReadFile(payload, "payload/manifest.json")
+			if err != nil {
+				return fmt.Errorf("component bundle is missing; build with make build: %w", err)
+			}
+			if args[0] == "components" {
+				_, err = out.Write(raw)
+				return err
+			}
+			var manifest struct {
+				Version string `json:"distribution_version"`
+			}
+			if err = json.Unmarshal(raw, &manifest); err != nil {
+				return err
+			}
+			_, err = fmt.Fprintln(out, manifest.Version+"\nhttps://github.com/topgsmir/bk")
+			return err
 		}
-		return
-	case *monitorMode:
-		monitor.Run()
-		return
-	case *proxyMode:
-		runProxy()
-		return
+		component, forward := route(args)
+		return executeComponent(component, forward, in, out, errOut, true)
 	}
-
-	// No config file -> interactive menu.
-	if *configPath == "" {
-		menu.Run()
-		return
+	launcherPath, _ := os.Executable()
+	for {
+		fmt.Fprintln(out, "\nbk — independent tunnel components\n1) BackPack core\n2) Package 2\n3) Package 3\n4) Manage Package 2 and 3\n0) Exit")
+		fmt.Fprint(out, "Select an option: ")
+		choice, err := readLine(in)
+		if errors.Is(err, io.EOF) && choice == "" {
+			return nil
+		}
+		if err != nil && !errors.Is(err, io.EOF) {
+			return err
+		}
+		var component string
+		var forwarded []string
+		switch strings.TrimSpace(choice) {
+		case "0":
+			return nil
+		case "1":
+			component = "bk-core"
+		case "2":
+			component = "bk-addons"
+			forwarded = []string{"package2"}
+		case "3":
+			component = "bk-addons"
+			forwarded = []string{"package3"}
+		case "4":
+			component = "bk-addons"
+			forwarded = []string{"manage"}
+		default:
+			fmt.Fprintln(out, "Choose 0, 1, 2, 3 or 4.")
+			continue
+		}
+		if err = execute(component, forwarded, in, out, errOut); err != nil {
+			fmt.Fprintln(errOut, err)
+		}
+		// A confirmed distribution uninstall removes this installed launcher.
+		// Do not redraw a menu that could recreate its just-removed components.
+		if launcherPath != "" {
+			if _, err = os.Stat(launcherPath); errors.Is(err, os.ErrNotExist) {
+				return nil
+			}
+		}
 	}
-
-	runEngine(*configPath)
+}
+func route(args []string) (string, []string) {
+	if len(args) == 0 {
+		return "bk-core", nil
+	}
+	switch args[0] {
+	case "core":
+		return "bk-core", args[1:]
+	case "addons":
+		return "bk-addons", args[1:]
+	case "external", "package2", "package3":
+		return "bk-addons", args
+	case "manage-addons":
+		return "bk-addons", append([]string{"manage"}, args[1:]...)
+	}
+	return "bk-core", args
 }
 
-// runProxy runs the built-in proxy until a termination signal arrives. The
-// proxy is a plain loopback service; the tunnel forwards to it like any backend.
-func runProxy() {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-	go localproxy.Run(ctx)
-	<-sigChan
-	cancel()
-	logger.Info("bk proxy stopped")
+// Read one byte at a time: buffered read-ahead would consume the answers meant
+// for the selected component when stdin is a pipe or scripted terminal input.
+func readLine(in io.Reader) (string, error) {
+	var line strings.Builder
+	var b [1]byte
+	for {
+		n, err := in.Read(b[:])
+		if n > 0 {
+			if b[0] == '\n' {
+				return strings.TrimSuffix(line.String(), "\r"), nil
+			}
+			line.WriteByte(b[0])
+			if line.Len() > 4096 {
+				return "", errors.New("menu input is too long")
+			}
+		}
+		if err != nil {
+			return line.String(), err
+		}
+	}
+}
+func execute(name string, args []string, in io.Reader, out, errOut io.Writer) error {
+	return executeComponent(name, args, in, out, errOut, false)
+}
+func executeComponent(name string, args []string, in io.Reader, out, errOut io.Writer, replace bool) error {
+	cache, err := os.UserCacheDir()
+	if err != nil {
+		return err
+	}
+	path, err := materialize(payload, filepath.Join(cache, "bk", "components"), name)
+	if err != nil {
+		return err
+	}
+	// Service commands keep their PID and signal semantics and retain no
+	// additional launcher runtime after selecting their owning component.
+	if replace && in == os.Stdin && out == os.Stdout && errOut == os.Stderr {
+		return syscall.Exec(path, append([]string{name}, args...), os.Environ())
+	}
+	command := exec.Command(path, args...)
+	command.Stdin = in
+	command.Stdout = out
+	command.Stderr = errOut
+	if err = command.Start(); err != nil {
+		return err
+	}
+	signals := make(chan os.Signal, 4)
+	signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
+	done := make(chan struct{})
+	defer close(done)
+	defer signal.Stop(signals)
+	go func() {
+		for {
+			select {
+			case sig := <-signals:
+				_ = command.Process.Signal(sig)
+			case <-done:
+				return
+			}
+		}
+	}()
+	return command.Wait()
+}
+func materialize(source fs.FS, cache, name string) (string, error) {
+	if name != "bk-core" && name != "bk-addons" {
+		return "", errors.New("unknown component")
+	}
+	component, err := source.Open("payload/" + name)
+	if err != nil {
+		return "", fmt.Errorf("%s is absent; build with make build: %w", name, err)
+	}
+	hash, err := digestReader(component)
+	component.Close()
+	if err != nil {
+		return "", err
+	}
+	manifestBytes, err := fs.ReadFile(source, "payload/manifest.json")
+	if err != nil {
+		return "", err
+	}
+	manifest := map[string]any{}
+	if err = json.Unmarshal(manifestBytes, &manifest); err != nil {
+		return "", err
+	}
+	if manifest[name+"_sha256"] != hash {
+		return "", errors.New("embedded component checksum mismatch")
+	}
+	directory := filepath.Join(cache, hash)
+	if err = os.MkdirAll(directory, 0700); err != nil {
+		return "", err
+	}
+	for current := directory; ; current = filepath.Dir(current) {
+		info, e := os.Lstat(current)
+		if e != nil {
+			return "", e
+		}
+		if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+			return "", errors.New("component cache must use real directories")
+		}
+		if current == cache {
+			break
+		}
+	}
+	target := filepath.Join(directory, name)
+	if info, e := os.Lstat(target); e == nil && info.Mode().IsRegular() {
+		if cached, e := os.Open(target); e == nil {
+			actual, digestErr := digestReader(cached)
+			cached.Close()
+			if digestErr == nil && actual == hash {
+				if e = os.Chmod(target, 0700); e != nil {
+					return "", e
+				}
+				return target, nil
+			}
+		}
+	}
+	temporary, err := os.CreateTemp(directory, "component-")
+	if err != nil {
+		return "", err
+	}
+	defer os.Remove(temporary.Name())
+	component, err = source.Open("payload/" + name)
+	if err != nil {
+		temporary.Close()
+		return "", err
+	}
+	written := sha256.New()
+	_, err = io.Copy(io.MultiWriter(temporary, written), component)
+	component.Close()
+	if err != nil {
+		temporary.Close()
+		return "", err
+	}
+	if hex.EncodeToString(written.Sum(nil)) != hash {
+		temporary.Close()
+		return "", errors.New("copied component checksum mismatch")
+	}
+	if err = temporary.Chmod(0700); err != nil {
+		temporary.Close()
+		return "", err
+	}
+	if err = temporary.Sync(); err != nil {
+		temporary.Close()
+		return "", err
+	}
+	if err = temporary.Close(); err != nil {
+		return "", err
+	}
+	if err = os.Rename(temporary.Name(), target); err != nil {
+		return "", err
+	}
+	return target, nil
 }
 
-// runEngine starts a single tunnel from a TOML config and blocks until a
-// termination signal arrives, then shuts down gracefully.
-func runEngine(configPath string) {
-	ctx, cancel := context.WithCancel(context.Background())
-
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-
-	go cmd.Run(configPath, ctx)
-
-	<-sigChan
-	cancel()
-	time.Sleep(1 * time.Second)
-	logger.Info("bk engine stopped")
+// Components are streamed: starting many services must not allocate one whole
+// embedded executable per launcher process.
+func digestReader(source io.Reader) (string, error) {
+	digest := sha256.New()
+	if _, err := io.Copy(digest, source); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(digest.Sum(nil)), nil
 }

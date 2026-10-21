@@ -1,0 +1,2313 @@
+--- a/install.sh
++++ b/install.sh
+@@ -84,13 +84,13 @@
+ # installed bk and then enrolled the machine with a panel. A panel reaches
+ # a managed server over its own SSH now, so there is nothing to enrol: the
+ # operator adds the server from the panel and never touches this machine again.
+-BP_ARGS=("$@")
+-if [[ ${#BP_ARGS[@]} -gt 0 && "${BP_ARGS[0]}" == "bk" ]]; then
+-  BP_ARGS=("${BP_ARGS[@]:1}")
+-fi
+-if [[ ${#BP_ARGS[@]} -gt 0 ]]; then
+-  if [[ "${BP_ARGS[0]}" != "link" || "${BP_ARGS[1]:-}" != "apply" || ${#BP_ARGS[@]} -lt 3 ]]; then
+-    err "Unknown argument: ${BP_ARGS[0]}"
++BK_ARGS=("$@")
++if [[ ${#BK_ARGS[@]} -gt 0 && "${BK_ARGS[0]}" == "bk" ]]; then
++  BK_ARGS=("${BK_ARGS[@]:1}")
++fi
++if [[ ${#BK_ARGS[@]} -gt 0 ]]; then
++  if [[ "${BK_ARGS[0]}" != "link" || "${BK_ARGS[1]:-}" != "apply" || ${#BK_ARGS[@]} -lt 3 ]]; then
++    err "Unknown argument: ${BK_ARGS[0]}"
+     err "This script takes no arguments, or a setup link to apply after installing:"
+     err "  bash <(curl -fsSL …/install.sh) link apply 'bk://…'"
+     exit 2
+@@ -498,8 +498,8 @@
+     GO_BIN=/usr/local/go/bin/go
+   else
+     warn "Installing Go ${GO_VERSION}..."
+-    download_go /tmp/go-bp.tgz || { err "Could not obtain Go."; exit 1; }
+-    rm -rf /usr/local/go && tar -C /usr/local -xzf /tmp/go-bp.tgz
++    download_go /tmp/go-bk.tgz || { err "Could not obtain Go."; exit 1; }
++    rm -rf /usr/local/go && tar -C /usr/local -xzf /tmp/go-bk.tgz
+     GO_BIN=/usr/local/go/bin/go
+     go_new_enough "$GO_BIN" || { err "Installed Go does not satisfy ${GO_VERSION}."; exit 1; }
+   fi
+@@ -553,10 +553,10 @@
+ # replaces this shell so the menu owns the terminal cleanly.
+ # A setup link given on the command line is applied now, instead of opening the
+ # menu: the binary builds the tunnel, starts it, and says whether it connected.
+-if [[ ${#BP_ARGS[@]} -gt 0 ]]; then
++if [[ ${#BK_ARGS[@]} -gt 0 ]]; then
+   echo
+   info "Setting up the tunnel from the setup link..."
+-  exec "$BIN_PATH" "${BP_ARGS[@]}"
++  exec "$BIN_PATH" "${BK_ARGS[@]}"
+ fi
+ 
+ if [ -t 0 ]; then
+--- a/internal/app/app.go
++++ b/internal/app/app.go
+@@ -10,11 +10,14 @@
+ 
+ const (
+ 	// Version of the bk engine.
+-	Version = "v1.9.0"
++	Version = "v1.12.0"
++
++	// UpstreamVersion identifies the inherited engine documentation baseline.
++	UpstreamVersion = "v1.9.0"
+ 
+ 	// RepoOwner/RepoName identify the GitHub repository used by the installer
+ 	// and the release-based updater.
+-	RepoOwner = "AminMGMT"
++	RepoOwner = "topgsmir"
+ 	RepoName  = "bk"
+ 
+ 	// SourceURL is where the source lives, printed with the version.
+@@ -103,7 +106,7 @@
+ // A var rather than a const so a test can pin a key of its own — the same
+ // reason node.StorePath and optimize.sysctlFile are vars. Nothing at runtime
+ // writes it.
+-var ReleasePublicKey = "uDVeC9NUFceAuhg53ZWbBNTVSaMC8tEvtwWmcDZmV9Q="
++var ReleasePublicKey = "voCWb72SQ6j+0YUlehUec/vg8Z0IL9tKcINNHsfSxDQ="
+ 
+ // TunnelConfigMode is the permission a tunnel's TOML config is written with.
+ //
+--- a/internal/app/docs_test.go
++++ b/internal/app/docs_test.go
+@@ -25,15 +25,19 @@
+ 		t.Fatalf("found %d documents — this test is looking in the wrong place", len(docs))
+ 	}
+ 
+-	want := "Last verified against bk " + Version
+ 	for _, path := range docs {
+ 		b, err := os.ReadFile(path)
+ 		if err != nil {
+ 			t.Errorf("%s: %v", path, err)
+ 			continue
+ 		}
++		// Engine references retain their original upstream verification dates.
++		// Distribution-specific documents must be checked against this release.
++		version := UpstreamVersion
++		product := "bk"
++		want := "Last verified against " + product + " " + version
+ 		s := string(b)
+-		if !strings.Contains(s, "Last verified against bk") {
++		if !strings.Contains(s, "Last verified against ") {
+ 			t.Errorf("%s has no verification stamp. Add one, or a figure in it will be "+
+ 				"read as current however old it is.", filepath.Base(path))
+ 			continue
+@@ -41,7 +45,7 @@
+ 		if !strings.Contains(s, want) {
+ 			t.Errorf("%s was last verified against an older version than %s. Either "+
+ 				"re-read it and move the stamp, or leave the stamp where it is — "+
+-				"but this failing means nobody has decided which.", filepath.Base(path), Version)
++				"but this failing means nobody has decided which.", filepath.Base(path), version)
+ 		}
+ 	}
+ }
+--- a/internal/app/installargs_test.go
++++ b/internal/app/installargs_test.go
+@@ -20,12 +20,12 @@
+ 		t.Fatal(err)
+ 	}
+ 	sh := string(src)
+-	start := strings.Index(sh, `BP_ARGS=("$@")`)
++	start := strings.Index(sh, `BK_ARGS=("$@")`)
+ 	end := strings.Index(sh, "# Which release asset this machine can run.")
+ 	if start < 0 || end < start {
+ 		t.Fatal("install.sh no longer has the argument block this test runs")
+ 	}
+-	block := "err() { echo \"$*\" >&2; }\n" + sh[start:end] + "\nprintf '%s\\n' \"${BP_ARGS[@]}\"\n"
++	block := "err() { echo \"$*\" >&2; }\n" + sh[start:end] + "\nprintf '%s\\n' \"${BK_ARGS[@]}\"\n"
+ 
+ 	run := func(args ...string) (string, int) {
+ 		cmd := exec.Command("bash", append([]string{"-c", block, "install.sh"}, args...)...)
+@@ -58,7 +58,7 @@
+ 		}
+ 	}
+ 
+-	if !strings.Contains(sh, `exec "$BIN_PATH" "${BP_ARGS[@]}"`) {
++	if !strings.Contains(sh, `exec "$BIN_PATH" "${BK_ARGS[@]}"`) {
+ 		t.Error("install.sh no longer hands the setup link to the installed binary")
+ 	}
+ }
+--- a/internal/app/installgo_test.go
++++ b/internal/app/installgo_test.go
+@@ -2,6 +2,8 @@
+ 
+ import (
+ 	"os"
++	"os/exec"
++	"path/filepath"
+ 	"regexp"
+ 	"strconv"
+ 	"strings"
+@@ -106,3 +108,33 @@
+ 	}
+ 	return strings.Trim(m[1], `"`)
+ }
++
++// Patch releases matter when the module requires a security-fixed toolchain.
++func TestInstallerRequiresTheFullGoVersion(t *testing.T) {
++	sh := read(t, "install.sh")
++	start := strings.Index(sh, "go_new_enough() {")
++	if start < 0 {
++		t.Fatal("missing Go version check")
++	}
++	end := strings.Index(sh[start:], "\nensure_go() {")
++	if end < 0 {
++		t.Fatal("missing Go version check")
++	}
++	function := sh[start : start+end]
++	fakeGo := filepath.Join(t.TempDir(), "go")
++	for _, tc := range []struct {
++		version string
++		ok      bool
++	}{
++		{"1.26.6", false}, {"1.26.8", false}, {"1.26.9", true},
++		{"1.26.10", true}, {"1.27.0", true}, {"1.27rc1", false},
++	} {
++		if err := os.WriteFile(fakeGo, []byte("#!/bin/sh\necho 'go version go"+tc.version+" linux/amd64'\n"), 0700); err != nil {
++			t.Fatal(err)
++		}
++		err := exec.Command("bash", "-c", "GO_VERSION=1.26.9\n"+function+"\ngo_new_enough \"$1\"", "test", fakeGo).Run()
++		if (err == nil) != tc.ok {
++			t.Errorf("Go %s accepted=%v want=%v", tc.version, err == nil, tc.ok)
++		}
++	}
++}
+--- a/internal/manage/conntest_test.go
++++ b/internal/manage/conntest_test.go
+@@ -168,23 +168,22 @@
+ 	if testing.Short() {
+ 		t.Skip("builds and runs the engine; skipped under -short")
+ 	}
+-	// PCK emits Ethernet frames on a real egress interface; IPv4 loopback
+-	// cannot carry it, even when the test happens to run as root. Its live
+-	// coverage uses separate network namespaces in e2e/l3live_test.go.
+-	previousReverse := connTestReverse
+-	connTestReverse = nil
+-	for _, tr := range previousReverse {
+-		if !connTestNeedsRoot(tr) {
+-			connTestReverse = append(connTestReverse, tr)
+-		}
+-	}
+-	defer func() { connTestReverse = previousReverse }()
+ 	host := os.Getenv("BP_CONNTEST_HOST")
+ 	if host == "" {
+ 		host = "127.0.0.1"
+ 	}
+ 	if ctFamily(host) == "IPv6" {
+ 		ctRequireIPv6(t)
++		// bk's PCK loopback support remains covered on IPv4. Raw IPv4
++		// carriers have no IPv6 wire format and are excluded only here.
++		previousReverse := connTestReverse
++		connTestReverse = nil
++		for _, tr := range previousReverse {
++			if !connTestNeedsRoot(tr) {
++				connTestReverse = append(connTestReverse, tr)
++			}
++		}
++		defer func() { connTestReverse = previousReverse }()
+ 	}
+ 	bin := filepath.Join(t.TempDir(), "bk")
+ 	build := exec.Command("go", "build", "-o", bin, "../..")
+--- a/internal/manage/directedit.go
++++ b/internal/manage/directedit.go
+@@ -426,7 +426,7 @@
+ 	source := "unforged"
+ 	switch {
+ 	case len(sc.SpoofSrcPool) > 1:
+-		source = fmt.Sprintf("%d forged sources", len(sc.SpoofSrcPool))
++		source = fmt.Sprintf("%d forged sources: %s", len(sc.SpoofSrcPool), strings.Join(sc.SpoofSrcPool, ", "))
+ 	case sc.SpoofSrcIP != "":
+ 		source = sc.SpoofSrcIP
+ 	}
+@@ -434,7 +434,12 @@
+ 	if spoofStealthOn(sc) {
+ 		stealth = "Stealth on"
+ 	}
+-	return profile + ", " + source + ", " + stealth
++	rotation := "source-port rotation off"
++	if sc.SpoofShufflePort {
++		rotation = fmt.Sprintf("source-port rotation %d–%d", sc.SpoofPortMin, sc.SpoofPortMax)
++	}
++	return profile + ", " + source + ", peer real " + orDefault(sc.SpoofPeerIP, "unset") +
++		", expected peer source " + orDefault(sc.SpoofPeerSrcIP, "any authenticated source") + ", " + rotation + ", " + stealth
+ }
+ 
+ // editL3Spoof changes the forged-source carrier of a running tunnel.
+@@ -450,6 +455,7 @@
+ // order is what keeps a pair in step. It ends in the same summary the setup
+ // does, which is where a mismatch is caught.
+ func editL3Spoof(t Tunnel, l config.L3Config) bool {
++	spoofSummary(l.SpoofConfig, !strings.EqualFold(strings.TrimSpace(l.Mode), "listen"))
+ 	onIran := !strings.EqualFold(strings.TrimSpace(l.Mode), "listen")
+ 	there := "kharej"
+ 	if !onIran {
+--- a/internal/manage/directsetup.go
++++ b/internal/manage/directsetup.go
+@@ -209,6 +209,7 @@
+ 
+ 	cfg.MTU, cfg.Iface = defaultL3MTU, freeL3Iface()
+ 	chooseL3Preset(false).apply(&cfg)
++	applyNewL3CarrierDefaults(&cfg)
+ 	if tui.Confirm("Fine-Tune The Advanced Settings", false) {
+ 		askL3Advanced(&cfg, side, side == sideIran)
+ 	}
+@@ -350,12 +351,16 @@
+ 		// server really is, behind its forged sources.
+ 		var own config.SpoofConfig
+ 		own.SpoofPeerIP = form.SpoofPeerIP
++		if form.Spoof != nil {
++			own.SpoofPeerSrcIP = form.Spoof.PeerSrcIP
++		}
+ 		askSpoofLocal(&own, false)
+ 		form.SpoofPeerIP = own.SpoofPeerIP
+ 		if form.Spoof == nil {
+ 			form.Spoof = &SpoofTune{}
+ 		}
+ 		form.Spoof.SrcIPs = strings.Join(spoofSources(own), ", ")
++		form.Spoof.PeerSrcIP = own.SpoofPeerSrcIP
+ 		form.Spoof.Interface = own.SpoofInterface
+ 		OfferRelaxRPFilter(own.SpoofInterface, own.SpoofPeerIP)
+ 	}
+@@ -497,10 +502,8 @@
+ 
+ 	fmt.Println()
+ 	cfg.MTU = tui.PromptInt("Starting MTU", cfg.MTU)
+-	if !tui.Confirm("Auto MTU (Measure And Correct)", true) {
+-		off := false
+-		cfg.AutoMTU = &off
+-	}
++	auto := tui.Confirm("Auto MTU (Measure And Correct)", cfg.AutoMTU == nil || *cfg.AutoMTU)
++	cfg.AutoMTU = &auto
+ 
+ 	cfg.Iface = tui.PromptDefault("Interface Name", cfg.Iface)
+ 
+--- a/internal/manage/directwebapi.go
++++ b/internal/manage/directwebapi.go
+@@ -465,11 +465,8 @@
+ 		plan := defaultL3FEC()
+ 		spec.FECData, spec.FECParity = plan.Data, plan.Parity
+ 	}
+-	if n.MTU > 0 {
+-		spec.MTU = n.MTU
+-	}
+-	spec.MSSClamp, spec.AutoMTU = n.MSSClamp, n.AutoMTU
+ 	if carrier == "spoof" {
++		spec.Spoof = newSpoofConfig("udp", "", "")
+ 		if n.Spoof != nil {
+ 			if err := n.Spoof.apply(&spec.Spoof); err != nil {
+ 				return l3Spec{}, err
+@@ -492,6 +489,14 @@
+ 				"the spoof carrier needs the Iran server's real IP on this side, " +
+ 					"because the peer forges the source of every packet it sends")
+ 		}
++	}
++	applyNewL3CarrierDefaults(&spec)
++	if n.MTU > 0 {
++		spec.MTU = n.MTU
++	}
++	spec.MSSClamp = n.MSSClamp
++	if n.AutoMTU != nil {
++		spec.AutoMTU = n.AutoMTU
+ 	}
+ 	return spec, nil
+ }
+@@ -788,8 +793,11 @@
+ 		if err := e.Spoof.apply(&l.SpoofConfig); err != nil {
+ 			return l, err
+ 		}
+-	}
+-	if e.Stealth != nil {
++		if strings.EqualFold(strings.TrimSpace(l.Mode), "listen") && net.ParseIP(l.SpoofPeerIP).To4() == nil {
++			return l, fmt.Errorf("the spoof listener needs the other server's real IPv4 to send replies")
++		}
++	}
++	if e.Stealth != nil && *e.Stealth != spoofStealthOn(l.SpoofConfig) {
+ 		if *e.Stealth {
+ 			applySpoofStealth(&l.SpoofConfig)
+ 		} else {
+--- a/internal/manage/localupdate_test.go
++++ b/internal/manage/localupdate_test.go
+@@ -44,7 +44,7 @@
+ 		"bk.tar.gz",
+ 		"bk_linux_" + other + ".tar.gz",
+ 		"bk_linux_" + runtime.GOARCH + ".tgz",
+-		"bk_linux_" + runtime.GOARCH + ".tar.gz",
++		"BK_linux_" + runtime.GOARCH + ".tar.gz",
+ 	} {
+ 		if err := os.WriteFile(filepath.Join(dir, name), []byte("x"), 0644); err != nil {
+ 			t.Fatal(err)
+--- a/internal/manage/releasesigtag_test.go
++++ b/internal/manage/releasesigtag_test.go
+@@ -30,16 +30,26 @@
+ 		t.Fatal(err)
+ 	}
+ 
+-	cmd := exec.Command("go", "run", "./tools/signsums", sumsPath)
++	// The child signing tool must trust the same fixture publisher as this test.
++	flags := "-X github.com/topgsmir/bk/internal/app.ReleasePublicKey=" + base64.StdEncoding.EncodeToString(pub)
++	cmd := exec.Command("go", "run", "-ldflags", flags, "./tools/signsums", sumsPath)
+ 	cmd.Dir = "../.."
+ 	cmd.Env = append(os.Environ(),
+ 		"RELEASE_SIGNING_KEY="+base64.StdEncoding.EncodeToString(priv),
+-		"GITHUB_REF_NAME=v9.9.9")
++		"GITHUB_REF_NAME=v9.9.9", "RELEASE_TAG=v9.9.9")
+ 	if out, err := cmd.CombinedOutput(); err != nil {
+ 		t.Fatalf("signsums: %v\n%s", err, out)
+ 	} else if !strings.Contains(string(out), "v9.9.9") {
+ 		t.Fatalf("signsums did not say which tag it signed for: %s", out)
+ 	}
++	// A secret for another publisher must be rejected before producing a signature.
++	mismatch := exec.Command("go", "run", "./tools/signsums", sumsPath)
++	mismatch.Dir = cmd.Dir
++	mismatch.Env = cmd.Env
++	if out, err := mismatch.CombinedOutput(); err == nil || !strings.Contains(string(out), "does not match") {
++		t.Fatalf("the tool did not refuse an unrelated publisher key: %v\n%s", err, out)
++	}
++
+ 	sig, err := os.ReadFile(sumsPath + ".sig")
+ 	if err != nil {
+ 		t.Fatal(err)
+--- a/internal/manage/setup.go
++++ b/internal/manage/setup.go
+@@ -666,6 +666,7 @@
+ // not asked to change.
+ func askSpoofShared(sc *config.SpoofConfig) {
+ 	fmt.Println()
++	fresh := sc.SpoofProfile == ""
+ 	if sc.SpoofProfile == "" || tui.Confirm("Change Packet Profile (Now "+sc.SpoofProfile+")", false) {
+ 		sc.SpoofProfile = askSpoofProfile("Packet Profile")
+ 	}
+@@ -678,10 +679,23 @@
+ 	} else {
+ 		sc.SpoofUplink, sc.SpoofDownlink = "", ""
+ 	}
++	if fresh && isSpoofUDP(*sc) {
++		defaults := newSpoofConfig(sc.SpoofProfile, sc.SpoofUplink, sc.SpoofDownlink)
++		sc.SpoofShufflePort, sc.SpoofPortMin, sc.SpoofPortMax = defaults.SpoofShufflePort, defaults.SpoofPortMin, defaults.SpoofPortMax
++		sc.SpoofSockBuf = defaults.SpoofSockBuf
++	}
+ 	if tui.Confirm("Stealth (Padding And Header Cosmetics)", spoofStealthOn(*sc)) {
+ 		applySpoofStealth(sc)
+ 	} else if spoofStealthOn(*sc) {
+ 		clearSpoofStealth(sc)
++	}
++	sc.SpoofShufflePort = tui.Confirm("Rotate Source Port (Independent Of Stealth)", sc.SpoofShufflePort)
++	if sc.SpoofShufflePort {
++		if sc.SpoofPortMin == 0 || sc.SpoofPortMax == 0 {
++			sc.SpoofPortMin, sc.SpoofPortMax = 49152, 65535
++		}
++	} else {
++		sc.SpoofPortMin, sc.SpoofPortMax = 0, 0
+ 	}
+ }
+ 
+@@ -692,15 +706,20 @@
+ 	if onIran {
+ 		other = "Kharej"
+ 	}
+-	for net.ParseIP(sc.SpoofPeerIP).To4() == nil {
+-		sc.SpoofPeerIP = strings.TrimSpace(tui.Prompt(other + " Real IPv4: "))
++	for {
++		sc.SpoofPeerIP = strings.TrimSpace(tui.PromptDefault(other+" Real IPv4", sc.SpoofPeerIP))
+ 		if net.ParseIP(sc.SpoofPeerIP).To4() == nil {
+ 			tui.Error("Enter an IPv4 address, like 203.0.113.10.")
+ 			tui.StopIfInputGone()
+-		}
++			continue
++		}
++		break
+ 	}
+ 	for {
+-		raw := strings.TrimSpace(tui.PromptDefault("Forged Source IPv4 (Comma Separated, Blank = None)", strings.Join(spoofSources(*sc), ", ")))
++		raw := strings.TrimSpace(tui.PromptDefault("Forged Source IPv4 (Comma Separated, '-' = None)", strings.Join(spoofSources(*sc), ", ")))
++		if raw == "-" {
++			raw = ""
++		}
+ 		pool, err := parseIPv4List(raw, "forged source")
+ 		if err != nil {
+ 			tui.Error(err.Error())
+@@ -714,6 +733,19 @@
+ 		if len(pool) > 1 {
+ 			sc.SpoofSrcPool = pool
+ 		}
++		break
++	}
++	for {
++		raw := strings.TrimSpace(tui.PromptDefault("Expected Peer Forged IPv4 ('-' = Any Authenticated Source)", sc.SpoofPeerSrcIP))
++		if raw == "-" {
++			raw = ""
++		}
++		if raw != "" && net.ParseIP(raw).To4() == nil {
++			tui.Error("Enter one IPv4 address or leave it blank for a rotating source pool.")
++			tui.StopIfInputGone()
++			continue
++		}
++		sc.SpoofPeerSrcIP = raw
+ 		break
+ 	}
+ 	// Only asked where there is a choice.
+@@ -754,14 +786,11 @@
+ // and carries nothing — the failure this whole carrier is worst at explaining.
+ // Setting them together means "the same answer on both ends" is one answer.
+ //
+-// The values are the reference implementation's: a padding ceiling of 64 bytes,
+-// and the ephemeral range for the source port.
++// Source-port rotation is independent: turning Stealth off must not undo it.
+ func applySpoofStealth(sc *config.SpoofConfig) {
+ 	sc.SpoofPadding, sc.SpoofPaddingMax = true, 64
+ 	sc.SpoofTTLJitter = true
+ 	sc.SpoofRandomDSCP = true
+-	sc.SpoofShufflePort = true
+-	sc.SpoofPortMin, sc.SpoofPortMax = 49152, 65535
+ 	// Only the tcp profile carries a TLS record header; on the others the flag
+ 	// is read and ignored, so setting it would be a setting that does nothing.
+ 	if up, down := network.ResolveSpoofDirections(sc.SpoofProfile, sc.SpoofUplink, sc.SpoofDownlink); up == "tcp" || down == "tcp" {
+@@ -797,6 +826,12 @@
+ 	fmt.Println()
+ 	tui.Info("Spoof: " + profile + " · Forged Source: " + src + " · Stealth: " + stealth)
+ 	tui.Info(other + " Real IP: " + sc.SpoofPeerIP)
++	tui.Info("Expected Peer Forged IP: " + orDefault(sc.SpoofPeerSrcIP, "any authenticated source"))
++	rotation := "off"
++	if sc.SpoofShufflePort {
++		rotation = fmt.Sprintf("on (%d–%d)", sc.SpoofPortMin, sc.SpoofPortMax)
++	}
++	tui.Info("Source-Port Rotation: " + rotation)
+ }
+ 
+ // askSpoofProfile prompts for one packet profile and returns its config value.
+@@ -1098,15 +1133,11 @@
+ 	s.SimpleAuth = tui.Confirm("Simple Token Auth (Only Behind A TLS-Terminating Proxy)", s.SimpleAuth)
+ }
+ 
+-// clearSpoofStealth is applySpoofStealth's opposite: it puts the carrier back to
+-// plain packets, including the bounds the knobs carried, so a config that has
+-// been switched off does not keep a port range and a padding ceiling that
+-// nothing reads.
++// clearSpoofStealth removes padding and header cosmetics, retaining the
++// independently configured source-port rotation.
+ func clearSpoofStealth(sc *config.SpoofConfig) {
+ 	sc.SpoofPadding, sc.SpoofPaddingMax = false, 0
+ 	sc.SpoofTTLJitter = false
+ 	sc.SpoofRandomDSCP = false
+-	sc.SpoofShufflePort = false
+-	sc.SpoofPortMin, sc.SpoofPortMax = 0, 0
+ 	sc.SpoofFakeTLS = false
+ }
+--- a/internal/manage/sharelink.go
++++ b/internal/manage/sharelink.go
+@@ -113,6 +113,12 @@
+ 	SrcIPs    string `json:"ss,omitempty"`
+ 	Stealth   bool   `json:"sl,omitempty"`
+ 	ICMPReply bool   `json:"si,omitempty"`
++	// Optional setup recommendations. A pointer preserves an explicit "off"
++	// while older links, which omitted rotation, get the new UDP defaults.
++	ShufflePort  *bool `json:"sr,omitempty"`
++	PortMin      int   `json:"sn,omitempty"`
++	PortMax      int   `json:"sx,omitempty"`
++	SpoofSockBuf int   `json:"sb,omitempty"`
+ 
+ 	// Reverse only, and paired. SimpleAuth changes how a wss client proves
+ 	// itself, and a server expecting the other kind refuses it; the smux
+@@ -418,6 +424,12 @@
+ 		}
+ 	} else {
+ 		f.Carrier = l.Tr
++		// On older producers, an omitted auto_mtu means enabled. Do not
++		// reinterpret that as the new Spoof UDP setup default (disabled).
++		if l.Tr == "spoof" && f.AutoMTU == nil {
++			auto := true
++			f.AutoMTU = &auto
++		}
+ 		if l.SNI != "" {
+ 			f.SNIDomain = l.SNI
+ 			paired = append(paired, "sniDomain")
+@@ -473,6 +485,15 @@
+ 			Uplink:    l.Uplink,
+ 			Downlink:  l.Downlink,
+ 			ICMPReply: l.ICMPReply,
++		}
++		defaults := newSpoofConfig(l.Profile, l.Uplink, l.Downlink)
++		sp.ShufflePort, sp.PortMin, sp.PortMax = defaults.SpoofShufflePort, defaults.SpoofPortMin, defaults.SpoofPortMax
++		sp.SockBuf = defaults.SpoofSockBuf
++		if l.ShufflePort != nil {
++			sp.ShufflePort, sp.PortMin, sp.PortMax = *l.ShufflePort, l.PortMin, l.PortMax
++		}
++		if l.SpoofSockBuf > 0 {
++			sp.SockBuf = l.SpoofSockBuf
+ 		}
+ 		paired = append(paired, "spoof.profile")
+ 		if l.Uplink != "" || l.Downlink != "" {
+@@ -614,6 +635,12 @@
+ 		l.SrcIPs = strings.Join(nonEmpty(append([]string{sc.SpoofSrcIP}, sc.SpoofSrcPool...)), ", ")
+ 		l.Stealth = spoofStealthOn(sc)
+ 		l.ICMPReply = sc.SpoofICMPReply
++		if l.Tr == "spoof" {
++			rotate := sc.SpoofShufflePort
++			l.ShufflePort = &rotate
++			l.PortMin, l.PortMax = sc.SpoofPortMin, sc.SpoofPortMax
++			l.SpoofSockBuf = sc.SpoofSockBuf
++		}
+ 
+ 	case cfg.Server.BindAddr != "":
+ 		l.Kind, l.From = "reverse", "iran" // the reverse server is the Iran side
+--- a/internal/manage/sharelinkv2.go
++++ b/internal/manage/sharelinkv2.go
+@@ -44,6 +44,7 @@
+ 	"k", "f", "n", "t", "tr", "e", "sni", "p", "h", "pr", "po", "u", "m", "mt",
+ 	"li", "pi", "fd", "fp", "pa", "gk", "lm", "am", "sp", "su", "sd", "ss", "sl",
+ 	"si", "sa", "mv", "hs", "rh", "rm", "ft", "fw", "ed",
++	"sr", "sn", "sx", "sb",
+ 	"hi", "hu", "hp", "hid", "hn", "hpa", "hh", "hk", "hsid", "hca",
+ }
+ 
+--- /dev/null
++++ b/internal/manage/spoofdefaults.go
+@@ -0,0 +1,39 @@
++package manage
++
++import (
++	"github.com/topgsmir/bk/config"
++	"github.com/topgsmir/bk/internal/utils/network"
++)
++
++const spoofUDPBuffer = 8 << 20
++
++func isSpoofUDP(sc config.SpoofConfig) bool {
++	up, down := network.ResolveSpoofDirections(sc.SpoofProfile, sc.SpoofUplink, sc.SpoofDownlink)
++	return up == "udp" && down == "udp"
++}
++
++// New UDP setups rotate source ports independently of padding/Stealth.
++// Existing configs and explicit edits are never migrated by this helper.
++func newSpoofConfig(profile, uplink, downlink string) config.SpoofConfig {
++	sc := config.SpoofConfig{SpoofProfile: profile, SpoofUplink: uplink, SpoofDownlink: downlink}
++	if isSpoofUDP(sc) {
++		sc.SpoofShufflePort = true
++		sc.SpoofPortMin, sc.SpoofPortMax = 49152, 65535
++		sc.SpoofSockBuf = spoofUDPBuffer
++	}
++	return sc
++}
++
++// Use a conservative inner MTU for raw UDP; explicit advanced settings and
++// imported MTU values are applied afterwards.
++func applyNewL3CarrierDefaults(s *l3Spec) {
++	if s.Carrier != "spoof" || !isSpoofUDP(s.Spoof) {
++		return
++	}
++	s.MTU = 1280
++	auto := false
++	s.AutoMTU = &auto
++	if s.Spoof.SpoofSockBuf == 0 {
++		s.Spoof.SpoofSockBuf = spoofUDPBuffer
++	}
++}
+--- /dev/null
++++ b/internal/manage/spoofdefaults_test.go
+@@ -0,0 +1,157 @@
++package manage
++
++import (
++	"reflect"
++	"strings"
++	"testing"
++
++	"github.com/topgsmir/bk/config"
++	"github.com/topgsmir/bk/internal/tui"
++)
++
++func TestSpoofUDPWizardRotationIsIndependentOfStealth(t *testing.T) {
++	for _, tc := range []struct {
++		name, input string
++		rotation    bool
++	}{
++		{"accept defaults", "1\n\n\n\n", true},
++		{"explicit off", "1\n\n\nn\n", false},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			restore := tui.SetInput(strings.NewReader(tc.input))
++			defer restore()
++			var sc config.SpoofConfig
++			askSpoofShared(&sc)
++			if sc.SpoofProfile != "udp" || sc.SpoofShufflePort != tc.rotation || spoofStealthOn(sc) {
++				t.Fatalf("wizard did not keep the independent rotation answer: %+v", sc)
++			}
++		})
++	}
++}
++
++// Exercise the same render -> link -> kharej creation path as the wizard.
++func TestSpoofUDPDefaultsSurvivePairedSetup(t *testing.T) {
++	iran := l3Spec{
++		Name: "spoof-iran", Side: sideIran, Carrier: "spoof", Encap: "gre",
++		Addr: "203.0.113.20:9000", Token: "regression-test-token",
++		Iface: "bp0", LocalIP: "10.70.0.1/30", PeerIP: "10.70.0.2",
++		Ports: []string{"443"}, MTU: defaultL3MTU,
++		Spoof: newSpoofConfig("udp", "", ""),
++	}
++	iran.Spoof.SpoofSrcIP, iran.Spoof.SpoofPeerIP = "198.51.100.10", "203.0.113.20"
++	findL3Preset("").apply(&iran)
++	applyNewL3CarrierDefaults(&iran)
++	for _, rotation := range []bool{true, false} {
++		t.Run(map[bool]string{true: "default rotation", false: "explicit rotation off"}[rotation], func(t *testing.T) {
++			iran.Spoof.SpoofShufflePort = rotation
++			if !rotation {
++				iran.Spoof.SpoofPortMin, iran.Spoof.SpoofPortMax = 0, 0
++			}
++			link, err := DecodeShareLink(pendingShareLinkFrom(iran, "203.0.113.10", linkExtras{}))
++			if err != nil {
++				t.Fatal(err)
++			}
++			form := MirrorForPeer(link)
++			form.Spoof.SrcIPs = "198.51.100.20"
++			kharej, err := form.ToNewDirectTunnel().spec()
++			if err != nil {
++				t.Fatal(err)
++			}
++			for _, cfg := range []config.L3Config{decode(t, iran.Render()).L3, decode(t, kharej.Render()).L3} {
++				if cfg.MTU != 1280 || cfg.AutoMTUEnabled() || cfg.SpoofShufflePort != rotation || cfg.SpoofSockBuf != 8<<20 {
++					t.Fatalf("paired UDP settings lost: %+v", cfg)
++				}
++				if rotation && (cfg.SpoofPortMin != 49152 || cfg.SpoofPortMax != 65535) {
++					t.Fatal("source-port range lost")
++				}
++			}
++			if kharej.Spoof.SpoofPeerSrcIP != "198.51.100.10" || kharej.Spoof.SpoofPeerIP != "203.0.113.10" {
++				t.Fatal("producer's forged and real IPs were not mirrored correctly")
++			}
++		})
++	}
++}
++
++func TestSpoofDefaultsRespectImportedMTUAndOtherCarriers(t *testing.T) {
++	on := true
++	n := NewDirectTunnel{Side: "kharej", Carrier: "spoof", Name: "imported",
++		Token: "regression-test-token", TunnelPort: "9000", SpoofPeerIP: "203.0.113.10", MTU: 1360, AutoMTU: &on}
++	spec, err := n.spec()
++	if err != nil {
++		t.Fatal(err)
++	}
++	if spec.MTU != 1360 || !*spec.AutoMTU {
++		t.Fatal("imported MTU choice was overridden")
++	}
++	for _, carrier := range []string{"udp", "pck", "quic", "sni", "xdi"} {
++		s := l3Spec{Carrier: carrier, MTU: defaultL3MTU}
++		before := s
++		applyNewL3CarrierDefaults(&s)
++		if !reflect.DeepEqual(s, before) {
++			t.Fatalf("defaults affected %s", carrier)
++		}
++	}
++	for _, profile := range []string{"tcp", "icmp"} {
++		s := l3Spec{Carrier: "spoof", MTU: defaultL3MTU, Spoof: newSpoofConfig(profile, "", "")}
++		before := s
++		applyNewL3CarrierDefaults(&s)
++		if !reflect.DeepEqual(s, before) {
++			t.Fatalf("UDP defaults affected %s", profile)
++		}
++	}
++}
++
++func TestSpoofOldLinksKeepTheProducersImplicitAutoMTU(t *testing.T) {
++	link := ShareLink{Kind: "direct", From: "iran", Tr: "spoof", Profile: "udp",
++		Name: "old-link", Tok: "regression-test-token", Port: "9000", Host: "203.0.113.10",
++		LocalIP: "10.71.0.1/30", PeerIP: "10.71.0.2", MTU: 1400}
++	form := MirrorForPeer(link)
++	spec, err := form.ToNewDirectTunnel().spec()
++	if err != nil {
++		t.Fatal(err)
++	}
++	if spec.MTU != 1400 || spec.AutoMTU == nil || !*spec.AutoMTU {
++		t.Fatal("old link's implicit Auto MTU was replaced with the new setup default")
++	}
++	if !spec.Spoof.SpoofShufflePort {
++		t.Fatal("old UDP link did not receive independent local port rotation")
++	}
++}
++
++func TestSpoofEditKeepsRotationAndHiddenSettingsWhenStealthIsOff(t *testing.T) {
++	off := false
++	l := config.L3Config{Carrier: "spoof", Mode: "dial", MTU: 1280, AutoMTU: &off,
++		SpoofConfig: newSpoofConfig("udp", "", "")}
++	l.SpoofSrcIP, l.SpoofPeerIP, l.SpoofPeerSrcIP = "198.51.100.10", "203.0.113.20", "198.51.100.20"
++	l.SpoofTTLJitter, l.SpoofMTU = true, 1500
++	settings := directSettingsFrom("test", l)
++	settings.Spoof.SrcIPs = "198.51.100.11"
++	got, err := applyDirectEdit(l, DirectEdit{Spoof: &settings.Spoof, Stealth: &off})
++	if err != nil {
++		t.Fatal(err)
++	}
++	want := l
++	want.SpoofSrcIP = "198.51.100.11"
++	if !reflect.DeepEqual(got, want) {
++		t.Fatalf("IP edit reset other settings:\ngot %+v\nwant %+v", got, want)
++	}
++	applySpoofStealth(&got.SpoofConfig)
++	clearSpoofStealth(&got.SpoofConfig)
++	if !got.SpoofShufflePort || got.SpoofPortMin != 49152 || got.SpoofPortMax != 65535 {
++		t.Fatal("Stealth toggle disabled independent rotation")
++	}
++}
++
++func TestSpoofListenerEditRejectsMissingRealPeerBeforeSaving(t *testing.T) {
++	l := config.L3Config{Carrier: "spoof", Mode: "listen", SpoofConfig: newSpoofConfig("udp", "", "")}
++	l.SpoofPeerIP = "203.0.113.10"
++	tune := spoofOf(l.SpoofConfig)
++	tune.PeerIP = ""
++	if _, err := applyDirectEdit(l, DirectEdit{Spoof: &tune}); err == nil {
++		t.Fatal("listener edit accepted a missing reply destination")
++	}
++	tune.PeerIP = "203.0.113.11"
++	if got, err := applyDirectEdit(l, DirectEdit{Spoof: &tune}); err != nil || got.SpoofPeerIP != tune.PeerIP {
++		t.Fatalf("valid real peer edit refused: %v", err)
++	}
++}
+--- a/internal/manage/spoofstealth_test.go
++++ b/internal/manage/spoofstealth_test.go
+@@ -13,7 +13,7 @@
+ // These pin the parts of that where being close is the same as being wrong.
+ 
+ // On and off again must land exactly where it started, or a tunnel switched off
+-// keeps a port range and a padding ceiling nothing reads — and the Edit screen
++// keeps a padding ceiling nothing reads — and the Edit screen
+ // goes on describing a tunnel that is not running.
+ func TestStealthOffUndoesStealthOnExactly(t *testing.T) {
+ 	before := config.SpoofConfig{SpoofProfile: "udp", SpoofSrcIP: "203.0.113.10"}
+@@ -41,8 +41,8 @@
+ 	if !sc.SpoofTTLJitter || !sc.SpoofRandomDSCP {
+ 		t.Error("the header cosmetics are not on")
+ 	}
+-	if !sc.SpoofShufflePort || sc.SpoofPortMin <= 0 || sc.SpoofPortMax <= sc.SpoofPortMin {
+-		t.Errorf("the source port shuffle has no usable range: %d-%d", sc.SpoofPortMin, sc.SpoofPortMax)
++	if sc.SpoofShufflePort || sc.SpoofPortMin != 0 || sc.SpoofPortMax != 0 {
++		t.Error("Stealth changed the independent source-port rotation setting")
+ 	}
+ }
+ 
+--- a/internal/menu/manage.go
++++ b/internal/menu/manage.go
+@@ -14,7 +14,7 @@
+ 	for {
+ 		tui.Clear()
+ 		idx := tui.ChooseOpt("Manage", []tui.Option{
+-			{Title: "Manage Tunnels", Desc: "edit, start/stop, log, delete"},
++			{Title: "Manage Tunnels", Desc: "core tunnels: edit, start/stop, log, delete"},
+ 			{Title: "Set Up From A Link", Desc: "paste the other server's link"},
+ 			{Title: "Status", Desc: "live tunnel table"},
+ 			{Title: "Health Check", Desc: "problems and fixes"},
+--- a/internal/menu/system.go
++++ b/internal/menu/system.go
+@@ -6,14 +6,13 @@
+ import (
+ 	"fmt"
+ 	"os"
++	"os/exec"
+ 
+ 	"github.com/topgsmir/bk/internal/app"
+ 	"github.com/topgsmir/bk/internal/manage"
+ 	"github.com/topgsmir/bk/internal/optimize"
+ 	"github.com/topgsmir/bk/internal/schedule"
+-	"github.com/topgsmir/bk/internal/telegram"
+ 	"github.com/topgsmir/bk/internal/tui"
+-	"github.com/topgsmir/bk/internal/webui"
+ )
+ 
+ // autoRefreshMenu lives under Manage.
+@@ -67,30 +66,14 @@
+ 		return
+ 	}
+ 
+-	// Capture the install path before we delete the config that records it.
+-	repo := manage.InstallPath()
+-	if repo == "" {
+-		repo = app.InstallDir
++	// The distribution launcher owns removal of both programs. In particular,
++	// addon services must be stopped before their configuration is removed.
++	command := exec.Command(app.BinPath, "distribution-uninstall", "--yes")
++	command.Stdin, command.Stdout, command.Stderr = os.Stdin, os.Stdout, os.Stderr
++	if err := command.Run(); err != nil {
++		tui.Error("Uninstall Failed: " + err.Error())
++		tui.PressEnter()
++		return
+ 	}
+-
+-	for _, t := range manage.List() {
+-		_ = manage.Delete(t.Name)
+-	}
+-	_ = webui.Disable()
+-	_ = manage.DisableMonitorService()
+-	_ = schedule.SetAutoRefresh(0)
+-	_ = telegram.Disable()
+-	os.RemoveAll(app.ConfigDir)
+-	if err := os.Remove(app.BinPath); err != nil {
+-		tui.Warn("Could Not Remove " + app.BinPath + " — Remove It By Hand.")
+-	}
+-	if repo != "" && repo != "/" && repo != os.Getenv("HOME") {
+-		if err := os.RemoveAll(repo); err != nil {
+-			tui.Warn("Could Not Remove " + repo + " — Remove It By Hand.")
+-		} else {
+-			tui.Info("Removed: " + repo)
+-		}
+-	}
+-	tui.Success("Uninstalled. Goodbye!")
+ 	os.Exit(0)
+ }
+--- a/internal/telegram/messages_test.go
++++ b/internal/telegram/messages_test.go
+@@ -68,10 +68,8 @@
+ func TestSupportTextFormat(t *testing.T) {
+ 	got := supportText(LangEN)
+ 	for _, want := range []string{
+-		"GitHub : ", "Channel : ",
+-		"🔺 Tron [ TRX ] :",
+-		"💠 USDT [ BEP20 ] :",
+-		"💎 Gram [ TON ] :",
++		"GitHub : https://github.com/topgsmir/bk",
++		"Maintainer : topgsmir", "Issues : ",
+ 	} {
+ 		if !strings.Contains(got, want) {
+ 			t.Errorf("support text is missing %q:\n%s", want, got)
+--- a/internal/telegram/telegram.go
++++ b/internal/telegram/telegram.go
+@@ -746,11 +746,9 @@
+ 
+ func supportText(lang string) string {
+ 	return b("💛 "+tr(lang, "Support")) + "\n\n" +
+-		"GitHub : https://github.com/AminMGMT\n" +
+-		"Channel : https://t.me/BlackProtocols\n\n" +
+-		"🔺 Tron [ TRX ] :\n" + code("TTzuUAtsEsrLgNpFVLNTyLVJVRRFNWESYc") + "\n\n" +
+-		"💠 USDT [ BEP20 ] :\n" + code("0xc112AE9bfF7c59dEcFb34E988A397848D3093E82") + "\n\n" +
+-		"💎 Gram [ TON ] :\n" + code("UQD9g40QubAICJ6zPqegtCY7s-joMx2DB8aIqA0xF1aHoCDs")
++		"Maintainer : topgsmir\n" +
++		"GitHub : " + app.SourceURL + "\n" +
++		"Issues : " + app.SourceURL + "/issues"
+ }
+ 
+ func sleepCtx(ctx context.Context, d time.Duration) {
+--- a/internal/tui/tui.go
++++ b/internal/tui/tui.go
+@@ -128,15 +128,11 @@
+ func Logo(version string) {
+ 	fmt.Print(Red)
+ 	fmt.Println(`
+- ██████╗  █████╗  ██████╗██╗  ██╗██████╗  █████╗  ██████╗██╗  ██╗
+- ██╔══██╗██╔══██╗██╔════╝██║ ██╔╝██╔══██╗██╔══██╗██╔════╝██║ ██╔╝
+- ██████╔╝███████║██║     █████╔╝ ██████╔╝███████║██║     █████╔╝
+- ██╔══██╗██╔══██║██║     ██╔═██╗ ██╔═══╝ ██╔══██║██║     ██╔═██╗
+- ██████╔╝██║  ██║╚██████╗██║  ██╗██║     ██║  ██║╚██████╗██║  ██╗
+- ╚═════╝ ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝`)
++  b k
++  ━━━`)
+ 	fmt.Print(Reset)
+ 	fmt.Printf("%s bk  %s%s%s\n", Bold+White, Red, version, Reset)
+-	fmt.Println(Gray + " TeleGram : @BlackProtocols  |  GitHub : https://github.com/AminMGMT" + Reset)
++	fmt.Println(Gray + " Maintainer : topgsmir  |  GitHub : https://github.com/topgsmir/bk" + Reset)
+ }
+ 
+ // Prompt reads a trimmed line after printing label.
+--- a/internal/utils/network/pckbatch_linux.go
++++ b/internal/utils/network/pckbatch_linux.go
+@@ -152,6 +152,9 @@
+ 	dst, ok := toUDPAddr(to)
+ 	if !ok {
+ 		return 0, net.InvalidAddrError("pck: unusable destination address")
++	}
++	if dst.IP.IsLoopback() {
++		return 0, errPckNoBatch
+ 	}
+ 	n := len(bufs)
+ 	if n == 0 {
+@@ -181,6 +184,10 @@
+ 	// advancing by each payload exactly as consecutive sends would.
+ 	c.mu.Lock()
+ 	seq0, ack, tsEcr := peer.seq, peer.ack, peer.lastTS
++	srcIP := c.egress.LocalIP
++	if c.autoServer && peer.localIP != nil {
++		srcIP = peer.localIP
++	}
+ 	for _, p := range bufs {
+ 		peer.seq += uint32(len(p))
+ 	}
+@@ -198,7 +205,7 @@
+ 		}
+ 		frame := assemblePckFrame(b.frames[i][:cap(b.frames[i])], pckFrameParams{
+ 			SrcMAC: c.egress.SrcMAC, DstMAC: c.egress.NextHop,
+-			SrcIP: c.egress.LocalIP, DstIP: dstIP,
++			SrcIP: srcIP, DstIP: dstIP,
+ 			SrcPort: c.local, DstPort: uint16(dst.Port),
+ 			Seq: seq, Ack: ack,
+ 			Flags: c.flags[int(c.flagRot.Add(1)-1)%len(c.flags)],
+--- a/internal/utils/network/pckconn_linux.go
++++ b/internal/utils/network/pckconn_linux.go
+@@ -95,10 +95,11 @@
+ 	txConn syscall.RawConn
+ 	txAddr *unix.SockaddrLinklayer
+ 
+-	egress *pckEgress
+-	port   uint16 // the port our segments are addressed TO on the peer
+-	local  uint16 // the port our segments come FROM, and that we accept
+-	server bool
++	egress     *pckEgress
++	port       uint16 // the port our segments are addressed TO on the peer
++	local      uint16 // the port our segments come FROM, and that we accept
++	server     bool
++	autoServer bool
+ 
+ 	flags   []TCPFlags
+ 	flagRot atomic.Uint32
+@@ -136,12 +137,13 @@
+ 
+ // pckPeer is the numbering of one conversation.
+ type pckPeer struct {
+-	used   int64 // unix nanoseconds of the last segment to or from it, for eviction
+-	sent   bool  // this carrier has sent to it: a peer the tunnel accepted
+-	addr   *net.UDPAddr
+-	seq    uint32 // our next sequence number
+-	ack    uint32 // the next byte we expect from them
+-	lastTS uint32 // their most recent timestamp, echoed back in ours
++	used    int64 // unix nanoseconds of the last segment to or from it, for eviction
++	sent    bool  // this carrier has sent to it: a peer the tunnel accepted
++	addr    *net.UDPAddr
++	localIP net.IP
++	seq     uint32 // our next sequence number
++	ack     uint32 // the next byte we expect from them
++	lastTS  uint32 // their most recent timestamp, echoed back in ours
+ }
+ 
+ // pckPeerKey identifies a peer without building a string for every packet.
+@@ -205,13 +207,14 @@
+ 	}
+ 
+ 	c := &pckConn{
+-		egress:  egress,
+-		port:    carrier.Port,
+-		server:  server,
+-		flags:   flags,
+-		tsBase:  rand.Uint32(),
+-		tsStart: time.Now(),
+-		peers:   make(map[pckPeerKey]*pckPeer),
++		egress:     egress,
++		port:       carrier.Port,
++		server:     server,
++		autoServer: server && carrier.Interface == "",
++		flags:      flags,
++		tsBase:     rand.Uint32(),
++		tsStart:    time.Now(),
++		peers:      make(map[pckPeerKey]*pckPeer),
+ 
+ 		tunnelID: pckTunnelID(carrier.Token),
+ 	}
+@@ -332,16 +335,23 @@
+ // openRx opens the AF_PACKET receive socket and filters it down to this
+ // tunnel's segments in the kernel.
+ func (c *pckConn) openRx() error {
+-	fd, err := unix.Socket(unix.AF_PACKET, unix.SOCK_RAW|unix.SOCK_CLOEXEC, int(htons(unix.ETH_P_IP)))
++	fd, err := unix.Socket(unix.AF_PACKET, unix.SOCK_DGRAM|unix.SOCK_CLOEXEC, int(htons(unix.ETH_P_IP)))
+ 	if err != nil {
+ 		if errors.Is(err, unix.EPERM) {
+ 			return fmt.Errorf("pck: a packet socket needs root or CAP_NET_RAW: %w", err)
+ 		}
+ 		return fmt.Errorf("pck: could not open the packet socket: %w", err)
+ 	}
++	// A listener without an explicit interface must also receive local and
++	// secondary-interface peers. Cooked packet sockets strip each link's L2
++	// header, so the filter/parser always see IPv4 at offset zero.
++	index := c.egress.Iface.Index
++	if c.autoServer {
++		index = 0
++	}
+ 	if err := unix.Bind(fd, &unix.SockaddrLinklayer{
+ 		Protocol: htons(unix.ETH_P_IP),
+-		Ifindex:  c.egress.Iface.Index,
++		Ifindex:  index,
+ 	}); err != nil {
+ 		unix.Close(fd)
+ 		return fmt.Errorf("pck: could not bind the packet socket to %s: %w", c.egress.Iface.Name, err)
+@@ -350,7 +360,7 @@
+ 	// between waking on this tunnel's packets and waking on every packet the
+ 	// machine receives. Best effort: parsePckFrame checks the port again, so a
+ 	// kernel that refuses the filter costs CPU rather than correctness.
+-	if prog, err := pckBPFProgram(c.local, c.egress.LinkLen); err == nil {
++	if prog, err := pckBPFProgram(c.local, 0); err == nil {
+ 		_ = attachSockFilter(fd, prog)
+ 	}
+ 	// A burst that arrives while the reader is busy is held here rather than
+@@ -376,6 +386,15 @@
+ // openTx opens the send path: a second packet socket where the link has an
+ // Ethernet header this process can build, and a raw IP socket where it does not.
+ func (c *pckConn) openTx() error {
++	// Keep a kernel-routed send path for local peers even when normal remote
++	// peers use Ethernet injection. Binding it to the default NIC would make
++	// a listener unable to reply to a loopback connection.
++	if c.autoServer {
++		if err := c.openRawTx(); err != nil {
++			return err
++		}
++	}
++
+ 	if c.egress.Ethernet && c.egress.NextHop != nil {
+ 		fd, err := unix.Socket(unix.AF_PACKET, unix.SOCK_RAW|unix.SOCK_CLOEXEC, int(htons(unix.ETH_P_IP)))
+ 		if err == nil {
+@@ -407,15 +426,24 @@
+ 				// fall through to the raw IP socket below.
+ 				_ = c.txFile.Close()
+ 				c.txFile = nil
+-				return nil
++				fd = -1
+ 			}
+-			unix.Close(fd)
++			if fd >= 0 {
++				unix.Close(fd)
++			}
+ 		}
+ 		// Fall through to the raw IP socket rather than fail: a machine that
+ 		// cannot open a second packet socket can still send perfectly well
+ 		// through the kernel's routing.
+ 	}
+ 
++	if c.txRaw != nil {
++		return nil
++	}
++	return c.openRawTx()
++}
++
++func (c *pckConn) openRawTx() error {
+ 	pc, err := net.ListenPacket("ip4:tcp", "0.0.0.0")
+ 	if err != nil {
+ 		if errors.Is(err, os.ErrPermission) {
+@@ -423,7 +451,7 @@
+ 		}
+ 		return fmt.Errorf("pck: could not open the raw send socket: %w", err)
+ 	}
+-	if c.egress.Iface != nil {
++	if c.egress.Iface != nil && !c.autoServer {
+ 		_ = bindPacketConnToInterface(pc, c.egress.Iface.Name)
+ 	}
+ 	raw, err := ipv4.NewRawConn(pc)
+@@ -557,6 +585,10 @@
+ 
+ 	c.mu.Lock()
+ 	seq, ack, tsEcr := peer.seq, peer.ack, peer.lastTS
++	srcIP := c.egress.LocalIP
++	if c.autoServer && peer.localIP != nil {
++		srcIP = peer.localIP
++	}
+ 	// The sequence number advances by the bytes sent, exactly as a real
+ 	// connection's does, so a middlebox following the stream sees it stay
+ 	// consistent instead of jumping.
+@@ -583,14 +615,14 @@
+ 
+ 	frame := assemblePckFrame(buf, pckFrameParams{
+ 		SrcMAC: c.egress.SrcMAC, DstMAC: c.egress.NextHop,
+-		SrcIP: c.egress.LocalIP, DstIP: dst.IP.To4(),
++		SrcIP: srcIP, DstIP: dst.IP.To4(),
+ 		SrcPort: c.local, DstPort: uint16(dst.Port),
+ 		Seq: seq, Ack: ack, Flags: f,
+ 		TSVal: c.timestamp(), TSEcr: tsEcr,
+ 		ID: id, Payload: p,
+ 	})
+ 
+-	if c.txFile != nil {
++	if c.txFile != nil && !dst.IP.IsLoopback() {
+ 		if err := c.sendFrame(frame); err != nil {
+ 			return c.writeFailed(len(p), err)
+ 		}
+@@ -610,7 +642,7 @@
+ 		Flags:    ipv4.DontFragment,
+ 		TTL:      64,
+ 		Protocol: 6,
+-		Src:      c.egress.LocalIP,
++		Src:      srcIP,
+ 		Dst:      dst.IP.To4(),
+ 	}
+ 	if err := c.txRaw.WriteTo(h, tcp, nil); err != nil {
+@@ -706,7 +738,7 @@
+ // it acknowledges and returns its payload and sender. The payload points into
+ // frame.
+ func (c *pckConn) accept(frame []byte) ([]byte, *net.UDPAddr, bool) {
+-	seg, ok := parsePckFrame(frame, c.egress.LinkLen, c.local)
++	seg, ok := parsePckFrame(frame, 0, c.local)
+ 	if !ok || len(seg.Payload) == 0 {
+ 		return nil, nil, false
+ 	}
+@@ -721,6 +753,7 @@
+ 	peer := c.peerFor(addr, false)
+ 
+ 	c.mu.Lock()
++	peer.localIP = seg.DstIP
+ 	// Acknowledge what we have actually received, as a real receiver does.
+ 	if next := seg.Seq + uint32(len(seg.Payload)); peer.ack == 0 || int32(next-peer.ack) > 0 {
+ 		peer.ack = next
+--- a/internal/utils/network/pckframe.go
++++ b/internal/utils/network/pckframe.go
+@@ -174,6 +174,7 @@
+ 
+ // pckSegment is what a received frame turned out to hold.
+ type pckSegment struct {
++	DstIP   net.IP
+ 	SrcIP   net.IP
+ 	SrcPort uint16
+ 	DstPort uint16
+@@ -409,6 +410,7 @@
+ 	}
+ 
+ 	seg.SrcIP = net.IP(append([]byte(nil), ip[12:16]...))
++	seg.DstIP = net.IP(append([]byte(nil), ip[16:20]...))
+ 	seg.SrcPort = binary.BigEndian.Uint16(tcp[0:2])
+ 	seg.DstPort = dstPort
+ 	seg.Seq = binary.BigEndian.Uint32(tcp[4:8])
+--- /dev/null
++++ b/internal/utils/network/pckloopback_linux_test.go
+@@ -0,0 +1,81 @@
++//go:build linux
++
++package network
++
++import (
++	"bytes"
++	"errors"
++	"net"
++	"os"
++	"testing"
++	"time"
++)
++
++// Exercise real AF_PACKET sockets, not a mocked frame: /proc/net/route does
++// not contain the local routing table. A default Ethernet interface must not
++// capture the listener away from loopback, or supply its reply source address.
++func TestPckLoopback(t *testing.T) {
++	for _, target := range []string{"127.0.0.1", "127.0.0.2"} {
++		t.Run(target, func(t *testing.T) {
++			ifaceName, gateway, err := routeToward(net.ParseIP(target))
++			if err != nil {
++				t.Fatal(err)
++			}
++			iface, err := net.InterfaceByName(ifaceName)
++			if err != nil || iface.Flags&net.FlagLoopback == 0 || gateway != nil {
++				t.Fatalf("local route: interface=%v gateway=%v error=%v", iface, gateway, err)
++			}
++			reservation, err := net.Listen("tcp4", "127.0.0.1:0")
++			if err != nil {
++				t.Fatal(err)
++			}
++			port := uint16(reservation.Addr().(*net.TCPAddr).Port)
++			reservation.Close()
++			serverPC, err := newPckConn(true, port, PcapCarrier{Port: port, Token: t.Name()})
++			if errors.Is(err, os.ErrPermission) && os.Getenv("BK_REQUIRE_PCK") != "1" {
++				t.Skip("real PCK sockets require root or CAP_NET_RAW")
++			}
++			if err != nil {
++				t.Fatal(err)
++			}
++			defer serverPC.Close()
++			clientPC, err := newPckConn(false, port, PcapCarrier{Port: port, PeerIP: target, Token: t.Name()})
++			if err != nil {
++				t.Fatal(err)
++			}
++			defer clientPC.Close()
++			server, client := serverPC.(*pckConn), clientPC.(*pckConn)
++			server.SetDeadline(time.Now().Add(5 * time.Second))
++			client.SetDeadline(time.Now().Add(5 * time.Second))
++			destination := &net.UDPAddr{IP: net.ParseIP(target), Port: int(port)}
++			request := bytes.Repeat([]byte("bk-pck-request"), 31)
++			reply := bytes.Repeat([]byte("bk-pck-reply"), 37)
++			if _, err := client.WriteTo(request, destination); err != nil {
++				t.Fatal(err)
++			}
++			bufs := [][]byte{make([]byte, 2048)}
++			sizes := make([]int, 1)
++			froms := make([]net.Addr, 1)
++			n, err := server.ReadBatch(bufs, sizes, froms)
++			if err != nil || n != 1 || !bytes.Equal(bufs[0][:sizes[0]], request) {
++				t.Fatalf("server batch received %d packets, error=%v", n, err)
++			}
++			// Loopback has no Ethernet injection. Callers must fall back to
++			// WriteTo when the batch path declines it.
++			if _, err := server.WriteBatch([][]byte{reply}, froms[0]); !errors.Is(err, errPckNoBatch) {
++				t.Fatalf("loopback batch must decline L2 injection: %v", err)
++			}
++			if _, err := server.WriteTo(reply, froms[0]); err != nil {
++				t.Fatal(err)
++			}
++			buf := make([]byte, 2048)
++			got, from, err := client.ReadFrom(buf)
++			if err != nil || !bytes.Equal(buf[:got], reply) {
++				t.Fatalf("reply: bytes=%d error=%v", got, err)
++			}
++			if !from.(*net.UDPAddr).IP.Equal(destination.IP) {
++				t.Fatalf("reply source %v differs from contacted address %v", from, destination)
++			}
++		})
++	}
++}
+--- a/internal/utils/network/pckroute_linux.go
++++ b/internal/utils/network/pckroute_linux.go
+@@ -165,6 +165,21 @@
+ // of text with no dependency, no privilege and no cgo, and this is a lookup
+ // done once per tunnel at startup rather than per packet.
+ func routeToward(dst net.IP) (iface string, gateway net.IP, err error) {
++	// /proc/net/route omits the local routing table. Never send 127/8 through
++	// its default Ethernet route just because that is the only matching row.
++	if dst.IsLoopback() {
++		ifaces, e := net.Interfaces()
++		if e != nil {
++			return "", nil, e
++		}
++		for _, in := range ifaces {
++			if in.Flags&net.FlagLoopback != 0 && in.Flags&net.FlagUp != 0 {
++				return in.Name, nil, nil
++			}
++		}
++		return "", nil, fmt.Errorf("pck: no loopback interface for %s", dst)
++	}
++
+ 	f, err := os.Open("/proc/net/route")
+ 	if err != nil {
+ 		return "", nil, fmt.Errorf("pck: cannot read the routing table: %w", err)
+--- a/internal/webui/assets/login.html
++++ b/internal/webui/assets/login.html
+@@ -149,7 +149,7 @@
+   <main class="card">
+     <div class="top">
+       <div class="mk" aria-hidden="true">
+-        <svg viewBox="0 0 24 24"><path d="M8 6V5a4 4 0 018 0v1"/><path d="M5 8h14a2 2 0 012 2v8a3 3 0 01-3 3H6a3 3 0 01-3-3v-8a2 2 0 012-2z"/><path d="M9 12h6"/></svg>
++        <svg viewBox="0 0 24 24"><path d="M4 4v14h4l3-3v-3L8 10H4M15 4v14m6-9-6 5 6 5"/></svg>
+       </div>
+       <h1>bk</h1>
+       <div class="sub" id="sub">Sign in to the panel</div>
+@@ -167,7 +167,7 @@
+       <button type="submit" class="go" id="unlock"><span id="unlocktxt">Unlock</span><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></button>
+     </form>
+     <div class="foot">
+-      <div>TeleGram <b>@BlackProtocols</b> · GitHub <b>AminMGMT</b></div>
++      <div>Maintained by <b>topgsmir</b> · GitHub <b>topgsmir/bk</b></div>
+     </div>
+   </main>
+ <script nonce="__CSP_NONCE__">
+--- a/internal/webui/assets/sw.js
++++ b/internal/webui/assets/sw.js
+@@ -37,7 +37,7 @@
+     font:inherit;font-size:13.5px;font-weight:620;color:var(--bg);background:var(--tx)}
+ </style></head>
+ <body><div class="card">
+-  <div class="mark"><svg viewBox="0 0 24 24"><path d="M8 6V5a4 4 0 018 0v1"/><path d="M5 8h14a2 2 0 012 2v8a3 3 0 01-3 3H6a3 3 0 01-3-3v-8a2 2 0 012-2z"/><path d="M9 12h6"/></svg></div>
++  <div class="mark"><svg viewBox="0 0 24 24"><path d="M4 4v14h4l3-3v-3L8 10H4M15 4v14m6-9-6 5 6 5"/></svg></div>
+   <h1>No connection</h1>
+   <p>The panel could not be reached. It runs on your server, so this usually
+      means this device is offline &mdash; or the server is.</p>
+--- a/internal/webui/assets/twofactor.html
++++ b/internal/webui/assets/twofactor.html
+@@ -167,7 +167,7 @@
+       <div class="hint" id="hint">Lost the phone? A recovery code works here too.</div>
+     </form>
+     <div class="foot">
+-      <div>TeleGram <b>@BlackProtocols</b> · GitHub <b>AminMGMT</b></div>
++      <div>Maintained by <b>topgsmir</b> · GitHub <b>topgsmir/bk</b></div>
+     </div>
+   </main>
+ <script nonce="__CSP_NONCE__">
+--- a/internal/webui/directeditform_test.go
++++ b/internal/webui/directeditform_test.go
+@@ -1,6 +1,7 @@
+ package webui
+ 
+ import (
++	"encoding/json"
+ 	"net/http/httptest"
+ 	"os"
+ 	"regexp"
+@@ -19,17 +20,22 @@
+ 		t.Fatal(err)
+ 	}
+ 	js := string(src)
+-	if !strings.Contains(js, "direct: readDirect(root)") {
++	if !strings.Contains(js, "direct: readDirect(root, settings)") {
+ 		t.Fatal("the direct form no longer posts under \"direct\"")
+ 	}
++	src, err = os.ReadFile("panel/js/ui/directedit.js")
++	if err != nil {
++		t.Fatal(err)
++	}
++	js = string(src)
+ 	start := strings.Index(js, "function directMarkup(")
+ 	end := strings.Index(js, "const DIRECT_NUMBERS")
+ 	if start < 0 || end < start {
+-		t.Fatal("edit.js no longer has the direct form")
++		t.Fatal("directedit.js no longer has the direct form")
+ 	}
+ 	markup := js[start:end]
+ 	var keys []string
+-	for _, m := range regexp.MustCompile(`(?:field|sw)\('([A-Za-z]+)'`).FindAllStringSubmatch(markup, -1) {
++	for _, m := range regexp.MustCompile(`(?:field|sw)\('([A-Za-z.]+)'`).FindAllStringSubmatch(markup, -1) {
+ 		keys = append(keys, m[1])
+ 	}
+ 	keys = append(keys, "preset") // the menu
+@@ -37,18 +43,28 @@
+ 		t.Fatalf("found only %v in the direct form", keys)
+ 	}
+ 
+-	var parts []string
++	direct := map[string]any{}
++	spoof := map[string]any{}
+ 	for _, k := range keys {
+-		v := `1`
++		var v any = 1
+ 		switch k {
+-		case "ports", "preset":
+-			v = `"x"`
+-		case "acceptUdp", "autoMtu", "fec", "stealth":
+-			v = `true`
++		case "addr", "ports", "preset", "spoof.srcIPs", "spoof.peerIP", "spoof.peerSrcIP", "spoof.interface":
++			v = "x"
++		case "acceptUdp", "autoMtu", "fec", "stealth", "spoof.shufflePort":
++			v = true
+ 		}
+-		parts = append(parts, `"`+k+`":`+v)
++		if strings.HasPrefix(k, "spoof.") {
++			spoof[strings.TrimPrefix(k, "spoof.")] = v
++		} else {
++			direct[k] = v
++		}
+ 	}
+-	body := `{"name":"t","direct":{` + strings.Join(parts, ",") + `}}`
++	direct["spoof"] = spoof
++	raw, err := json.Marshal(map[string]any{"name": "t", "direct": direct})
++	if err != nil {
++		t.Fatal(err)
++	}
++	body := string(raw)
+ 	var req tunnelEditRequest
+ 	r := httptest.NewRequest("POST", "/api/tunnel/edit", strings.NewReader(body))
+ 	if err := decodeJSON(httptest.NewRecorder(), r, &req); err != nil {
+@@ -57,4 +73,7 @@
+ 	if req.Direct.MTU == nil || req.Direct.Ports == nil || req.Direct.FEC == nil {
+ 		t.Errorf("the direct fields did not arrive: %+v", req.Direct)
+ 	}
++	if req.Direct.Spoof == nil || req.Direct.Spoof.SrcIPs != "x" || req.Direct.Spoof.PeerIP != "x" || req.Direct.Spoof.PeerSrcIP != "x" || !req.Direct.Spoof.ShufflePort {
++		t.Fatal("the visible spoof address fields did not reach the nested carrier edit")
++	}
+ }
+--- a/internal/webui/handlers_app.go
++++ b/internal/webui/handlers_app.go
+@@ -87,9 +87,8 @@
+   </linearGradient></defs>
+   <rect width="128" height="128" rx="30" fill="url(#g)"/>
+   <g fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+-    <path d="M46 38v-4a18 18 0 0 1 36 0v4"/>
+-    <path d="M32 46h64a9 9 0 0 1 9 9v36a13 13 0 0 1-13 13H36a13 13 0 0 1-13-13V55a9 9 0 0 1 9-9z"/>
+-    <path d="M51 72h26"/>
++    <path d="M28 32v56h18l10-10v-8L46 60H28"/>
++    <path d="M76 32v56m24-30L76 76l26 14"/>
+   </g>
+ </svg>`)
+ 
+--- a/internal/webui/panel/js/lib/icons.js
++++ b/internal/webui/panel/js/lib/icons.js
+@@ -7,7 +7,7 @@
+ 
+ /* Not exported: callers name an icon, they do not reach into the table. */
+ const ICONS = {
+-  pack:   '<path d="M8 6V5a4 4 0 018 0v1"/><path d="M5 8h14a2 2 0 012 2v8a3 3 0 01-3 3H6a3 3 0 01-3-3v-8a2 2 0 012-2z"/><path d="M9 12h6"/>',
++  pack:   '<path d="M4 4v14h4l3-3v-3L8 10H4M15 4v14m6-9-6 5 6 5"/>',
+   burger: '<path d="M3 6h18M3 12h18M3 18h18"/>',
+   close:  '<path d="M18 6L6 18M6 6l12 12"/>',
+   chev:   '<path d="M9 18l6-6-6-6"/>',
+--- /dev/null
++++ b/internal/webui/panel/js/ui/directedit.js
+@@ -0,0 +1,73 @@
++import { esc } from '../lib/dom.js';
++
++const sw = (name, title, text) => `<div class="tg"><div class="tx"><b>${title}</b><span>${text}</span></div>` +
++  `<div class="sww" data-name="${name}"><i></i></div></div>`;
++const field = (name, label, hint = '') => `<div class="f"><label>${label}</label>` +
++  `<input name="${name}" type="text">${hint ? `<div class="hint">${hint}</div>` : ''}</div>`;
++
++export function directMarkup(set) {
++  const ports = !!set.holdsPorts;
++  if (set.layer === 4) return `<div class="pane" data-tab="Direct">` + (ports ?
++    field('addr', 'Kharej address', 'Host and port.') + field('ports', 'Forwarded ports') +
++    sw('acceptUdp', 'Accept UDP', 'Carry UDP over the forwarded ports.') +
++    `<div class="f"><label>Performance preset</label><div class="sel" data-name="preset">Turbo<span class="sp"></span></div></div>` +
++    `<div class="two">${field('sessions', 'Sessions')}${field('mss', 'TCP MSS', '0 is auto.')}</div>` +
++    `<div class="two">${field('maxConnections', 'Max connections')}${field('bandwidthMbps', 'Bandwidth (Mbit/s)')}</div>` :
++    `<div class="hint">Forwarded ports and tuning are set on the Iran server.</div>`) + `</div>`;
++  const spoof = set.carrier === 'spoof';
++  const profile = set.spoof || {};
++  return `<div class="pane" data-tab="Direct">` +
++    (ports ? field('ports', 'Forwarded ports', 'Comma separated. Blank leaves a plain TUN tunnel.') +
++      sw('acceptUdp', 'Accept UDP', 'Carry UDP over the forwarded ports.') : '') +
++    `<div class="f"><label>Performance preset</label><div class="sel" data-name="preset">Turbo` +
++    `<span class="sp"></span><svg class="x" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div></div>` +
++    `<div class="two">${field('mtu', 'MTU')}` +
++    (set.carrier === 'udp' ? field('paths', 'Sockets', '1 is one socket; 2–8 spread it.') : '<div></div>') + `</div>` +
++    sw('autoMtu', 'Auto MTU', 'Measure the path and correct the MTU once up.') +
++    sw('fec', 'Error correction (FEC)', 'Spare packets repair loss. Both ends must match.') +
++    (spoof ? `<div class="f"><label>IP spoofing · ${esc(profile.profile || 'udp')}</label>` +
++      `<div class="hint">Forged addresses change the packet source. The destination remains the peer's real IP.</div></div>` +
++      field('spoof.srcIPs', 'This server’s forged source IPv4', 'Comma separated for a source pool. Blank uses the real source.') +
++      field('spoof.peerIP', 'Other server’s real IPv4', 'The real destination for this server’s packets.') +
++      field('spoof.peerSrcIP', 'Expected forged IPv4 from the other server', 'Blank accepts any authenticated source; leave blank for a rotating pool. Update the peer’s expected source if you change your forged source.') +
++      field('spoof.interface', 'Network interface', 'Blank selects the route automatically.') +
++      sw('spoof.shufflePort', 'Rotate source port', 'Independent of Stealth. The destination port stays fixed.') +
++      `<div class="two">${field('spoof.portMin', 'Source port minimum', '0 uses the default range.')}` +
++      `${field('spoof.portMax', 'Source port maximum', '0 uses the default range.')}</div>` +
++      field('spoof.sockBuf', 'Packet socket buffer (bytes)', '0 uses the engine default.') +
++      sw('stealth', 'Stealth', 'Padding and header cosmetics. Both ends must match.') : '') +
++    (ports ? `<div class="two">${field('maxConnections', 'Max connections', '0 is no limit.')}` +
++      `${field('bandwidthMbps', 'Bandwidth (Mbit/s)', '0 is no limit.')}</div>` : '') +
++    `</div>`;
++}
++
++const DIRECT_NUMBERS = new Set(['mtu', 'paths', 'maxConnections', 'bandwidthMbps',
++  'sessions', 'mss', 'spoof.portMin', 'spoof.portMax', 'spoof.sockBuf']);
++
++const directBaseline = new WeakMap();
++
++export function rememberDirect(root, settings) {
++  directBaseline.set(root, readDirect(root, settings));
++}
++
++export function readDirect(root, settings) {
++  // SpoofTune replaces the whole carrier table. Retain settings this form does
++  // not edit (direction profiles, outer MTU, XDP, ICMP replies and cosmetics).
++  const out = settings.carrier === 'spoof' ? { spoof: { ...settings.spoof } } : {};
++  root.querySelectorAll('.panes input[name]').forEach(n => {
++    const v = n.type === 'checkbox' ? n.checked
++            : DIRECT_NUMBERS.has(n.name) ? Number(n.value.trim())
++            : n.value;
++    if (typeof v === 'number' && (!Number.isFinite(v) || !Number.isInteger(v))) {
++      throw new Error(`${n.name} must be a whole number.`);
++    }
++    if (n.name.startsWith('spoof.')) {
++      if (settings.carrier === 'spoof') out.spoof[n.name.slice(6)] = v;
++    } else {
++      out[n.name] = v;
++    }
++  });
++  const original = directBaseline.get(root);
++  return original ? Object.fromEntries(Object.entries(out)
++    .filter(([key, value]) => JSON.stringify(value) !== JSON.stringify(original[key]))) : out;
++}
+--- /dev/null
++++ b/internal/webui/panel/js/ui/form.js
+@@ -0,0 +1,41 @@
++/* A <select> keeps its first option when the value it is handed matches none
++   of them, which is how "turbo" quietly displayed as "Balanced". The server
++   speaks in values ("turbo", "wss"); the preview's options were written with
++   labels. Match either, and say so when neither fits. */
++function setControl(node, v) {
++  if (node.type === 'checkbox') { node.checked = !!v; return; }
++  const val = Array.isArray(v) ? v.join(', ') : String(v ?? '');
++  if (node.tagName !== 'SELECT') { node.value = val; return; }
++  const want = val.trim().toLowerCase();
++  const hit = [...node.options].find(o =>
++    o.value.trim().toLowerCase() === want || o.textContent.trim().toLowerCase() === want);
++  if (hit) { node.value = hit.value; return; }
++  /* Nothing matched: show the server's value rather than a wrong one. */
++  const opt = new Option(val, val, true, true);
++  node.add(opt);
++}
++
++const dig = (obj, path) => path.split('.').reduce((o, k) => (o ?? {})[k], obj);
++
++
++/* The two halves of the API disagree on one name.
++ *
++ * Reading a tunnel answers with serverHost; writing one takes serverAddr. The
++ * field has to be named for the write — a key the edit handler does not know
++ * fails the whole save, and that is what it used to do — so the read is
++ * bridged here instead. One alias in one place, rather than a form that cannot
++ * be filled or cannot be saved. */
++const READ_ALIAS = { serverAddr: 'serverHost' };
++
++export function fill(root, values) {
++  root.querySelectorAll('[name]').forEach(node => {
++    let v = dig(values, node.name);
++    if (v === undefined || v === null) v = dig(values, READ_ALIAS[node.name] || '');
++    if (v === undefined || v === null) return;
++    setControl(node, v);
++  });
++  root.querySelectorAll('[data-unwired]').forEach(n => {
++    n.disabled = true;
++    n.title = 'Not settable over the API — use the CLI';
++  });
++}
+--- a/internal/webui/panel/js/views/edit.js
++++ b/internal/webui/panel/js/views/edit.js
+@@ -16,6 +16,8 @@
+ import { oops, toast } from '../ui/toast.js';
+ import { go } from '../router.js';
+ import { setupLinkHTML, bindSetupLink } from '../ui/setuplink.js';
++import { directMarkup, readDirect, rememberDirect } from '../ui/directedit.js';
++import { fill } from '../ui/form.js';
+ 
+ /* The Iran end of a reverse tunnel: the one whose edits the kharej follows. */
+ const tunnelIsIranEnd = (t, settings) => (settings.role || t?.role) === 'server';
+@@ -55,53 +57,12 @@
+    form and reading it back are both one pass with no field list to drift.
+    Five controls in the preview have no field behind them on the server; they
+    carry data-unwired and are left alone rather than posted as invented keys. */
+-/* A <select> keeps its first option when the value it is handed matches none
+-   of them, which is how "turbo" quietly displayed as "Balanced". The server
+-   speaks in values ("turbo", "wss"); the preview's options were written with
+-   labels. Match either, and say so when neither fits. */
+-function setControl(node, v) {
+-  if (node.type === 'checkbox') { node.checked = !!v; return; }
+-  const val = Array.isArray(v) ? v.join(', ') : String(v ?? '');
+-  if (node.tagName !== 'SELECT') { node.value = val; return; }
+-  const want = val.trim().toLowerCase();
+-  const hit = [...node.options].find(o =>
+-    o.value.trim().toLowerCase() === want || o.textContent.trim().toLowerCase() === want);
+-  if (hit) { node.value = hit.value; return; }
+-  /* Nothing matched: show the server's value rather than a wrong one. */
+-  const opt = new Option(val, val, true, true);
+-  node.add(opt);
+-}
+-
+-const dig = (obj, path) => path.split('.').reduce((o, k) => (o ?? {})[k], obj);
+-
+ function plant(obj, path, value) {
+   const keys = path.split('.');
+   const last = keys.pop();
+   let at = obj;
+   for (const k of keys) at = at[k] ??= {};
+   at[last] = value;
+-}
+-
+-/* The two halves of the API disagree on one name.
+- *
+- * Reading a tunnel answers with serverHost; writing one takes serverAddr. The
+- * field has to be named for the write — a key the edit handler does not know
+- * fails the whole save, and that is what it used to do — so the read is
+- * bridged here instead. One alias in one place, rather than a form that cannot
+- * be filled or cannot be saved. */
+-const READ_ALIAS = { serverAddr: 'serverHost' };
+-
+-function fill(root, values) {
+-  root.querySelectorAll('[name]').forEach(node => {
+-    let v = dig(values, node.name);
+-    if (v === undefined || v === null) v = dig(values, READ_ALIAS[node.name] || '');
+-    if (v === undefined || v === null) return;
+-    setControl(node, v);
+-  });
+-  root.querySelectorAll('[data-unwired]').forEach(n => {
+-    n.disabled = true;
+-    n.title = 'Not settable over the API — use the CLI';
+-  });
+ }
+ 
+ /* bindValue renders the tunnel port the way it is typed: "443" when the tunnel
+@@ -374,53 +335,6 @@
+  * Edit on a direct tunnel showed the wrong dialog and could not save it. The
+  * reverse panes are replaced with the settings a direct tunnel really has, and
+  * the save goes where the server reads it. */
+-const sw = (name, title, text) => `<div class="tg"><div class="tx"><b>${title}</b><span>${text}</span></div>` +
+-  `<div class="sww" data-name="${name}"><i></i></div></div>`;
+-const field = (name, label, hint = '') => `<div class="f"><label>${label}</label>` +
+-  `<input name="${name}" type="text">${hint ? `<div class="hint">${hint}</div>` : ''}</div>`;
+-
+-function directMarkup(set) {
+-  const ports = !!set.holdsPorts;
+-  if (set.layer === 4) return `<div class="pane" data-tab="Direct">` + (ports ?
+-    field("addr", "Kharej address", "Host and port.") + field("ports", "Forwarded ports") +
+-    sw("acceptUdp", "Accept UDP") +
+-    `<div class="f"><label>Performance preset</label><div class="sel" data-name="preset">Turbo<span class="sp"></span></div></div>` +
+-    `<div class="two">${field("sessions", "Sessions")}${field("mss", "TCP MSS", "0 is auto.")}</div>` +
+-    `<div class="two">${field("maxConnections", "Max connections")}${field("bandwidthMbps", "Bandwidth (Mbit/s)")}</div>` :
+-    `<div class="hint">Forwarded ports and tuning are set on the Iran server.</div>`) + `</div>`;
+-  return `<div class="pane" data-tab="Direct">` +
+-    (ports ? field('ports', 'Forwarded ports', 'Comma separated. Blank leaves a plain TUN tunnel.') +
+-      sw('acceptUdp', 'Accept UDP', 'Carry UDP over the forwarded ports.') : '') +
+-    `<div class="f"><label>Performance preset</label><div class="sel" data-name="preset">Turbo` +
+-    `<span class="sp"></span><svg class="x" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div></div>` +
+-    `<div class="two">${field('mtu', 'MTU')}` +
+-    (set.carrier === 'udp' ? field('paths', 'Sockets', '1 is one socket; 2–8 spread it.') : '<div></div>') + `</div>` +
+-    sw('autoMtu', 'Auto MTU', 'Measure the path and correct the MTU once up.') +
+-    sw('fec', 'Error correction (FEC)', 'Spare packets repair loss. Both ends must match.') +
+-    (set.carrier === 'spoof' ? sw('stealth', 'Stealth', 'Padding and header cosmetics. Both ends must match.') : '') +
+-    (ports ? `<div class="two">${field('maxConnections', 'Max connections', '0 is no limit.')}` +
+-      `${field('bandwidthMbps', 'Bandwidth (Mbit/s)', '0 is no limit.')}</div>` : '') +
+-    `</div>`;
+-}
+-
+-const DIRECT_NUMBERS = new Set(['mtu', 'paths', 'maxConnections', 'bandwidthMbps', 'sessions', 'mss']);
+-
+-const directBaseline = new WeakMap();
+-
+-function readDirect(root) {
+-  const out = {};
+-  root.querySelectorAll('.panes input[name]').forEach(n => {
+-    const v = n.type === 'checkbox' ? n.checked
+-            : DIRECT_NUMBERS.has(n.name) ? Number(n.value.trim())
+-            : n.value;
+-    if (typeof v === 'number' && Number.isNaN(v)) return;
+-    out[n.name] = v;
+-  });
+-  const original = directBaseline.get(root);
+-  return original ? Object.fromEntries(Object.entries(out)
+-    .filter(([key, value]) => value !== original[key])) : out;
+-}
+-
+ export async function editView(ctx) {
+   const name = ctx.params.name;
+   /* A deep link arrives before the first poll, so the tunnel may not be in the
+@@ -485,7 +399,7 @@
+         syncControls(root);
+       }
+ 
+-      if (direct) directBaseline.set(root, readDirect(root));
++      if (direct) rememberDirect(root, settings);
+ 
+       /* Tabs and drawers are the preview's own handlers, rebound in screen.js. */
+ 
+@@ -521,9 +435,9 @@
+         });
+       }
+       save?.addEventListener('click', async () => {
+-        const payload = direct ? { name, direct: readDirect(root) } : { name, ...read(root) };
+         save.disabled = true;
+         try {
++          const payload = direct ? { name, direct: readDirect(root, settings) } : { name, ...read(root) };
+           const r = await api.tunnelEdit(payload);
+           if (r.status === 'partial') {
+             /* This end changed and the other did not. Half the values on this
+--- a/internal/webui/panel/js/views/overview.js
++++ b/internal/webui/panel/js/views/overview.js
+@@ -161,14 +161,14 @@
+ function footer() {
+   return `<div class="ov-foot">
+     <div class="ov-links">
+-      <a href="https://github.com/AminMGMT" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub">
++      <a href="https://github.com/topgsmir" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub">
+         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 00-1-2.6c3-.3 6.5-1.5 6.5-7A5.4 5.4 0 0020 4.8 5 5 0 0019.9 1S18.7.6 16 2.5a13.4 13.4 0 00-7 0C6.3.6 5.1 1 5.1 1A5 5 0 005 4.8 5.4 5.4 0 003.5 8.5c0 5.5 3.5 6.7 6.5 7a3.4 3.4 0 00-1 2.6V22"/></svg>
+       </a>
+-      <a href="https://t.me/BlackProtocols" target="_blank" rel="noopener" title="Telegram" aria-label="Telegram">
++      <a href="https://github.com/topgsmir/bk/issues" target="_blank" rel="noopener" title="Issues" aria-label="Issues">
+         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 3L2 11l6 2 2 6 3-4 5 4z"/><path d="M8 13l8-6"/></svg>
+       </a>
+     </div>
+-    <a class="ov-by" href="https://blackprotocols.space" target="_blank" rel="noopener">developed by AminMGMT</a>
++    <a class="ov-by" href="https://github.com/topgsmir/bk" target="_blank" rel="noopener">maintained by topgsmir</a>
+   </div>`;
+ }
+ 
+--- a/internal/webui/panel/js/views/support.js
++++ b/internal/webui/panel/js/views/support.js
+@@ -29,7 +29,7 @@
+   root.querySelectorAll('button').forEach(b => {
+     const t = b.textContent.trim().toLowerCase();
+     if (t.includes('github')) b.addEventListener('click', () => open('https://github.com/topgsmir/bk'));
+-    else if (t.includes('telegram')) b.addEventListener('click', () => open('https://t.me/BlackProtocols'));
++    else if (t.includes('issues')) b.addEventListener('click', () => open('https://github.com/topgsmir/bk/issues'));
+     else if (t === 'later') b.addEventListener('click', close);
+     else if (t === 'do not ask again') b.addEventListener('click', () => {
+       try { localStorage.setItem('bp_star', 'never'); } catch (e) {}
+--- a/internal/webui/panel/views/support.html
++++ b/internal/webui/panel/views/support.html
+@@ -1,5 +1,5 @@
+ <!-- support — markup lifted from starsup.html, the approved preview.
+      Bound to data by js/views/support.js; ids and classes are the originals. -->
+-<div class="dlg star0" data-d="star"><div class="dh"><div class="fl" style="display:grid;place-items:center;border:1px solid var(--ln2)"><svg class="x" viewBox="0 0 24 24"><path d="M8 6V5a4 4 0 018 0v1"/><path d="M5 8h14a2 2 0 012 2v8a3 3 0 01-3 3H6a3 3 0 01-3-3v-8a2 2 0 012-2z"/><path d="M9 12h6"/></svg></div><div class="ttl"><div style="font-size:16px;font-weight:640;letter-spacing:-.024em">Enjoying bk?</div><small>asked at most once every three days</small></div><button class="x"><svg class="x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="bodyS"><div class="mkS"><svg class="x" viewBox="0 0 24 24"><path d="M8 6V5a4 4 0 018 0v1"/><path d="M5 8h14a2 2 0 012 2v8a3 3 0 01-3 3H6a3 3 0 01-3-3v-8a2 2 0 012-2z"/><path d="M9 12h6"/></svg><span class="stS"><svg class="x" viewBox="0 0 24 24"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5-5.8-3-5.8 3 1.1-6.5L2.6 9.4l6.5-.9z"/></svg></span></div><h2>Enjoying bk?</h2><p>It is free and open source. A star on GitHub is the whole thanks it asks for — it helps other people find it.</p></div><div class="actS"><button class="pri"><svg class="x" viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 00-1-2.6c3-.3 6.5-1.5 6.5-7A5.4 5.4 0 0020 4.8 5 5 0 0019.9 1S18.7.6 16 2.5a13.4 13.4 0 00-7 0C6.3.6 5.1 1 5.1 1A5 5 0 005 4.8 5.4 5.4 0 003.5 8.5c0 5.5 3.5 6.7 6.5 7a3.4 3.4 0 00-1 2.6V22"/></svg>Star on GitHub</button><button>Later</button></div><div style="padding:0 20px 4px"><button class="neverS">Do not ask again</button></div><div class="cadS">A panel that nags is a panel people stop reading, and this one also carries the alerts. So: once every three days at the most, and never again once it is dismissed for good.</div><div style="height:16px"></div></div>
++<div class="dlg star0" data-d="star"><div class="dh"><div class="fl" style="display:grid;place-items:center;border:1px solid var(--ln2)"><svg class="x" viewBox="0 0 24 24"><path d="M4 4v14h4l3-3v-3L8 10H4M15 4v14m6-9-6 5 6 5"/></svg></div><div class="ttl"><div style="font-size:16px;font-weight:640;letter-spacing:-.024em">Enjoying bk?</div><small>asked at most once every three days</small></div><button class="x"><svg class="x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="bodyS"><div class="mkS"><svg class="x" viewBox="0 0 24 24"><path d="M4 4v14h4l3-3v-3L8 10H4M15 4v14m6-9-6 5 6 5"/></svg><span class="stS"><svg class="x" viewBox="0 0 24 24"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5-5.8-3-5.8 3 1.1-6.5L2.6 9.4l6.5-.9z"/></svg></span></div><h2>Enjoying bk?</h2><p>It is free and open source. A star on GitHub is the whole thanks it asks for — it helps other people find it.</p></div><div class="actS"><button class="pri"><svg class="x" viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 00-1-2.6c3-.3 6.5-1.5 6.5-7A5.4 5.4 0 0020 4.8 5 5 0 0019.9 1S18.7.6 16 2.5a13.4 13.4 0 00-7 0C6.3.6 5.1 1 5.1 1A5 5 0 005 4.8 5.4 5.4 0 003.5 8.5c0 5.5 3.5 6.7 6.5 7a3.4 3.4 0 00-1 2.6V22"/></svg>Star on GitHub</button><button>Later</button></div><div style="padding:0 20px 4px"><button class="neverS">Do not ask again</button></div><div class="cadS">A panel that nags is a panel people stop reading, and this one also carries the alerts. So: once every three days at the most, and never again once it is dismissed for good.</div><div style="height:16px"></div></div>
+ 
+-<div class="dlg sup0" data-d="sup" hidden><div class="dh"><div class="fl" style="display:grid;place-items:center;border:1px solid var(--ln2)"><svg class="x" viewBox="0 0 24 24"><path d="M8 6V5a4 4 0 018 0v1"/><path d="M5 8h14a2 2 0 012 2v8a3 3 0 01-3 3H6a3 3 0 01-3-3v-8a2 2 0 012-2z"/><path d="M9 12h6"/></svg></div><div class="ttl"><div style="font-size:16px;font-weight:640;letter-spacing:-.024em">Support bk</div><small>free and open source</small></div><button class="x"><svg class="x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="bodyS" style="padding-bottom:6px"><div class="mkS"><svg class="x" viewBox="0 0 24 24"><path d="M20.8 5.6a5 5 0 00-7.1 0L12 7.3l-1.7-1.7a5 5 0 10-7.1 7.1L12 21.5l8.8-8.8a5 5 0 000-7.1z"/></svg></div><h2>Support bk</h2><p>Free &amp; open-source. If it helps you, a star or a small tip means a lot. 🙏</p></div><div class="actS"><button><svg class="x" viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 00-1-2.6c3-.3 6.5-1.5 6.5-7A5.4 5.4 0 0020 4.8 5 5 0 0019.9 1S18.7.6 16 2.5a13.4 13.4 0 00-7 0C6.3.6 5.1 1 5.1 1A5 5 0 005 4.8 5.4 5.4 0 003.5 8.5c0 5.5 3.5 6.7 6.5 7a3.4 3.4 0 00-1 2.6V22"/></svg>GitHub</button><button class="pri"><svg class="x" viewBox="0 0 24 24"><path d="M22 3L2 11l6 2 2 6 3-4 5 4z"/><path d="M8 13l8-6"/></svg>Telegram</button></div><div class="donS"><div class="hS">donate · click an address to copy</div><button class="wal0" data-addr="TTzuUAtsEsrLgNpFVLNTyLVJVRRFNWESYc"><span class="chip0">TRX</span><span class="tx0"><b>Tron · TRX</b><span class="ad0">TTzuUAtsEsrLgNpFVLNTyLVJVRRFNWESYc</span></span><span class="cp0">Copy</span></button><button class="wal0" data-addr="0xc112AE9bfF7c59dEcFb34E988A397848D3093E82"><span class="chip0">BEP20</span><span class="tx0"><b>USDT · BEP20</b><span class="ad0">0xc112AE9bfF7c59dEcFb34E988A397848D3093E82</span></span><span class="cp0">Copy</span></button><button class="wal0" data-addr="UQD9g40QubAICJ6zPqegtCY7s-joMx2DB8aIqA0xF1aHoCDs"><span class="chip0">TON</span><span class="tx0"><b>Toncoin · TON</b><span class="ad0">UQD9g40QubAICJ6zPqegtCY7s-joMx2DB8aIqA0xF1aHoCDs</span></span><span class="cp0">Copy</span></button></div><div class="bp-about" style="padding:0 18px 4px;font-size:11.5px;line-height:1.6;opacity:.6;text-align:center">bk <span id="bpver"></span><br><a href="https://github.com/topgsmir/bk" target="_blank" rel="noreferrer" style="color:inherit">source</a> &middot; AGPL-3.0 &middot; <a href="https://github.com/topgsmir/bk/blob/main/TRADEMARK.md" target="_blank" rel="noreferrer" style="color:inherit">trademark</a></div><div class="actS" style="padding-top:14px;padding-bottom:18px"><button>Close</button></div></div>
++<div class="dlg sup0" data-d="sup" hidden><div class="dh"><div class="fl" style="display:grid;place-items:center;border:1px solid var(--ln2)"><svg class="x" viewBox="0 0 24 24"><path d="M4 4v14h4l3-3v-3L8 10H4M15 4v14m6-9-6 5 6 5"/></svg></div><div class="ttl"><div style="font-size:16px;font-weight:640;letter-spacing:-.024em">Support bk</div><small>free and open source</small></div><button class="x"><svg class="x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="bodyS" style="padding-bottom:6px"><div class="mkS"><svg class="x" viewBox="0 0 24 24"><path d="M20.8 5.6a5 5 0 00-7.1 0L12 7.3l-1.7-1.7a5 5 0 10-7.1 7.1L12 21.5l8.8-8.8a5 5 0 000-7.1z"/></svg></div><h2>Support bk</h2><p>Free &amp; open-source. If it helps you, a star or a bug report helps. 🙏</p></div><div class="actS"><button><svg class="x" viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 00-1-2.6c3-.3 6.5-1.5 6.5-7A5.4 5.4 0 0020 4.8 5 5 0 0019.9 1S18.7.6 16 2.5a13.4 13.4 0 00-7 0C6.3.6 5.1 1 5.1 1A5 5 0 005 4.8 5.4 5.4 0 003.5 8.5c0 5.5 3.5 6.7 6.5 7a3.4 3.4 0 00-1 2.6V22"/></svg>GitHub</button><button class="pri"><svg class="x" viewBox="0 0 24 24"><path d="M22 3L2 11l6 2 2 6 3-4 5 4z"/><path d="M8 13l8-6"/></svg>Issues</button></div><div class="bp-about" style="padding:0 18px 4px;font-size:11.5px;line-height:1.6;opacity:.6;text-align:center">bk <span id="bpver"></span><br><a href="https://github.com/topgsmir/bk" target="_blank" rel="noreferrer" style="color:inherit">source</a> &middot; AGPL-3.0 &middot; <a href="https://github.com/topgsmir/bk/blob/main/TRADEMARK.md" target="_blank" rel="noreferrer" style="color:inherit">trademark</a></div><div class="actS" style="padding-top:14px;padding-bottom:18px"><button>Close</button></div></div>
+--- a/internal/webui/panelserving_test.go
++++ b/internal/webui/panelserving_test.go
+@@ -94,12 +94,12 @@
+ 	if err != nil {
+ 		t.Fatalf("the panel's api.js is not embedded: %v", err)
+ 	}
+-	for _, gone := range []string{"__BK_LIVE__", "MOCK", "mock/"} {
++	for _, gone := range []string{"__bk_LIVE__", "MOCK", "mock/"} {
+ 		if strings.Contains(string(api), gone) {
+ 			t.Errorf("api.js has grown a second source of data again (%q)", gone)
+ 		}
+ 	}
+-	if strings.Contains(string(panelIndex), "__BK_LIVE__") {
++	if strings.Contains(string(panelIndex), "__bk_LIVE__") {
+ 		t.Error("the served page still injects the mock-mode flag")
+ 	}
+ 	if _, err := fs.Stat(panelRoot, "mock"); err == nil {
+--- /dev/null
++++ b/internal/webui/paneltest/directedit.test.js
+@@ -0,0 +1,97 @@
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import { directMarkup, readDirect, rememberDirect } from '../panel/js/ui/directedit.js';
++import { fill } from '../panel/js/ui/form.js';
++
++const settings = {
++  carrier: 'spoof', holdsPorts: true,
++  spoof: { profile: 'udp', uplink: '', downlink: '', srcIPs: '198.51.100.10',
++    peerIP: '203.0.113.20', peerSrcIP: '198.51.100.20', interface: 'eth0',
++    shufflePort: true, portMin: 49152, portMax: 65535, sockBuf: 8388608,
++    mtu: 1500, xdpIface: 'eth0', ttlJitter: true, paddingMax: 80, icmpReply: true },
++};
++const input = (name, value) => typeof value === 'boolean'
++  ? { name, type: 'checkbox', checked: value }
++  : { name, type: 'text', value: String(value) };
++const root = (...inputs) => ({ querySelectorAll: () => inputs });
++
++test('direct Edit offers source pool, peer addresses and independent rotation on both sides', () => {
++  for (const holdsPorts of [true, false]) {
++    const markup = directMarkup({ ...settings, holdsPorts });
++    for (const name of ['srcIPs', 'peerIP', 'peerSrcIP', 'interface', 'shufflePort', 'portMin', 'portMax', 'sockBuf']) {
++      assert.ok(markup.includes(`name="spoof.${name}"`), `missing ${name}`);
++    }
++    assert.match(markup, /destination remains the peer's real IP/);
++  }
++  const plain = directMarkup({ carrier: 'udp', holdsPorts: true });
++  assert.ok(!plain.includes('spoof.'));
++  assert.ok(plain.includes('name="paths"'));
++});
++
++test('server settings fill the visible address fields and rotation controls without swapping sources', () => {
++  const controls = [...directMarkup(settings).matchAll(/(?:\bname|data-name)="(spoof\.[^"]+)"/g)]
++    .map(m => ({ ...input(m[1], m[1] === 'spoof.shufflePort' ? false : ''), tagName: 'INPUT' }));
++  const form = { querySelectorAll: selector => selector === '[name]' ? controls : [] };
++  const value = { ...settings, spoof: { ...settings.spoof, srcIPs: '198.51.100.10, 198.51.100.11' } };
++  fill(form, value);
++  const visible = Object.fromEntries(controls.map(n => [n.name, n.type === 'checkbox' ? n.checked : n.value]));
++  assert.equal(visible['spoof.srcIPs'], value.spoof.srcIPs);
++  assert.equal(visible['spoof.peerIP'], '203.0.113.20');
++  assert.equal(visible['spoof.peerSrcIP'], '198.51.100.20');
++  assert.equal(visible['spoof.shufflePort'], true);
++  assert.equal(visible['spoof.portMin'], '49152');
++  assert.deepEqual(readDirect({ querySelectorAll: () => controls }, value).spoof, value.spoof);
++});
++
++test('saving an IP change sends a nested carrier, preserves hidden tuning and uses numeric and boolean JSON types', () => {
++  const out = readDirect(root(input('spoof.srcIPs', '198.51.100.11, 198.51.100.12'),
++    input('spoof.peerIP', settings.spoof.peerIP), input('spoof.peerSrcIP', settings.spoof.peerSrcIP),
++    input('spoof.shufflePort', true), input('spoof.portMin', '49152'), input('spoof.portMax', '65535'),
++    input('spoof.sockBuf', '8388608'), input('mtu', '1280'), input('autoMtu', false), input('stealth', false)), settings);
++  assert.deepEqual(out, { spoof: { ...settings.spoof, srcIPs: '198.51.100.11, 198.51.100.12' },
++    mtu: 1280, autoMtu: false, stealth: false });
++  assert.equal(settings.spoof.srcIPs, '198.51.100.10');
++  assert.ok(!Object.keys(out).some(k => k.startsWith('spoof.')));
++});
++
++test('explicitly turning rotation off reaches the API without losing the profile', () => {
++  const out = readDirect(root(input('spoof.shufflePort', false)), settings);
++  assert.equal(out.spoof.shufflePort, false);
++  assert.equal(out.spoof.profile, 'udp');
++});
++
++test('non-spoof edits never submit a carrier drawer', () => {
++  assert.deepEqual(readDirect(root(input('ports', '443')), { carrier: 'udp' }), { ports: '443' });
++});
++
++test('layer 4 Edit exposes its sessions and MSS without offering layer 3 tuning', () => {
++  const markup = directMarkup({ layer: 4, holdsPorts: true });
++  for (const name of ['addr', 'sessions', 'mss', 'ports']) assert.ok(markup.includes(`name="${name}"`));
++  for (const name of ['mtu', 'autoMtu', 'fec']) assert.ok(!markup.includes(`data-name="${name}"`) && !markup.includes(`name="${name}"`));
++  assert.deepEqual(readDirect(root(input('sessions', '4'), input('mss', '1280')), { layer: 4 }), { sessions: 4, mss: 1280 });
++});
++
++test('changing a direct address leaves untouched FEC and tuning out of the request', () => {
++  const address = input('addr', 'old.example:443');
++  const form = root(address, input('fec', true), input('sessions', '4'));
++  rememberDirect(form, { layer: 4 });
++  assert.deepEqual(readDirect(form, { layer: 4 }), {});
++  address.value = 'new.example:443';
++  assert.deepEqual(readDirect(form, { layer: 4 }), { addr: 'new.example:443' });
++});
++
++test('a changed spoof source retains hidden carrier tuning while unchanged fields stay absent', () => {
++  const source = input('spoof.srcIPs', settings.spoof.srcIPs);
++  const form = root(source, input('fec', true));
++  rememberDirect(form, settings);
++  assert.deepEqual(readDirect(form, settings), {});
++  source.value = '198.51.100.99';
++  assert.deepEqual(readDirect(form, settings), { spoof: { ...settings.spoof, srcIPs: source.value } });
++});
++
++test('invalid numeric edits fail before saving; profile labels are escaped', () => {
++  for (const value of ['oops', 'Infinity', '49152.5']) {
++    assert.throws(() => readDirect(root(input('spoof.portMin', value)), settings), /whole number/);
++  }
++  assert.ok(!directMarkup({ ...settings, spoof: { profile: '<script>alert(1)</script>' } }).includes('<script>'));
++});
+--- a/NOTICE
++++ b/NOTICE
+@@ -1,4 +1,8 @@
+-bk
++bk distribution modifications (C) 2026 topgsmir.
++Repository: https://github.com/topgsmir/bk
++Original notices follow unchanged.
++
++Backpack
+ Copyright (C) 2026 Amin Mohammadi (AminMGMT). All rights reserved.
+ 
+ Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+@@ -25,8 +29,8 @@
+ 
+       The line is:
+ 
+-        Based on bk by Amin Mohammadi (AminMGMT)
+-        https://github.com/topgsmir/bk
++        Based on BackPack by Amin Mohammadi (AminMGMT)
++        https://github.com/AminMGMT/BackPack
+ 
+       Adding your own copyright and your own notices alongside it is expected.
+       Replacing or removing it is not permitted.
+@@ -34,11 +38,11 @@
+   (2) TRADEMARK — under Section 7(e), which permits declining to grant rights
+       under trademark law.
+ 
+-      "bk", the bk name and the bk logo are marks of Amin
++      "BackPack", the BackPack name and the BackPack logo are marks of Amin
+       Mohammadi (AminMGMT) and are NOT licensed with this code. A modified
+       version must carry a different name and its own branding. Saying
+       truthfully that your work is based on, forked from, or compatible with
+-      bk is always allowed and needs no permission.
++      BackPack is always allowed and needs no permission.
+ 
+       See TRADEMARK.md for the detail.
+ 
+@@ -53,7 +57,7 @@
+ Portions of the tunnel data-plane are derived from prior AGPL-3.0 / GPL-3.0
+ open-source work. This single line is retained only to satisfy the copyleft
+ attribution requirement of that license; all product branding, CLI, web UI, and
+-management code are original to bk by Amin Mohammadi.
++management code are original to Backpack by Amin Mohammadi.
+ 
+ The SNI-spoofing carrier reimplements a DPI-bypass technique first described by
+ patterniha (https://github.com/patterniha/SNI-Spoofing) and implemented in Rust
+--- a/README.md
++++ b/README.md
+@@ -1,8 +1,19 @@
+-<p align="center">
+-  <img src="img/image.png" alt="bk" width="100%">
+-</p>
++
+ 
+ <h1 align="center">bk</h1>
++
++> Distribution maintained by **topgsmir**. This is an independent distribution, not the official upstream distribution.
++>
++> Based on BackPack by Amin Mohammadi (AminMGMT)
++> https://github.com/AminMGMT/BackPack
++>
++> **bk** is the renamed distribution. Original license and attribution are retained; see [NOTICE](NOTICE).
++
++Installation and removal use this repository. [Install, uninstall and private access](docs/install.md) · [Publishing this distribution](docs/publishing.md).
++
++Optional **Tunnel Package 3**: [108 methods and grouped native connection tests](docs/package3.md). Build in menu **12**; test in **0 → Test Tunnel Package 3**.
++
++
+ 
+ <p align="center">
+   <b>High-performance tunneling between Iran and abroad — built in Go.</b>
+@@ -30,8 +41,7 @@
+   <a href="tutorial/README.md">Tutorials</a> ·
+   <a href="docs/README.md">Documentation</a> ·
+   <a href="README_FA.md">فارسی</a> ·
+-  <a href="https://t.me/BlackProtocols">Telegram</a> ·
+-  <a href="https://t.me/BlackProtocolsGroup">Community</a>
++  <a href="https://github.com/topgsmir/bk/issues">Issues</a>
+ </p>
+ 
+ ---
+@@ -965,12 +975,8 @@
+ * Star the repository
+ * Report bugs through GitHub Issues
+ * Contribute improvements
+-* Join the Telegram community
+-
+-### Telegram
+-
+-* Channel: [@BlackProtocols](https://t.me/BlackProtocols)
+-* Community: [@BlackProtocolsGroup](https://t.me/BlackProtocolsGroup)
++
++Maintained by [topgsmir](https://github.com/topgsmir). Support and bug reports: [GitHub Issues](https://github.com/topgsmir/bk/issues).
+ 
+ ---
+ 
+@@ -1011,8 +1017,8 @@
+ Modified versions must keep this line, unaltered, in their README (and in NOTICE):
+ 
+ ```text
+-Based on bk by Amin Mohammadi (AminMGMT)
+-https://github.com/topgsmir/bk
++Based on BackPack by Amin Mohammadi (AminMGMT)
++https://github.com/AminMGMT/BackPack
+ ```
+ 
+ ### Name & logo
+--- a/README_FA.md
++++ b/README_FA.md
+@@ -1,8 +1,18 @@
+ <div dir="rtl">
+ 
+-<p align="center"><img src="img/cover.png" alt="bk" width="100%"></p>
+-
+-# بک‌پک 🎒
++
++
++# bk
++
++> نسخهٔ سفارشی نگه‌داری‌شده توسط **topgsmir**؛ نسخهٔ رسمی سازندهٔ اصلی نیست.
++>
++> Based on BackPack by Amin Mohammadi (AminMGMT)
++> https://github.com/AminMGMT/BackPack
++>
++> این توزیع با نام مستقل **bk** منتشر می‌شود؛ مجوز و مشخصات منبع در [NOTICE](NOTICE) حفظ شده‌اند.
++
++لینک‌های نصب و حذف به مخزن خودمان اشاره می‌کنند؛ [راهنمای نصب و حذف](docs/install.md).
++
+ 
+ <p align="center">
+   <a href="go.mod"><img alt="Go version" src="https://img.shields.io/github/go-mod/go-version/topgsmir/bk?logo=go&label=Go"></a>
+@@ -12,7 +22,7 @@
+   <a href="https://github.com/topgsmir/bk/releases"><img alt="Total downloads across all releases" src="https://img.shields.io/github/downloads/topgsmir/bk/total?logo=github&label=total%20downloads&color=orange"></a>
+ </p>
+ 
+-**بک‌پک** یک هستهٔ تونل با کارایی بالاست که کاملاً با **Go** نوشته شده و برای
++**bk** یک هستهٔ تونل با کارایی بالاست که کاملاً با **Go** نوشته شده و برای
+ ست‌آپ سرور ایران ⇄ خارج طراحی شده. یک باینری واحد است با یک منوی تعاملی CLI
+ **و** یک پنل وب امن — یعنی همه‌چیز را با ترمینال یا بدون ترمینال می‌توانی
+ مدیریت کنی.
+@@ -26,7 +36,7 @@
+   <b><a href="tutorial/README.md">📘 آموزش‌های راه‌اندازی</a></b> ·
+   <b><a href="docs/README.md">📚 مستندات</a></b> ·
+   <b><a href="README.md">🇬🇧 English</a></b> ·
+-  <b><a href="https://t.me/BlackProtocols">✈️ تلگرام</a></b>
++  <b><a href="https://github.com/topgsmir/bk/issues">گزارش مشکل</a></b>
+ </p>
+ 
+ <div dir="rtl">
+@@ -37,7 +47,7 @@
+ 
+ ## چطور کار می‌کند
+ 
+-<p align="center"><img src="img/architecture.svg" alt="معماری بک‌پک: کاربر به پورت forward‌شده روی سرور ایران وصل می‌شود، انجین آن را از یک ترنسپورت به کلاینت خارج می‌برد و کلاینت به سرویس واقعی می‌رساند. کلاینت به سرور dial می‌کند." width="100%"></p>
++<p align="center"><img src="img/architecture.svg" alt="معماری bk: کاربر به پورت forward‌شده روی سرور ایران وصل می‌شود، انجین آن را از یک ترنسپورت به کلاینت خارج می‌برد و کلاینت به سرویس واقعی می‌رساند. کلاینت به سرور dial می‌کند." width="100%"></p>
+ 
+ </div>
+ 
+@@ -125,8 +135,8 @@
+ می‌دهد.
+ 
+ **اول سرور ایران را بساز.** بعد از ساخت تونل، ایران یک **لینک `bk://`** چاپ
+-می‌کند، و زیرش یک **دستور یک‌خطی** که روی خارجی که هنوز بک‌پک ندارد (با کاربر root) بک‌پک را نصب
+-می‌کند و تونل را از همان لینک می‌سازد و بالا می‌آورد — بدون هیچ سؤالی. اگر خارج بک‌پک را دارد،
++می‌کند، و زیرش یک **دستور یک‌خطی** که روی خارجی که هنوز bk ندارد (با کاربر root) bk را نصب
++می‌کند و تونل را از همان لینک می‌سازد و بالا می‌آورد — بدون هیچ سؤالی. اگر خارج bk را دارد،
+ **Setup Kharej ← Direct ← همان حامل ← Setup Link** را بزن و لینک را پیست کن (یا
+ `bk link apply '<link>'`) — توکن، آدرس‌ها و تنظیمات خودکار می‌آیند. برای چند خارج پشت یک ایران، برای هر خارج یک بار از ایران تونل بساز؛ هر
+ کدام لینک خودش را دارد.
+@@ -198,7 +208,7 @@
+ 
+ ---
+ 
+-## چرا بک‌پک؟
++## چرا bk؟
+ 
+ - **UDP روی هر پورت forward شده** — Xray/3x-ui، شدوساکس، وایرگارد، DNS و بازی،
+   روی **همهٔ** ترنسپورت‌ها، فقط با یک گزینه.
+@@ -305,21 +315,11 @@
+ 
+ ---
+ 
+-## حمایت و دونیت
+-
+-اگر بک‌پک برات مفید بود، یه ستاره یا یه دونیت کوچیک خیلی ارزشمنده. 🙏
+-
+-- کانال تلگرام: **[@BlackProtocols](https://t.me/BlackProtocols)**
+-
+-</div>
+-
+-| کوین | آدرس |
+-|------|------|
+-| **Tron (TRX)** | `TTzuUAtsEsrLgNpFVLNTyLVJVRRFNWESYc` |
+-| **USDT (BEP20)** | `0xc112AE9bfF7c59dEcFb34E988A397848D3093E82` |
+-| **Toncoin (TON)** | `UQD9g40QubAICJ6zPqegtCY7s-joMx2DB8aIqA0xF1aHoCDs` |
+-
+-<div dir="rtl">
++## نگه‌داری و پشتیبانی
++
++این نسخه توسط **topgsmir** نگه‌داری می‌شود. برای گزارش مشکل از
++[Issues مخزن خودمان](https://github.com/topgsmir/bk/issues) استفاده کن.
++
+ 
+ ## لایسنس
+ 
+@@ -334,11 +334,13 @@
+ - **انتساب را نگه دار.** یک نسخهٔ تغییریافته باید این خط را بدون تغییر در README
+   خودش (و در NOTICE) داشته باشد:
+ 
+-  > Based on bk by Amin Mohammadi (AminMGMT)
+-  > https://github.com/topgsmir/bk
++  > Based on BackPack by Amin Mohammadi (AminMGMT)
++  > https://github.com/AminMGMT/BackPack
+ 
+ - **از نام خودت استفاده کن.** «bk»، نام و لوگو همراه کد لایسنس نشده‌اند —
+   یک fork به نام خودش نیاز دارد. گفتن این حقیقت که کارت بر پایهٔ bk است یا
+   با آن سازگار است همیشه آزاد است. [TRADEMARK.md](TRADEMARK.md) را ببین.
+ 
+-</div>
++امکانات اختیاری **پکیج تانل ۳**: [راهنمای ۸۷ روش و تست اتصال واقعی](docs/package3.md). ساخت در منوی **۱۲** و تست در **۰ ← Test Tunnel Package 3** قرار دارد.
++
++</div>
+--- /dev/null
++++ b/tests/uninstall.sh
+@@ -0,0 +1,59 @@
++#!/usr/bin/env bash
++set -euo pipefail
++# Destructive fixture tests run ONLY in a disposable Docker container.
++[[ -f /.dockerenv && $EUID == 0 ]] || { echo 'Run in a disposable Docker container as root.' >&2; exit 1; }
++script="$(cd "$(dirname "$0")/.." && pwd)/uninstall.sh"
++export TEST_STATE="$(mktemp -d)"
++mkdir -p "$TEST_STATE/bin" /run/systemd/system /etc/systemd/system
++export PATH="$TEST_STATE/bin:$PATH"
++cat >"$TEST_STATE/bin/crontab" <<'MOCK'
++#!/usr/bin/env bash
++if [[ "${FAIL_CRON:-0}" == 1 ]]; then echo 'permission denied' >&2; exit 1; fi
++if [[ "$1" == -l ]]; then cat "$TEST_STATE/cron"; else cp "$1" "$TEST_STATE/cron"; fi
++MOCK
++cat >"$TEST_STATE/bin/systemctl" <<'MOCK'
++#!/usr/bin/env bash
++printf '%s\n' "$*" >> "$TEST_STATE/services"
++if [[ "$1" == list-unit-files ]]; then
++  for p in /etc/systemd/system/bk-*.service /etc/systemd/system/bk-*.timer; do [[ ! -f "$p" ]] || echo "${p##*/} enabled"; done
++fi
++if [[ "${FAIL_STOP:-0}" == 1 && "$1" == stop ]]; then exit 1; fi
++exit 0
++MOCK
++chmod +x "$TEST_STATE/bin/"*
++fixture() {
++  mkdir -p /etc/bk /root/bk/backups /tmp/unrelated-source
++  touch /etc/bk/test.toml /root/bk/backups/test /usr/local/bin/bk /tmp/unrelated-source/keep
++  echo /tmp/unrelated-source > /etc/bk/install_path
++  touch /etc/systemd/system/bk-test.service /etc/systemd/system/bk-test-restart.timer /etc/systemd/system/unrelated.service /etc/systemd/system/unrelated.timer
++  mkdir -p /etc/sysctl.d /etc/security/limits.d
++  touch /etc/sysctl.d/zz-bk.conf /etc/sysctl.d/99-bk.conf /etc/security/limits.d/99-bk.conf /etc/sysctl.d/unrelated.conf
++  printf '%s\n' '0 * * * * /usr/local/bin/bk --restart-all # bk-auto-refresh' '0 * * * * /usr/local/bin/bk --telegram-report # bk-telegram' '0 0 * * * /usr/local/bin/backup # unrelated' > "$TEST_STATE/cron"
++}
++fixture
++bash "$script" --dry-run > "$TEST_STATE/dry-run"
++[[ -f /etc/bk/test.toml && -f /root/bk/backups/test && -f /usr/local/bin/bk ]]
++[[ $(wc -l < "$TEST_STATE/cron") == 3 ]]
++bash "$script" > "$TEST_STATE/cancel" 2>&1
++[[ -f /etc/bk/test.toml ]]
++if bash "$script" --invalid >/dev/null 2>&1; then echo 'Invalid option accepted' >&2; exit 1; fi
++if FAIL_CRON=1 bash "$script" --yes >/dev/null 2>&1; then echo 'Cron failure ignored' >&2; exit 1; fi
++[[ -f /etc/bk/test.toml ]]
++if FAIL_STOP=1 bash "$script" --yes >/dev/null 2>&1; then echo 'Stop failure ignored' >&2; exit 1; fi
++[[ -f /etc/bk/test.toml && -f /usr/local/bin/bk ]]
++fixture
++bash "$script" --yes
++[[ ! -e /etc/bk && ! -e /root/bk && ! -e /usr/local/bin/bk ]]
++[[ ! -e /etc/systemd/system/bk-test.service && -f /etc/systemd/system/unrelated.service ]]
++[[ -f /tmp/unrelated-source/keep && -f /etc/systemd/system/unrelated.timer && -f /etc/sysctl.d/unrelated.conf ]]
++[[ ! -e /etc/systemd/system/bk-test-restart.timer && ! -e /etc/sysctl.d/zz-bk.conf && ! -e /etc/sysctl.d/99-bk.conf && ! -e /etc/security/limits.d/99-bk.conf ]]
++[[ $(cat "$TEST_STATE/cron") == '0 0 * * * /usr/local/bin/backup # unrelated' ]]
++grep -q 'stop bk-test-restart.timer' "$TEST_STATE/services"
++grep -q 'stop bk-test.service' "$TEST_STATE/services"
++bash "$script" --yes >/dev/null
++fixture
++rm -rf -- /root/bk
++ln -s /tmp/unrelated-source /root/bk
++bash "$script" --yes >/dev/null
++[[ ! -L /root/bk && -f /tmp/unrelated-source/keep ]]
++echo 'PASS: dry run, cancellation, validation, cron/stop failures, scoped removal, repeat removal and symlink preservation.'
+--- a/tools/signsums/main.go
++++ b/tools/signsums/main.go
+@@ -10,6 +10,7 @@
+ package main
+ 
+ import (
++	"bytes"
+ 	"crypto/ed25519"
+ 	"encoding/base64"
+ 	"fmt"
+@@ -46,6 +47,13 @@
+ 		os.Exit(1)
+ 	}
+ 
++	expected, err := base64.StdEncoding.DecodeString(strings.TrimSpace(app.ReleasePublicKey))
++	actual := ed25519.PrivateKey(key).Public().(ed25519.PublicKey)
++	if err != nil || !bytes.Equal(expected, actual) {
++		fmt.Fprintln(os.Stderr, "RELEASE_SIGNING_KEY does not match this distribution's public key")
++		os.Exit(1)
++	}
++
+ 	sums, err := os.ReadFile(path)
+ 	if err != nil {
+ 		fmt.Fprintln(os.Stderr, err)
+@@ -62,6 +70,9 @@
+ 
+ // releaseTag is the tag being released: CI's, or the VERSION file's.
+ func releaseTag() string {
++	if t := strings.TrimSpace(os.Getenv("RELEASE_TAG")); t != "" {
++		return t
++	}
+ 	if t := strings.TrimSpace(os.Getenv("GITHUB_REF_NAME")); t != "" {
+ 		return t
+ 	}
+--- a/TRADEMARK.md
++++ b/TRADEMARK.md
+@@ -1,6 +1,6 @@
+ # Trademark policy
+ 
+-**bk**, the bk name and the bk logo are marks of
++**BackPack**, the BackPack name and the BackPack logo are marks of
+ **Amin Mohammadi (AminMGMT)**.
+ 
+ The source is free software under AGPL-3.0. The name is not part of it.
+@@ -20,9 +20,9 @@
+ | Read and modify the source | ✅ | |
+ | Fork it and publish your fork | ✅ | |
+ | Sell a service built on it | ✅ | |
+-| Call your fork "bk" | | ❌ |
+-| Use the bk logo or icons | | ❌ |
+-| Imply your fork is the official bk | | ❌ |
++| Call your fork "BackPack" | | ❌ |
++| Use the BackPack logo or icons | | ❌ |
++| Imply your fork is the official BackPack | | ❌ |
+ 
+ Nothing here restricts what you may do with the code. It restricts what you may
+ call it.
+@@ -30,16 +30,16 @@
+ ## What you may do without asking
+ 
+ - Say that your project **is based on**, **is a fork of**, or **is compatible
+-  with** bk. Referring to us by name to state a true fact is nominative
++  with** BackPack. Referring to us by name to state a true fact is nominative
+   use and nobody needs permission for it.
+ - Keep the name in the attribution notices — in fact, you must; see `NOTICE`.
+-- Write about bk, review it, teach it, package it under its own name where
+-  the package is genuinely bk and not a modified version.
++- Write about BackPack, review it, teach it, package it under its own name where
++  the package is genuinely BackPack and not a modified version.
+ 
+ ## What needs a different name
+ 
+ If you publish a **modified version**, it needs a name of its own. Not
+-"bk", not "bk Pro", not "bk-NG", not a logo that is ours with
++"BackPack", not "BackPack Pro", not "BackPack-NG", not a logo that is ours with
+ the colours changed.
+ 
+ This is the same line Redis, Grafana, Mozilla and most other copyleft projects
+@@ -50,8 +50,8 @@
+ 
+ Rename it, then say plainly what it came from:
+ 
+-> **Based on bk by Amin Mohammadi (AminMGMT)** —
+-> https://github.com/topgsmir/bk
++> **Based on BackPack by Amin Mohammadi (AminMGMT)** —
++> https://github.com/AminMGMT/BackPack
+ 
+ That sentence is required by `NOTICE`, and it is also the whole of what is being
+ asked. Change the name, keep the credit.
+@@ -61,7 +61,7 @@
+ For anything else — a distribution package, a commercial arrangement, using the
+ name in a way this file does not cover — ask.
+ 
+-Open an issue at https://github.com/topgsmir/bk/issues.
++Open an issue at https://github.com/AminMGMT/BackPack/issues.
+ 
+ ---
+ 
+--- /dev/null
++++ b/uninstall.sh
+@@ -0,0 +1,87 @@
++#!/usr/bin/env bash
++# bk distribution maintained by topgsmir.
++# bash <(curl -fsSL https://raw.githubusercontent.com/topgsmir/bk/main/uninstall.sh)
++set -euo pipefail
++
++yes=0
++dry_run=0
++for arg in "$@"; do
++  case "$arg" in
++    --yes) yes=1 ;;
++    --dry-run) dry_run=1 ;;
++    -h|--help)
++      echo 'Usage: bash uninstall.sh [--yes] [--dry-run]'
++      echo 'Removes bk services, settings, tunnels, binary and backups.'
++      exit 0 ;;
++    *) echo "Unknown argument: $arg" >&2; exit 2 ;;
++  esac
++done
++if (( ! dry_run && EUID != 0 )); then echo 'Run as root (sudo).' >&2; exit 1; fi
++echo 'bk uninstall: /etc/bk, /root/bk (including backups), /usr/local/bin/bk'
++if (( ! dry_run && ! yes )); then
++  answer=''
++  read -r -p 'Type DELETE to remove bk and its data: ' answer </dev/tty || true
++  if [[ "$answer" != DELETE ]]; then echo 'Cancelled.'; exit 0; fi
++fi
++run() {
++  if (( dry_run )); then printf '[dry-run] '; printf '%q ' "$@"; echo
++  else "$@"; fi
++}
++# A failed cron read must never be treated as an empty crontab.
++if command -v crontab >/dev/null 2>&1; then
++  cron_dir="$(mktemp -d)"
++  trap 'rm -rf -- "$cron_dir"' EXIT
++  if crontab -l >"$cron_dir/current" 2>"$cron_dir/error"; then
++    awk '!/#[[:space:]]+bk-(auto-refresh|telegram)([[:space:]]|$)/' \
++      "$cron_dir/current" >"$cron_dir/kept"
++    if ! cmp -s "$cron_dir/current" "$cron_dir/kept"; then
++      if (( dry_run )); then echo '[dry-run] remove bk cron entries'
++      else crontab "$cron_dir/kept"; fi
++    fi
++  elif ! grep -qi 'no crontab' "$cron_dir/error"; then
++    echo 'Cannot read the current crontab; no bk files were removed.' >&2
++    exit 1
++  fi
++fi
++declare -A units=()
++shopt -s nullglob
++for path in /etc/systemd/system/bk-*.service /etc/systemd/system/bk-*.timer; do units["${path##*/}"]=1; done
++if [[ -d /run/systemd/system ]]; then
++  command -v systemctl >/dev/null 2>&1 || { echo 'systemctl is required.' >&2; exit 1; }
++  unit_list="$(systemctl list-unit-files --no-legend --no-pager 'bk-*.service' 'bk-*.timer')"
++  while read -r unit rest; do
++    if [[ ( "$unit" == bk-*.service || "$unit" == bk-*.timer ) && "$unit" != */* ]]; then units["$unit"]=1; fi
++  done <<<"$unit_list"
++  # Stop timers first so they cannot restart a service during removal.
++  for kind in timer service; do
++    for unit in "${!units[@]}"; do
++      if [[ "$unit" == *."$kind" ]]; then
++        run systemctl stop "$unit"
++        run systemctl disable "$unit"
++      fi
++    done
++  done
++fi
++for path in /etc/systemd/system/bk-*.service /etc/systemd/system/bk-*.service.d /etc/systemd/system/bk-*.timer /etc/systemd/system/bk-*.timer.d; do
++  run rm -rf -- "$path"
++done
++if [[ -d /run/systemd/system ]]; then run systemctl daemon-reload; fi
++# Do not turn an untrusted install_path into a recursive-delete argument.
++if [[ -f /etc/bk/install_path ]]; then
++  recorded="$(cat /etc/bk/install_path)"
++  if [[ -n "$recorded" && "$recorded" != /root/bk ]]; then
++    printf 'Custom source checkout preserved: %s\n' "$recorded"
++  fi
++fi
++# Remove only the three tuning files written by this project. Do not reset
++# live kernel settings, which could affect other software on the server.
++for path in /etc/sysctl.d/zz-bk.conf /etc/sysctl.d/99-bk.conf /etc/security/limits.d/99-bk.conf; do
++  if [[ -e "$path" || -L "$path" ]]; then
++    run rm -f -- "$path"
++    echo 'bk tuning file removed; live kernel settings persist until reboot.'
++  fi
++done
++run rm -f -- /usr/local/bin/bk
++run rm -rf -- /etc/bk /root/bk
++if (( dry_run )); then echo 'Dry run complete; no bk data was removed.'
++else echo 'bk uninstalled.'; fi
+--- a/VERSION
++++ b/VERSION
+@@ -1 +1 @@
+-v1.9.0
++v1.12.0

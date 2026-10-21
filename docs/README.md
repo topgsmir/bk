@@ -25,6 +25,7 @@ Reference pages: what each part of bk **is**, and every setting it has.
 - [IP Spoofing](ip-spoofing.md) — the forged-source carrier, setting by setting
 - [Decoy site (WSS camouflage)](camouflage.md)
 - [When a server is filtered, blocked, or dirty](filtered-or-dirty-ip.md)
+- [Checking a heavily filtered path](filtered-paths.md) — when the Connection Test coordinator cannot get through
 
 ### Per-tunnel settings
 - [Configuration reference](config-reference.md) — every key bk reads, generated from the declarations.
@@ -90,4 +91,4 @@ Reference pages: what each part of bk **is**, and every setting it has.
 
 ---
 
-*Last verified against Backpack v1.8.5.*
+*Inherited documentation updated against BackPack v1.9.0; bk integration validation is recorded in docs/upstream-sync.md.*

@@ -6,6 +6,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+defaults:
+  run:
+    working-directory: addons
 jobs:
   live:
     runs-on: ubuntu-latest
@@ -14,7 +17,8 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
         with:
-          go-version-file: go.mod
+          go-version-file: addons/go.mod
+          cache-dependency-path: addons/go.sum
           cache: true
       - name: Build optional manager and run validation tests
         run: |

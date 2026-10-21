@@ -115,4 +115,4 @@ for the full picture.
 
 ---
 
-*Last verified against Backpack v1.8.5.*
+*Inherited documentation updated against BackPack v1.9.0; bk integration validation is recorded in docs/upstream-sync.md.*

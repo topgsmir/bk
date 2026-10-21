@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
-const source = fs.readFileSync('internal/app/app.go','utf8');
+const source = fs.readFileSync('.build/core/internal/app/app.go','utf8');
 const publicBytes = Buffer.from(source.match(/var ReleasePublicKey = "([^"]+)"/)[1],'base64');
 assert.equal(publicBytes.length,32);
 const publicKey = crypto.createPublicKey({key:Buffer.concat([Buffer.from('302a300506032b6570032100','hex'),publicBytes]),format:'der',type:'spki'});
 const tag = fs.readFileSync('VERSION','utf8').trim();
-assert.equal(tag,'v1.8.6.1');
+assert.match(tag,/^v[0-9]+\.[0-9]+\.[0-9]+$/);
 const sums = fs.readFileSync('release/SHA256SUMS');
 const signature = Buffer.from(fs.readFileSync('release/SHA256SUMS.sig','utf8').trim(),'base64');
 const message = Buffer.concat([Buffer.from(`bk release ${tag}\n`),sums]);

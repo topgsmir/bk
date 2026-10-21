@@ -1,73 +1,45 @@
-# Publishing bk
+# Publishing the separated bk distribution
 
-bk is the distribution maintained by topgsmir, based on BackPack by Amin
-Mohammadi (AminMGMT): https://github.com/AminMGMT/BackPack.
-The original AGPL-3.0 license, NOTICE and trademark policy remain in the source.
-The modified product uses its own name and icon.
+The distribution is maintained at `topgsmir/bk`. Its source keeps the AGPL-3.0
+licence, original attribution, and the independently pinned upstream snapshot.
 
-## Repository and visibility
+Run `make check` and require the BackPack core, launcher, Additional tunnels and
+Tunnel Package 3 workflows to pass. The native addon workflows remain separate
+from the core checks. A local loopback pass does not establish public-route
+connectivity or native support for every optional method.
 
-https://github.com/topgsmir/bk is a standalone repository. It preserves the
-source history and can be Public or Private through Settings → General →
-Danger Zone → Change repository visibility. The original BackPack fork is
-separate. Anonymous installation and online updates require the bk repository
-to be public; authenticated private installation is described in [install.md](install.md).
+`make build` creates a single runnable launcher containing two separately built
+component executables. `make release` builds seven Linux variants, creates the
+existing `bk_linux_<arch>.tar.gz` archives, computes checksums, and signs them
+through the core's existing distribution signer. `release/SBOM.txt` includes
+both embedded programs' dependency metadata.
 
-See [GitHub visibility documentation](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility).
+The public signing key is retained in the core overlay and materialized at
+`.build/core/internal/app/app.go`. The private key is never source data. Keep
+the existing encrypted `.publisher` backup and the repository's
+`RELEASE_SIGNING_KEY` secret. `scripts/upload-signing-key.ps1` remains the
+explicit account-owned provisioning tool; building does not upload keys.
 
-## Signed releases
+The root `VERSION`, `upstream.lock.json` distribution version, core app version,
+and release tag must agree. The lock also records the independently inherited
+core version and addon version. A pushed tag publishes that source; a manual
+workflow can use an explicit tag or the declared version, with the workflow's
+existing tag/source consistency checks.
 
-The pinned Ed25519 public key is in internal/app/app.go. The matching private
-key is locally encrypted for the Windows account in the ignored
-.publisher/release-signing-key.dpapi file. It is never part of Git or source
-archives. Keep a secure backup before replacing the machine/account.
-The script scripts/upload-signing-key.ps1 uploads it to the bk repository's
-RELEASE_SIGNING_KEY Actions secret after gh auth login. The signer rejects a
-key that does not match the public key in the source.
-
-## Build and publish
-
-Use the Go version from go.mod. Before tagging, run:
-
-```bash
-go test ./... -timeout 20m
-go test ./internal/utils/network -race -timeout 5m
-# Run removal and privileged PCK tests in a disposable container only.
-docker run --rm --cap-add=NET_RAW --cap-add=NET_ADMIN -e BK_REQUIRE_PCK=1 -v "$PWD:/work" -w /work golang:1.26.9-bookworm bash -c 'bash tests/uninstall.sh && go test ./internal/utils/network -run TestPckLoopback -count=1 -v'
-RELEASE_TAG="$(cat VERSION)" make release
-```
-
-Require the Additional tunnels workflow to pass its real 60-second tests for
-every optional method before tagging. Also require the Tunnel Package 3
-workflow for native Package 3 traffic, including its separate spoof cases. Push reviewed source to main and its
-version tag. The Release workflow tests,
-builds seven Linux architectures and publishes checksums, a signature, SBOM,
-install.sh and uninstall.sh. Manual workflow runs require an existing tag.
-The release tag, VERSION and app.Version must agree.
-
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/topgsmir/bk/main/install.sh)
-bk
-bash <(curl -fsSL https://raw.githubusercontent.com/topgsmir/bk/main/uninstall.sh)
-```
-
-The removal script works offline, asks for confirmation, and supports
---dry-run. It removes only bk's standard paths and units. Custom source
-checkouts outside /root/bk are left alone.
-
----
+Do not tag or publish solely because an upstream release exists. Review its
+source changes, sync the pristine snapshot, run the compatibility checks, and
+require the appropriate native workflows. Updating core source does not update
+or regenerate the addon module.
 
 <div dir="rtl">
 
 ## خلاصهٔ فارسی
 
-مخزن bk متعلق به topgsmir و مستقل است؛ منبع اصلی، مجوز و سابقهٔ کد حفظ شده‌اند.
-از Settings و Change repository visibility می‌توان حالت عمومی یا خصوصی را
-تغییر داد. نصب و به‌روزرسانی با لینک عمومی نیاز به مخزن عمومی دارد؛ برای حالت
-خصوصی راهنمای نصب آفلاین را بخوان. دستور bk منوی مدیریت را باز می‌کند.
-کلید خصوصی انتشار رمزگذاری شده است و وارد Git نمی‌شود؛ نسخه‌های منتشرشده با
-کلید اختصاصی امضا می‌شوند. حذف با تأیید کاربر انجام می‌شود و --dry-run پیش‌نمایش است.
+قبل از انتشار، تست‌های هسته، منوی مشترک و پکیج‌ها باید پاس شوند. خروجی یک
+فایل نصب امضاشده است که برنامه‌های مستقل داخل آن قرار دارند. کلید اختصاصی
+انتشار، مسیر نصب و قالب آپدیت قبلی حفظ شده‌اند. دریافت آپدیت upstream به معنی
+انتشار خودکار نیست؛ نسخه، سازگاری و تست‌های مسیر واقعی باید بررسی شوند.
 
 </div>
 
-*Last verified against bk v1.11.7.*
+*Last verified against bk v1.12.0.*

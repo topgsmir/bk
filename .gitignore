@@ -1,30 +1,14 @@
-# Build artifacts
+/.build/
+/payload/bk-core
+/payload/bk-addons
+/payload/manifest.json
 /bk
-# Compiled test binaries (go test -c). Two were committed once: 45 MB of
-# machine-specific ELF carrying the build machine's paths.
-*.test
 /dist/
 /release/
-
-# Go module cache accidentally copied into the project (must live outside it)
-/go/
-
-# Vendored deps are optional to commit; uncomment to keep the repo small.
-# /vendor/
-
-# OS / editor cruft
-.DS_Store
-*.log
-*.swp
-
-# Local planning dashboards — private, never committed
-fix.html
-premium.html
-premium-fa.html
-idea.md
-todo.md
-fix-*.html
-
-# Local distribution keys and verification caches
+*.test
+__pycache__/
+*.pyc
 /.publisher/
 /.tools/
+*.log
+.DS_Store

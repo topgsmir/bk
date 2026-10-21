@@ -31,4 +31,4 @@ share one link and you want to stop any one of them from taking it all.
 
 ---
 
-*Last verified against Backpack v1.8.5.*
+*Inherited documentation updated against BackPack v1.9.0; bk integration validation is recorded in docs/upstream-sync.md.*

@@ -167,4 +167,4 @@ amd64 و `aarch64` یعنی arm64. بهترین راه این است که `insta
 
 ---
 
-*Last verified against bk v1.11.7.*
+*Inherited documentation updated against BackPack v1.9.0; bk integration validation is recorded in docs/upstream-sync.md.*

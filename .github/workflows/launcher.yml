@@ -1,0 +1,45 @@
+name: Launcher and independent addons
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  components:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            addons/go.sum
+            upstream/BackPack/go.sum
+      - name: Launcher, pristine snapshot, and dependency boundaries
+        run: |
+          go test ./... -race
+          go vet ./...
+          python3 -m unittest discover -s scripts -p 'test_*.py'
+      - name: Addons compile and test without a core checkout
+        working-directory: addons
+        run: |
+          go test ./... -race -timeout 15m
+          go vet ./...
+      - name: Preserve the addon static and dependency audit gates
+        working-directory: addons
+        run: |
+          go run honnef.co/go/tools/cmd/staticcheck@latest ./...
+          go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+      - name: Build and smoke-test the complete signed-asset payload
+        run: |
+          make build
+          ./bk components
+          ./bk core -v
+          ./bk addons -v
+          printf '0\n' | ./bk
+      - name: Check source installer syntax
+        run: bash -n install.sh uninstall.sh
+      - name: Check removal of both component services in a disposable container
+        run: docker run --rm -v "$GITHUB_WORKSPACE:/work:ro" -w /work golang:1.26.9-bookworm bash tests/uninstall.sh

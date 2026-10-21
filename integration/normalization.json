@@ -1,0 +1,50 @@
+{
+  "internal/app/app.go": [
+    "\"backpack-socks-v1:\""
+  ],
+  "internal/app/attribution_test.go": [
+    "\"Based on BackPack by Amin Mohammadi (AminMGMT)\"",
+    "\"Based on BackPack\""
+  ],
+  "internal/spooftest/spooftest.go": [
+    "\"backpack-spooftest-v1:\""
+  ],
+  "internal/server/transport/decoy.go": [
+    "\"backpack-decoy\\x00\""
+  ],
+  "internal/tunnel/direct/handshake.go": [
+    "\"backpack-direct-v1|\""
+  ],
+  "internal/tunnel/l3/carrier_quic.go": [
+    "\"backpack l3 quic stateless reset v1\\x00\""
+  ],
+  "internal/tunnel/l3/session.go": [
+    "\"backpack-l3-psk-v1\"",
+    "\"backpack-l3-v1\""
+  ],
+  "internal/utils/network/icmpframe.go": [
+    "\"backpack-xdi-v1:\""
+  ],
+  "internal/utils/network/kcp.go": [
+    "\"backpack-kcp-v1\""
+  ],
+  "internal/utils/network/noise.go": [
+    "\"backpack-stealth-psk-v1\"",
+    "\"backpack-noise-v1\""
+  ],
+  "internal/utils/network/pckport.go": [
+    "\"backpack-pck-v1:\""
+  ],
+  "internal/utils/network/quic.go": [
+    "\"backpack-quic\""
+  ],
+  "internal/utils/network/quicbind.go": [
+    "\"EXPORTER-backpack-quic-binding-v1\""
+  ],
+  "internal/utils/network/spoofframe.go": [
+    "\"backpack-spoof-v1:\""
+  ],
+  "internal/utils/network/wssbind.go": [
+    "\"EXPORTER-backpack-wss-binding-v1\""
+  ]
+}

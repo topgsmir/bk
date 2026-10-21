@@ -83,5 +83,6 @@ for path in /etc/sysctl.d/zz-bk.conf /etc/sysctl.d/99-bk.conf /etc/security/limi
 done
 run rm -f -- /usr/local/bin/bk
 run rm -rf -- /etc/bk /root/bk
+run rm -rf -- /root/.cache/bk/components
 if (( dry_run )); then echo 'Dry run complete; no bk data was removed.'
 else echo 'bk uninstalled.'; fi

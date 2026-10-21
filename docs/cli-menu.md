@@ -32,6 +32,24 @@ long form. For *how to set a tunnel up*, use the
 
 Option **0** offers the original bk test, **Test Pack 2** and **Test Pack 3**.
 
+Connection Test includes **Naive / HTTP2**, **XHTTP / TLS** and **REALITY / Vision**.
+Install the optional pinned helpers on both servers (`BP_HELPERS=naive,xray`);
+a missing helper is shown as **SKIPPED** with its reason. Iran automatically
+selects a reachable REALITY cover endpoint after verifying its certificate,
+TLS 1.3 and HTTP/2 support; no cover question is asked. If no candidate is
+reachable, only REALITY is skipped with its reason. Naive and XHTTP use a temporary certificate verified
+by the peer; private keys remain on Iran and all temporary files are removed
+when the test ends. Use matching bk builds on both sides. An **OK** row
+requires every scheduled echo and the checked bulk transfer to complete;
+interruption, corruption and setup failures cannot pass as steady traffic.
+
+Managed HTTPS tunnels created on Iran also export a **Setup Link** for Kharej's
+terminal or `bk link apply`. It carries the public endpoint, internal
+reverse port, matching helper credentials, and private certificate trust when
+needed. REALITY carries only its public key; server private keys and local
+binary paths are never included. Both servers need the same updated build and
+the optional helpers. Generate the link on Iran.
+
 A red banner above the menu appears when a newer release exists. It reads a
 cached answer, so a slow or blocked GitHub never delays the menu.
 
@@ -469,4 +487,4 @@ FEC؛ و zero-copy (فقط روی tcp ساده).
 
 ---
 
-*Last verified against Backpack v1.8.5.*
+*Inherited documentation updated against BackPack v1.9.0; bk integration validation is recorded in docs/upstream-sync.md.*

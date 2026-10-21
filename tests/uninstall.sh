@@ -14,6 +14,9 @@ MOCK
 cat >"$TEST_STATE/bin/systemctl" <<'MOCK'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >> "$TEST_STATE/services"
+if [[ "$1" == stop && "$2" == bk-ext-extra.service ]]; then
+  [[ -f /etc/bk/external/extra.json ]] || exit 86
+fi
 if [[ "$1" == list-unit-files ]]; then
   for p in /etc/systemd/system/bk-*.service /etc/systemd/system/bk-*.timer; do [[ ! -f "$p" ]] || echo "${p##*/} enabled"; done
 fi
@@ -22,7 +25,8 @@ exit 0
 MOCK
 chmod +x "$TEST_STATE/bin/"*
 fixture() {
-  mkdir -p /etc/bk /root/bk/backups /tmp/unrelated-source
+  mkdir -p /etc/bk/external /root/bk/backups /tmp/unrelated-source /root/.cache/bk/components/fixture
+  touch /etc/bk/external/extra.json /etc/systemd/system/bk-ext-extra.service /root/.cache/bk/components/fixture/bk-addons
   touch /etc/bk/test.toml /root/bk/backups/test /usr/local/bin/bk /tmp/unrelated-source/keep
   echo /tmp/unrelated-source > /etc/bk/install_path
   touch /etc/systemd/system/bk-test.service /etc/systemd/system/bk-test-restart.timer /etc/systemd/system/unrelated.service /etc/systemd/system/unrelated.timer
@@ -44,12 +48,14 @@ if FAIL_STOP=1 bash "$script" --yes >/dev/null 2>&1; then echo 'Stop failure ign
 fixture
 bash "$script" --yes
 [[ ! -e /etc/bk && ! -e /root/bk && ! -e /usr/local/bin/bk ]]
+[[ ! -e /root/.cache/bk/components && ! -e /etc/systemd/system/bk-ext-extra.service ]]
 [[ ! -e /etc/systemd/system/bk-test.service && -f /etc/systemd/system/unrelated.service ]]
 [[ -f /tmp/unrelated-source/keep && -f /etc/systemd/system/unrelated.timer && -f /etc/sysctl.d/unrelated.conf ]]
 [[ ! -e /etc/systemd/system/bk-test-restart.timer && ! -e /etc/sysctl.d/zz-bk.conf && ! -e /etc/sysctl.d/99-bk.conf && ! -e /etc/security/limits.d/99-bk.conf ]]
 [[ $(cat "$TEST_STATE/cron") == '0 0 * * * /usr/local/bin/backup # unrelated' ]]
 grep -q 'stop bk-test-restart.timer' "$TEST_STATE/services"
 grep -q 'stop bk-test.service' "$TEST_STATE/services"
+grep -q 'stop bk-ext-extra.service' "$TEST_STATE/services"
 bash "$script" --yes >/dev/null
 fixture
 rm -rf -- /root/bk

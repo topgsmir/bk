@@ -39,8 +39,8 @@ written down, so a release made in a hurry is the same release.
 ## Tagging
 
 ```
-git tag -a v1.8.5 -m "v1.8.5"
-git push origin v1.8.5
+git tag -a v1.9.0 -m "v1.9.0"
+git push origin v1.9.0
 ```
 
 The release workflow builds every architecture, writes `SHA256SUMS`, signs it
@@ -151,4 +151,4 @@ during the incident.
 
 ---
 
-*Last verified against Backpack v1.8.5.*
+*Inherited documentation updated against BackPack v1.9.0; bk integration validation is recorded in docs/upstream-sync.md.*
