@@ -7,6 +7,30 @@ dependencies, tests, and processes.
 > Based on BackPack by Amin Mohammadi (AminMGMT)
 > https://github.com/AminMGMT/BackPack
 
+## Install
+
+Run this command as **root on both servers** (Iran and kharej):
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/topgsmir/bk/main/install.sh)
+```
+
+The installer downloads the latest release for your server's architecture,
+checks its published SHA-256 checksum, installs `bk`, and opens the shared menu.
+Choose **1) BackPack core**, **2) Package 2**, or **3) Package 3**.
+
+To open the menu again:
+
+```bash
+sudo bk
+```
+
+[Full installation and offline setup](docs/install.md) ·
+[Latest release](https://github.com/topgsmir/bk/releases/latest) ·
+[راهنمای فارسی](README_FA.md)
+
+## Project structure
+
 | Directory | Owner and purpose |
 | --- | --- |
 | `upstream/BackPack/` | Exact, unedited upstream snapshot, pinned by commit |
