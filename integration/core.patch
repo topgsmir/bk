@@ -90,7 +90,7 @@
  const (
  	// Version of the bk engine.
 -	Version = "v1.9.0"
-+	Version = "v1.12.0"
++	Version = "v1.12.1"
 +
 +	// UpstreamVersion identifies the inherited engine documentation baseline.
 +	UpstreamVersion = "v1.9.0"
@@ -2348,4 +2348,4 @@
 +++ b/VERSION
 @@ -1 +1 @@
 -v1.9.0
-+v1.12.0
++v1.12.1

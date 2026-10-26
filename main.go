@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"os/user"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -148,11 +149,11 @@ func execute(name string, args []string, in io.Reader, out, errOut io.Writer) er
 	return executeComponent(name, args, in, out, errOut, false)
 }
 func executeComponent(name string, args []string, in io.Reader, out, errOut io.Writer, replace bool) error {
-	cache, err := os.UserCacheDir()
+	cache, err := componentCacheDir()
 	if err != nil {
 		return err
 	}
-	path, err := materialize(payload, filepath.Join(cache, "bk", "components"), name)
+	path, err := materialize(payload, cache, name)
 	if err != nil {
 		return err
 	}
@@ -185,6 +186,24 @@ func executeComponent(name string, args []string, in io.Reader, out, errOut io.W
 	}()
 	return command.Wait()
 }
+
+func componentCacheDir() (string, error) {
+	cache, err := os.UserCacheDir()
+	if err != nil {
+		// System services may have neither HOME nor XDG_CACHE_HOME. Resolve
+		// their effective account instead of depending on a login shell.
+		account, lookupErr := user.LookupId(fmt.Sprint(os.Geteuid()))
+		if lookupErr != nil {
+			return "", fmt.Errorf("locate component cache for uid %d: %w", os.Geteuid(), lookupErr)
+		}
+		if !filepath.IsAbs(account.HomeDir) {
+			return "", fmt.Errorf("component cache requires an absolute home for uid %d", os.Geteuid())
+		}
+		cache = filepath.Join(account.HomeDir, ".cache")
+	}
+	return filepath.Join(cache, "bk", "components"), nil
+}
+
 func materialize(source fs.FS, cache, name string) (string, error) {
 	if name != "bk-core" && name != "bk-addons" {
 		return "", errors.New("unknown component")

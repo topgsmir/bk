@@ -41,8 +41,11 @@ systemd unit migration is required for the commands above.
 
 The existing single-file release format is retained: both component executables
 are embedded in the launcher, hashed, and extracted into private per-content
-directories under the user's cache. A rollback of the launcher also selects its
-original component hashes. Installation and signed online updating continue to
+directories under the user's cache.
+When a service has neither `HOME` nor `XDG_CACHE_HOME`, the launcher resolves
+the effective account's home directory from the system account database.
+A rollback of the launcher also selects its original component hashes.
+Installation and signed online updating continue to
 replace one binary. SBOM output records the dependencies of both child programs,
 not merely the small launcher's standard library.
 

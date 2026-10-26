@@ -1,5 +1,9 @@
 # bk distribution
 
+## v1.12.1 — Service startup without a login environment (2026-10-26)
+
+- Resolve the component cache from the effective service account when both HOME and XDG_CACHE_HOME are absent. This fixes monitor and tunnel startup under systemd while preserving explicit cache settings and component integrity checks.
+
 ## v1.12.0 — Independent core and addons (2026-10-21)
 
 - Require Go 1.26.10 across all build modules and source installation to address GO-2026-6809. Keep the upstream source snapshot intact and refresh the official Linux toolchain checksums.
